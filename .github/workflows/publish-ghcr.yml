@@ -34,7 +34,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Compute tags
+      - name: Compute tags
         id: meta
         shell: bash
         run: |
