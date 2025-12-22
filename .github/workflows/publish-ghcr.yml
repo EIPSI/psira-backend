@@ -38,18 +38,21 @@ jobs:
         id: meta
         shell: bash
         run: |
+          REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+
           TAGS=""
           if [[ "${GITHUB_REF_TYPE}" == "branch" ]]; then
             if [[ "${GITHUB_REF_NAME}" == "develop" ]]; then
-              TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging"
+              TAGS="${{ env.REGISTRY }}/$REPO:staging"
             elif [[ "${GITHUB_REF_NAME}" == "main" ]]; then
-              TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main"
+              TAGS="${{ env.REGISTRY }}/$REPO:main"
             fi
           elif [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            # Example: v0.1.0
-            TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${GITHUB_REF_NAME},${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+            TAGS="${{ env.REGISTRY }}/$REPO:${GITHUB_REF_NAME},${{ env.REGISTRY }}/$REPO:latest"
           fi
+
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+          
 
       - name: Build & Push
         uses: docker/build-push-action@v6
