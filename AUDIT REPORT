@@ -491,3 +491,339 @@ All DTOs must have comprehensive validation
 All errors must be logged with correlation IDs
 Security audit of all Handlebars template usage
 Upgrade to NestJS v10 and Modern Dependencies — The current v7 dependencies are 3+ years old with multiple known CVEs. This requires refactoring for breaking changes in TypeORM v0.3, Mongoose v8, and Apollo Server v4, but is essential for security maintenance.
+
+---------------------------------------------------------
+
+DEEP-DIVE TECHNICAL ANALYSIS: psira-backend
+1. THREAT MODEL — Attack Narratives for Critical Findings
+ATTACK 1: JWT Secret Exploitation (Authentication Bypass)
+Attack Vector: Missing SECRET environment variable allows JWT forgery
+
+Step-by-Step Exploitation:
+Step	Action	Attacker Activity	System Response
+1	Reconnaissance	Attacker discovers the application uses JWT authentication by examining frontend requests	GraphQL introspection reveals login mutation returns accessToken
+2	Environment Analysis	Attacker probes error messages or finds public repository/docker image showing SECRET env var is expected	Confirms JWT signing relies on environment variable
+3	JWT Forgery	Attacker crafts JWT with payload {"jti":"admin","sub":"1"} and signs with key undefined (literal string) or empty secret	Due to config.service.ts:10 having commented error handling, jwtConstants.secret becomes undefined
+4	Token Injection	Attacker sends request: Authorization: Bearer <forged_jwt> to protected endpoints	JwtStrategy.validate() calls authService.validateAccessToken("admin")
+5	Token Validation Bypass	validateAccessToken queries database for token ID "admin"	Token not found, BUT if attacker knows any valid token ID from logs/leaks, they bypass completely
+6	Privilege Escalation	Attacker crafts JWT with sub: "1" (first user = superadmin)	Returns superadmin user with full permissions
+Data Accessed:
+
+All patient records (PHI)
+All assessment responses (mental health data)
+All user accounts and credentials
+All questionnaire scripts (potentially proprietary)
+Log Traces Left:
+
+AuthService logs: Invalid Username only on failed login attempts
+NO LOGGING of JWT validation failures in JwtStrategy or AccessTokenService
+Cache activity for session validation appears in Redis/Mongo logs (if cache store logs)
+No request ID correlation makes tracing difficult
+Stealth Level: HIGH — No failed authentication logs, appears as legitimate traffic
+
+ATTACK 2: SQL Injection in Assessment Email Cron
+Attack Vector: Raw SQL query with unsanitized deliveryDate comparison
+
+Step-by-Step Exploitation:
+Step	Action	Attacker Activity	System Response
+1	Discovery	Attacker identifies checkAssessmentEmails runs every minute via @Cron decorator	Source code review or error message reveals raw SQL
+2	Assessment Creation	Attacker creates assessment with malicious deliveryDate containing SQL injection payload: 2024-01-01'); DROP TABLE assessments; --	Assessment saved to PostgreSQL
+3	Cron Trigger	When deliveryDate ≤ NOW(), the cron job executes	Query builder executes: .where("(Extract(epoch FROM (assessment.deliveryDate - now()))/60)::integer <= 0 AND assessment.emailStatus = 'SCHEDULED'")
+4	Payload Execution	The injected SQL executes within the where clause	Potential data exfiltration, modification, or deletion
+Data Accessed:
+
+Entire assessments table
+Linked patients, users tables via JOINs
+PostgreSQL system tables (pg_user, pg_authid)
+Potential remote code execution via PostgreSQL COPY ... FROM PROGRAM
+Log Traces Left:
+
+PostgreSQL query logs (if enabled) show malformed queries
+No application-level logging of the cron job SQL execution
+Email status changes to FAILED or SENT depending on injection success
+SendMailService.checkAssessmentEmails() has empty catch block that returns error without logging
+Stealth Level: MEDIUM-HIGH — Requires cron execution; errors swallowed in catch block
+
+ATTACK 3: Public UUID Assessment Access (PHI Disclosure)
+Attack Vector: getFullPublicAssessment query has NO authentication guards
+
+Step-by-Step Exploitation:
+Step	Action	Attacker Activity	System Response
+1	UUID Harvesting	Attacker searches for leaked UUIDs in: email headers, browser history, server logs, or brute-forces UUIDv4 space (2^122 possibilities - impractical)	Realistic vector: phishing email contains assessment link with UUID
+2	Direct API Access	Attacker sends unauthenticated GraphQL query: query { getFullPublicAssessment(uuid: "550e8400-e29b-41d4-a716-446655440000") { ... } }	Resolver executes without any @UseGuards()
+3	Data Retrieval	Attacker queries for sensitive fields: questionnaireAssessment { answers { textValue numberChoiceValue } }	Returns complete assessment responses including mental health answers
+4	Enumeration	Attacker tests sequential UUIDs or uses timing attacks to find valid assessments	Each valid UUID returns full patient assessment data
+Data Accessed:
+
+FullPublicAssessment includes:
+questionnaireAssessment.answers — All patient responses
+assessmentType — Diagnosis/treatment context
+deliveryDate, expirationDate — Timeline information
+Linked patient data via assessment.patient (if resolver traverses relation)
+Log Traces Left:
+
+NO authentication logs (no auth attempt made)
+GraphQL query logs (if Apollo Studio enabled)
+Application logs: Only AssessmentService.getFullPublicAssessment() execution (no user context)
+No access logging for this specific endpoint
+Stealth Level: CRITICAL — Completely silent; appears as legitimate API usage; no auth logs generated
+
+2. NOTES FILE ANALYSIS
+File: NOTES (lines 1-77)
+
+Content Summary:
+The NOTES file is completely empty of project-specific documentation. It contains only:
+
+NestJS framework boilerplate (lines 1-77)
+NestJS logo and badges
+Standard installation instructions (npm install)
+Standard npm scripts (start, test, etc.)
+Links to NestJS documentation and author info
+What's Missing:
+Expected Content	Actual Content
+Security considerations	None
+Known vulnerabilities or shortcuts	None
+Environment variable documentation	None
+Architecture decisions	None
+TODOs or FIXMEs	None
+Deployment notes	None
+PHI handling guidelines	None
+Encryption at rest configuration	None
+Conclusion:
+The NOTES file documents NOTHING. This is a significant finding—there is no institutional knowledge captured about:
+
+Why JWT secrets have commented error handling
+Why the public assessment endpoint lacks authentication
+Why SQL queries use raw strings
+Any deferred security decisions
+Recommendation: Create comprehensive security documentation immediately.
+
+3. AUTHENTICATION FLOW — End-to-End Trace
+Complete Authentication Chain:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        AUTHENTICATION FLOW                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+[1] LOGIN REQUEST
+    │
+    ├─► GraphQL Mutation: login(identifier, password)
+    │   File: src/modules/auth/auth.resolver.ts:16
+    │   Guard: NONE (public endpoint)
+    │
+    ▼
+[2] CREDENTIAL VALIDATION
+    │
+    ├─► AuthService.validateUserCredentials()
+    │   File: src/modules/auth/auth.service.ts:37-85
+    │   │
+    │   ├─► User.findOne({ username: identifier.toLowerCase() })
+    │   │   Database: PostgreSQL (user table)
+    │   │
+    │   ├─► Hash.compare(password, user.password)
+    │   │   File: src/shared/helpers/hash.helper.ts:22-35
+    │   │   Supports: bcrypt ($2a) and argon2 ($argon2)
+    │   │
+    │   └─► Login attempt tracking (cache-based)
+    │       Key: `login-attempts:${user.id}`
+    │       File: src/modules/auth/auth.service.ts:123-140
+    │
+    ▼
+[3] JWT GENERATION
+    │
+    ├─► AccessTokenService.generateToken()
+    │   File: src/modules/auth/providers/access-token.service.ts:59-94
+    │   │
+    │   ├─► Token ID Generation: Str.uuid() (UUIDv4)
+    │   │
+    │   ├─► Database Persistence: AccessToken.create({ id, userId, expiresAt })
+    │   │   Table: access_token (PostgreSQL)
+    │   │
+    │   ├─► Cache Registration: setTokenActivity(tokenId)
+    │   │   Key: `active-sessions:${tokenId}`
+    │   │   TTL: authConfig.inactivityTimeout = 1800s (30 min)
+    │   │
+    │   └─► JWT Signing: jwtService.sign({ jti: tokenId, sub: user.id })
+    │       Secret: jwtConstants.secret (from process.env.SECRET)
+    │       Expires: authConfig.tokenLife = 1296000s (15 days)
+    │
+    ▼
+[4] TOKEN VALIDATION (Per Request)
+    │
+    ├─► GqlAuthGuard.canActivate()
+    │   File: src/modules/auth/auth.guard.ts:16-23
+    │   │
+    │   ├─► JWT Extract: ExtractJwt.fromAuthHeaderAsBearerToken()
+    │   │   Strategy: src/modules/auth/jwt.strategy.ts:16
+    │   │
+    │   ├─► JWT Verify: jwtService.verify(token, { secret: jwtConstants.secret })
+    │   │   If secret is undefined/empty → **FORGERY POSSIBLE**
+    │   │
+    │   └─► Payload Extraction: { jti, sub }
+    │
+    ▼
+[5] SESSION VALIDATION
+    │
+    ├─► AccessTokenService.validateAccessToken(jti)
+    │   File: src/modules/auth/providers/access-token.service.ts:19-43
+    │   │
+    │   ├─► Cache Check: validateTokenActivity(tokenId)
+    │   │   Key: `active-sessions:${tokenId}`
+    │   │   If missing → "Session expired! Please login."
+    │   │
+    │   ├─► Database Check: AccessToken.findOne({ id: tokenId, isRevoked: false })
+    │   │   Table: access_token
+    │   │
+    │   └─► User Resolution: token.user (via TypeORM relation)
+    │       Returns: Full User entity
+    │
+    ▼
+[6] PERMISSION CHECK
+    │
+    ├─► PermissionGuard.canActivate()
+    │   File: src/modules/permission/guards/permission.guard.ts:14-38
+    │   │
+    │   ├─► Permission Extraction: @UsePermission() decorator metadata
+    │   │   via Reflector.get('permissions', context.getHandler())
+    │   │
+    │   ├─► User Permission Lookup: PermissionService.userPermissionGrants(userId)
+    │   │   File: src/modules/permission/providers/permission.service.ts:128-152
+    │   │   │
+    │   │   ├─► Direct permissions: user.permissions (Many-to-Many)
+    │   │   ├─► Role permissions: roles.flatMap(r => r.permissions)
+    │   │   └─► Deduplication: [...new Set([...direct, ...role])]
+    │   │
+    │   └─► Permission Validation
+    │       All required permissions must be present
+    │       OR permissions: at least one must match
+    │
+    ▼
+[7] REQUEST HANDLER EXECUTION
+    │
+    └─► Resolver method executes with @CurrentUser() injected
+Critical Break/Bypass Points:
+#	Point	Vulnerability	Exploit
+1	config.service.ts:10	Error throwing commented out	App starts with SECRET=undefined
+2	jwtConstants.secret	Loaded from env without validation	Attacker signs JWT with undefined
+3	JwtStrategy:17	ignoreExpiration: false only	No token binding to IP/user-agent
+4	AccessTokenService:39	No cache → DB fallback	Cache miss still validates if DB token exists
+5	PermissionGuard:18	if (!userId) return false	Silent rejection, no logging
+Refresh Token Analysis:
+FINDING: Refresh tokens are NOT IMPLEMENTED in the current codebase.
+
+authConfig.refreshTokenLife is defined (180 days) but never used
+REFRESH_TOKEN_SECRET environment variable is loaded but never referenced
+No refresh token GraphQL mutations exist
+The LoginResponseDto only returns accessToken, no refresh token
+Impact:
+
+Users must re-login after 15 days (access token expiry)
+No secure mechanism for session extension
+Long-lived access tokens (15 days) increase exposure window
+4. GRAPHQL EXPOSURE — Unprotected Endpoints
+Publicly Accessible Operations (NO Authentication Required):
+#	Operation	Type	File	Data Exposed
+1	getFullPublicAssessment(uuid: String!)	Query	public.assesment.resolver.ts:10	CRITICAL: Full assessment data including patient answers
+2	disclaimers	Query	disclaimer.resolver.ts:15	System disclaimer text (low risk)
+3	login(identifier, password)	Mutation	auth.resolver.ts:15	Authentication endpoint (expected public)
+Analysis of getFullPublicAssessment:
+graphql
+# No authentication required - ANYONE can query
+query GetPatientData {
+  getFullPublicAssessment(uuid: "any-uuid-here") {
+    id
+    uuid
+    status
+    deliveryDate
+    expirationDate
+    informantType
+    assessmentType {
+      name
+    }
+    questionnaireAssessment {
+      status
+      answers {
+        question
+        textValue        # PATIENT ANSWERS
+        numberValue      # PATIENT ANSWERS
+        dateValue        # PATIENT ANSWERS
+        booleanValue     # PATIENT ANSWERS
+        multipleChoiceValue  # PATIENT ANSWERS
+        valid
+      }
+      questionnaires {
+        name
+        abbreviation
+        questionGroups {
+          label
+          questions {
+            label
+            type
+            required
+          }
+        }
+      }
+    }
+  }
+}
+Analysis of disclaimers:
+typescript
+// disclaimer.resolver.ts:12-18
+@Resolver(() => Disclaimer)
+export class DisclaimerResolver {
+    @Query(() => [Disclaimer])  // NO @UseGuards()
+    async disclaimers(): Promise<Disclaimer[]> {
+        return this.disclaimerService.getDisclaimers();
+    }
+}
+Risk: LOW — Only returns system disclaimer text, no PHI
+
+5. PHI DATA MAP — Protected Health Information Locations
+PostgreSQL Tables Containing PHI:
+Table	PHI Fields	Encrypted?	Notes
+patient	firstName, middleName, lastName, phone, phone2, email, address, addressStreet, addressNumber, addressApartment, addressPlace, addressPostalCode, birthDate, medicalRecordNo	NO	Core patient demographics
+emergency_contact	firstName, lastName, phone, email, address	NO	Linked to patient
+informant	firstName, lastName, phone, email	NO	Patient informant data
+assessment	note, receiverEmail	NO	Assessment metadata
+user	firstName, lastName, email, phone, birthDate	NO	Clinician data
+access_token	id (token identifier)	NO	Session data
+MongoDB Collections Containing PHI:
+Collection	PHI Fields	Encrypted?	Notes
+assessments	answers[].textValue, answers[].numberValue, answers[].dateValue, answers[].booleanValue, answers[].multipleChoiceValue	NO	Complete patient questionnaire responses
+questionnaires	name, questionGroups[].label, questionGroups[].questions[].label	NO	Questionnaire structure (low PHI)
+questionnaire_bundles	name, description	NO	Bundle metadata
+Critical PHI Exposure in answers Schema:
+typescript
+// src/modules/questionnaire/models/answer.schema.ts
+@Schema({ timestamps: true })
+export class Answer extends Document {
+    @Prop() question: Types.ObjectId;      // Links to question (what was asked)
+    @Prop() textValue: string;             // **FREE TEXT ANSWERS** — Mental health notes
+    @Prop() numberValue: number;           // **NUMERIC SCALES** — Depression scores, etc.
+    @Prop() dateValue: Date;               // **DATES** — Event dates, diagnosis dates
+    @Prop() booleanValue: boolean;         // **YES/NO** — Screening responses
+    @Prop() multipleChoiceValue: string[]; // **SELECTED OPTIONS** — Diagnoses, symptoms
+}
+Encryption Status Summary:
+Layer	Status	Details
+At-Rest PostgreSQL	❌ NONE	No TDE or column encryption configured
+At-Rest MongoDB	❌ NONE	No encryption-at-rest enabled
+Field-Level Encryption	❌ NONE	No sensitive fields encrypted
+Transit	✅ TLS	HTTPS/WSS only (expected)
+Database Connections	⚠️ UNVERIFIED	Connection strings use plaintext passwords
+HIPAA Compliance Assessment:
+Requirement	Status	Gap
+164.312(a)(1) - Access Control	❌ FAIL	Public endpoint exposes PHI
+164.312(a)(2)(iv) - Encryption/Decryption	❌ FAIL	No at-rest encryption
+164.312(b) - Audit Controls	⚠️ PARTIAL	Some logging, no audit trail for data access
+164.312(c)(1) - Integrity	⚠️ PARTIAL	No checksums/verification
+164.312(d) - Person/Entity Authentication	❌ FAIL	JWT secret can be undefined
+164.312(e)(1) - Transmission Security	✅ PASS	HTTPS expected
+CRITICAL SUMMARY
+Immediate Actions Required (This Week):
+Add @UseGuards() to PublicAssessmentResolver — PHI exposure is catastrophic
+Uncomment error throwing in config.service.ts:10 — Prevent JWT forgery
+Remove raw SQL from SendMailService — Use TypeORM query builder
+This Quarter:
+Implement refresh token rotation
+Add encryption-at-rest for MongoDB and PostgreSQL
+Deploy comprehensive audit logging
+Implement field-level encryption for answers.textValue (free-text responses)
