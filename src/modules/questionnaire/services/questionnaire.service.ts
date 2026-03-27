@@ -189,6 +189,9 @@ export class QuestionnaireService {
                 if ('questions' in question) {
                     currentGroup = question;
                 } else {
+		            if (!currentGroup) {
+			            continue;
+		            }
                     currentGroup.questions.push(question);
                 }
             }
