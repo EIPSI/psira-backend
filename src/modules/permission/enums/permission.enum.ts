@@ -14,6 +14,16 @@ export const systemPermissions = [
         group: 'Patient Management',
     },
     {
+        key: 'VIEW_DEPARTMENT_PATIENTS',
+        name: 'view department patients',
+        group: 'Patient Management',
+    },
+    {
+        key: 'VIEW_ASSIGNED_PATIENTS',
+        name: 'view assigned patients',
+        group: 'Patient Management',
+    },
+    {
         key: 'VIEW_ALL_PATIENTS',
         name: 'view all patients',
         group: 'Patient Management',
