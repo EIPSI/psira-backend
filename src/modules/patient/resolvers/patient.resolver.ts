@@ -126,32 +126,41 @@ export class PatientResolver {
             relations: ['departments'],
         });
 
-        // Check input deparments overlap with departments user is a member
-        // Or User has permission over patients in all departments.
+        // Auto-assignment for VIEW_ASSIGNED_PATIENTS
+        const hasAssignedPermission = await PermissionService.userCan(
+            currentUser.id,
+            PermissionEnum.VIEW_ASSIGNED_PATIENTS,
+        );
 
+        if (hasAssignedPermission) {
+            // Force auto-assignment to creator, ignore input
+            patientInput.caseManagerIds = [currentUser.id];
+        }
+
+        // Department validation
         const canViewAllPatients = await PermissionService.userCan(
             currentUser.id,
             PermissionEnum.VIEW_ALL_PATIENTS,
         );
 
         if (!canViewAllPatients) {
-            const deparmentIds = currentUser.departments.map(
+            const departmentIds = currentUser.departments.map(
                 department => department.id,
             );
             const exceptionDepartments = patientInput.departmentIds.filter(
-                inputId => deparmentIds.indexOf(inputId) < 0,
+                inputId => departmentIds.indexOf(inputId) < 0,
             );
 
             if (exceptionDepartments?.length) {
                 throw new BadRequestException(
-                    `User cannot create Patients in deparments of which is not a member`,
+                    `User cannot create patients in departments of which they are not a member`,
                 );
             }
         }
 
-        // Check for duplicate medical record no
+        // Check for duplicate medical record no (existing logic)
         if (patientInput.medicalRecordNo === '')
-            patientInput.medicalRecordNo = null; // coalesce '' to NULL, as field is nullable
+            patientInput.medicalRecordNo = null;
 
         if (patientInput.medicalRecordNo) {
             const exists = await Patient.findOne({
