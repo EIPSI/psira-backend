@@ -22,23 +22,47 @@ export class PatientAuthorizer {
             relations: ['departments'],
         });
 
+        // 1. VIEW_ALL_PATIENTS: Return empty filter (no restriction)
         if (await PermissionService.userCan(currentUser.id, PermissionEnum.VIEW_ALL_PATIENTS)) {
             return {};
         }
 
-        const deparmentIds = currentUser.departments.map((department) => department.id);
-
-        // User has no departments
-        if (deparmentIds.length < 1) {
-
-            throw new UnauthorizedException(`You need to be assigned atleast one department to view patients.`)
+        // 2. VIEW_DEPARTMENT_PATIENTS: Filter by user's departments
+        if (await PermissionService.userCan(currentUser.id, PermissionEnum.VIEW_DEPARTMENT_PATIENTS)) {
+            const departmentIds = currentUser.departments.map(d => d.id);
+            if (departmentIds.length === 0) {
+                throw new UnauthorizedException('You need to be assigned at least one department to view patients.');
+            }
+            return this.filterByDepartments(departmentIds);
         }
 
-        return Promise.resolve({
+        // 3. VIEW_ASSIGNED_PATIENTS: Filter by user.id as case manager
+        if (await PermissionService.userCan(currentUser.id, PermissionEnum.VIEW_ASSIGNED_PATIENTS)) {
+            return this.filterByAssignedUser(currentUser.id);
+        }
+
+        // Default: VIEW_PATIENTS only - keep existing behavior
+        const departmentIds = currentUser.departments.map(d => d.id);
+        if (departmentIds.length === 0) {
+            throw new UnauthorizedException('You need to be assigned at least one department to view patients.');
+        }
+        return this.filterByDepartments(departmentIds);
+    }
+
+    private static filterByDepartments(departmentIds: number[]): Filter<Patient> {
+        return {
             or: [
-                { departments: { id: { in: deparmentIds } } },
+                { departments: { id: { in: departmentIds } } },
             ]
-        });
+        };
+    }
+
+    private static filterByAssignedUser(userId: number): Filter<Patient> {
+        return {
+            or: [
+                { caseManagers: { id: { eq: userId } } },
+            ]
+        };
     }
 
 }
