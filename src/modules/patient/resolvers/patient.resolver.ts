@@ -216,10 +216,91 @@ export class PatientResolver {
         const { id, update } = input;
 
         // Get patient if authorized. Throws exception if Not Found
-        await this.service.getOnePatient(currentUser, Number(input.id));
+        const patient = await this.service.getOnePatient(
+            currentUser,
+            Number(input.id),
+        );
 
-        // Check for duplicate medical record no
-        if (update.medicalRecordNo === '') update.medicalRecordNo = null; // coalesce '' to NULL, as field is nullable
+        // Check permissions
+        const canViewAllPatients = await PermissionService.userCan(
+            currentUser.id,
+            PermissionEnum.VIEW_ALL_PATIENTS,
+        );
+
+        const hasAssignedPermission = await PermissionService.userCan(
+            currentUser.id,
+            PermissionEnum.VIEW_ASSIGNED_PATIENTS,
+        );
+
+        // Handle case manager updates if provided
+        if (update.caseManagerIds !== undefined) {
+            // For VIEW_ASSIGNED_PATIENTS: only allow updating their own assigned patients
+            // and restrict case managers to themselves
+            if (hasAssignedPermission) {
+                // Verify user is assigned as case manager
+                const isCaseManager = patient.caseManagers?.some(
+                    cm => cm.id === currentUser.id,
+                );
+                if (!isCaseManager) {
+                    throw new BadRequestException(
+                        'You can only update patients where you are assigned as case manager',
+                    );
+                }
+
+                // Force case manager to be themselves only
+                update.caseManagerIds = [currentUser.id];
+            } else if (!canViewAllPatients) {
+                // For DEPARTMENT scope: validate case managers belong to patient's departments
+                if (update.caseManagerIds.length > 0) {
+                    // Get patient's current departments
+                    const patientWithDepts = await Patient.findOne({
+                        where: { id: patient.id },
+                        relations: ['departments'],
+                    });
+
+                    const departmentIds = patientWithDepts.departments.map(
+                        d => d.id,
+                    );
+
+                    // Get users in those departments
+                    const departmentMembers = await User.createQueryBuilder(
+                        'user',
+                    )
+                        .innerJoin('user.departments', 'department')
+                        .where('department.id IN (:...departmentIds)', {
+                            departmentIds,
+                        })
+                        .getMany();
+
+                    const departmentMemberIds = departmentMembers.map(u => u.id);
+
+                    const invalidManagers = update.caseManagerIds.filter(
+                        cmId => !departmentMemberIds.includes(cmId),
+                    );
+
+                    if (invalidManagers.length > 0) {
+                        throw new BadRequestException(
+                            `Can only assign case managers who are members of the patient's departments. Invalid manager IDs: ${invalidManagers.join(
+                                ', ',
+                            )}`,
+                        );
+                    }
+                }
+            }
+            // For VIEW_ALL_PATIENTS: no validation needed
+
+            // Update case managers
+            await this.service.updateCaseManagers(
+                Number(id),
+                update.caseManagerIds,
+            );
+
+            // Remove caseManagerIds from update object to avoid passing it to updateOne
+            delete update.caseManagerIds;
+        }
+
+        // Check for duplicate medical record no (existing logic)
+        if (update.medicalRecordNo === '') update.medicalRecordNo = null;
 
         if (!!update.medicalRecordNo) {
             const exists = await Patient.createQueryBuilder('patient')
