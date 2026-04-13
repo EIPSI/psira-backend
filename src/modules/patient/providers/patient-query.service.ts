@@ -112,6 +112,31 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
         return patient;
     }
 
+    async updateCaseManagers(
+        patientId: number,
+        caseManagerIds: number[],
+    ): Promise<void> {
+        // First, remove all existing case managers
+        await this.repo
+            .createQueryBuilder()
+            .delete()
+            .from('patient_case_manager')
+            .where('patientId = :patientId', { patientId })
+            .execute();
+
+        // Then, add new case managers if any
+        if (caseManagerIds && caseManagerIds.length > 0) {
+            for (const cmId of caseManagerIds) {
+                await this.repo
+                    .createQueryBuilder()
+                    .insert()
+                    .into('patient_case_manager')
+                    .values({ patientId, userId: cmId })
+                    .execute();
+            }
+        }
+    }
+
     async createMany(input: CreatePatientInput[]): Promise<Patient[]> {
         const patients = await super.createMany(input);
 
