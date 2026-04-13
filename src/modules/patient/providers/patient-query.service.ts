@@ -69,11 +69,21 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
     async createOne(input: CreatePatientInput): Promise<Patient> {
         const patient = await super.createOne(input);
 
+        // Handle department assignment (existing logic)
         if (input.departmentIds) {
             await super.addRelations(
                 'departments',
                 patient.id,
                 input.departmentIds,
+            );
+        }
+
+        // Handle case manager assignment (new logic)
+        if (input.caseManagerIds && input.caseManagerIds.length > 0) {
+            await super.addRelations(
+                'caseManagers',
+                patient.id,
+                input.caseManagerIds,
             );
         }
 
