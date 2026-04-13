@@ -32,10 +32,13 @@ import {
 import { QuestionnaireModule } from '../questionnaire/questionnaire.module';
 import { PatientStatusService } from './providers/patient-status.service';
 import { Assessment } from '../assessment/models/assessment.model';
+import { PermissionModule } from '../permission/permission.module';
+import { PatientPermissionService } from './services/patient-permission.service';
 
 const guards = [GqlAuthGuard, PermissionGuard];
 @Module({
     imports: [
+        PermissionModule,
         QuestionnaireModule,
         NestjsQueryGraphQLModule.forFeature({
             // import the NestjsQueryTypeOrmModule to register the entity with typeorm
@@ -162,7 +165,8 @@ const guards = [GqlAuthGuard, PermissionGuard];
         PatientQueryService,
         QuestionnaireAssessmentService,
         PatientStatusService,
+        PatientPermissionService,
     ],
-    exports: [PatientQueryService],
+    exports: [PatientQueryService, PatientPermissionService],
 })
 export class PatientModule {}
