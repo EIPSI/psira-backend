@@ -60,6 +60,7 @@ export class RoleAuthorizer implements Authorizer<Role> {
     ],
     exports: [
         PermissionGuard,
+        PermissionService,
     ]
 })
 export class PermissionModule { }
