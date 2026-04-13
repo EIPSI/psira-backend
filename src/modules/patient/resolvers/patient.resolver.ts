@@ -158,6 +158,37 @@ export class PatientResolver {
             }
         }
 
+        if (!canViewAllPatients && !hasAssignedPermission) {
+            // Validate case managers belong to the assigned departments
+            if (
+                patientInput.caseManagerIds &&
+                patientInput.caseManagerIds.length > 0
+            ) {
+                // Get users who are case managers in the assigned departments
+                const departmentMembers = await User.createQueryBuilder('user')
+                    .innerJoin('user.departments', 'department')
+                    .where('department.id IN (:...departmentIds)', {
+                        departmentIds: patientInput.departmentIds,
+                    })
+                    .getMany();
+
+                const departmentMemberIds = departmentMembers.map(u => u.id);
+
+                // Check if all caseManagerIds belong to department members
+                const invalidManagers = patientInput.caseManagerIds.filter(
+                    cmId => !departmentMemberIds.includes(cmId),
+                );
+
+                if (invalidManagers.length > 0) {
+                    throw new BadRequestException(
+                        `Can only assign case managers who are members of the assigned departments. Invalid manager IDs: ${invalidManagers.join(
+                            ', ',
+                        )}`,
+                    );
+                }
+            }
+        }
+
         // Check for duplicate medical record no (existing logic)
         if (patientInput.medicalRecordNo === '')
             patientInput.medicalRecordNo = null;
