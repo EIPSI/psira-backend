@@ -71,4 +71,8 @@ export class CreatePatientInput {
     @Field(() => [Int], { nullable: true })
     @ArrayMinSize(1, { message: 'Please select atleast one(1) Department for patient' })
     departmentIds: number[];
+
+    @Field(() => [Int], { nullable: true, description: 'IDs of case managers to assign to this patient' })
+    @IsOptional()
+    caseManagerIds?: number[];
 }
