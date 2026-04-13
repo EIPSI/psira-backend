@@ -1,4 +1,4 @@
-import { Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { User } from 'src/modules/user/models/user.model';
 import { Hash } from 'src/shared';
 import { Any } from 'typeorm';
@@ -8,6 +8,7 @@ import { RoleCode } from '../enums/role-code.enum';
 import { Permission } from '../models/permission.model';
 import { Role } from '../models/role.model';
 
+@Injectable()
 export class PermissionService implements OnModuleInit {
     private readonly logger = new Logger(PermissionService.name);
 
@@ -156,6 +157,10 @@ export class PermissionService implements OnModuleInit {
         const userPermissions = await PermissionService.userPermissionGrants(userId);
 
         return !!userPermissions.find(permission => permission.name === action)
+    }
+
+    async userCan(userId: number, action: string) {
+        return PermissionService.userCan(userId, action);
     }
 
     /**
