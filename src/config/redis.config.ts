@@ -1,7 +1,7 @@
 import { Str } from 'src/shared/helpers/string.helper';
 
 const redisPrefix = process.env.REDIS_PREFIX ||
-    Str.slug(process.env.APP_NAME || 'mhira') + ':' + Str.slug(process.env.APP_ENV || 'production');
+    Str.slug(process.env.APP_NAME || 'psira') + ':' + Str.slug(process.env.APP_ENV || 'production');
 
 export const redisConfig = {
 
