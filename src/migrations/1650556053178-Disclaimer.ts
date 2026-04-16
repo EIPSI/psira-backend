@@ -11,7 +11,7 @@ export class Disclaimer1650556053178 implements MigrationInterface {
         await queryRunner.query(`INSERT INTO disclaimer (type, description)
         VALUES (
            'loginDisclaimer', 
-            'The MHIRA platform stores sensible and private health information of patients. To protect the data, please make sure to never share your password with anyone. All actions in the system are logged and might be tracked back to your account. If you notice any data security risk, please notify the person responsible for MHIRA. Finally, please only share data of your patients for health care purposes or with the permission of your patients.')`);
+            'The PSIRA platform stores sensible and private health information of patients. To protect the data, please make sure to never share your password with anyone. All actions in the system are logged and might be tracked back to your account. If you notice any data security risk, please notify the person responsible for PSIRA. Finally, please only share data of your patients for health care purposes or with the permission of your patients.')`);
 
         await queryRunner.query(`INSERT INTO disclaimer (type, description)
         VALUES (
