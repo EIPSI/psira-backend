@@ -140,14 +140,23 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
     async createMany(input: CreatePatientInput[]): Promise<Patient[]> {
         const patients = await super.createMany(input);
 
-        let counter = 0;
+        for (let i = 0; i < patients.length; i++) {
+            const patient = patients[i];
+            const patientInput = input[i];
 
-        for (const patient of patients) {
-            if (input[counter++].departmentIds) {
+            if (patientInput.departmentIds) {
                 await super.addRelations(
                     'departments',
                     patient.id,
-                    input[counter++].departmentIds,
+                    patientInput.departmentIds,
+                );
+            }
+
+            if (patientInput.caseManagerIds && patientInput.caseManagerIds.length > 0) {
+                await super.addRelations(
+                    'caseManagers',
+                    patient.id,
+                    patientInput.caseManagerIds,
                 );
             }
         }
