@@ -10,6 +10,7 @@ export class AddPatientPermissionsToSuperAdmin1776349969188 implements Migration
             SELECT name, "group"
             FROM (
                 VALUES 
+                    ('view all patients', 'Patient Management'),
                     ('view department patients', 'Patient Management'),
                     ('view assigned patients', 'Patient Management')
             ) AS new_perms(name, "group")
@@ -19,16 +20,14 @@ export class AddPatientPermissionsToSuperAdmin1776349969188 implements Migration
         `;
         await queryRunner.query(insertPermissions);
 
-        // ... el resto de la migración (asignación a roles, etc.)
-    }
-            // Asignar los permisos al rol SUPER_ADMIN
+        // Asignar los permisos al rol SUPER_ADMIN
         const assignPermissions = `
             INSERT INTO role_permission ("roleId", "permissionId")
             SELECT r.id, p.id
             FROM role r
             CROSS JOIN permission p
             WHERE r.code = 'SUPER_ADMIN'
-            AND p.name IN ('view department patients', 'view assigned patients')
+            AND p.name IN ('view all patients', 'view department patients', 'view assigned patients')
             ON CONFLICT ("roleId", "permissionId") DO NOTHING;
         `;
         await queryRunner.query(assignPermissions);
@@ -41,8 +40,14 @@ export class AddPatientPermissionsToSuperAdmin1776349969188 implements Migration
             WHERE "roleId" IN (SELECT id FROM role WHERE code = 'SUPER_ADMIN')
             AND "permissionId" IN (
                 SELECT id FROM permission 
-                WHERE name IN ('view department patients', 'view assigned patients')
+                WHERE name IN ('view all patients', 'view department patients', 'view assigned patients')
             );
+        `);
+
+        // Opcional: también eliminar los permisos de la tabla permission
+        await queryRunner.query(`
+            DELETE FROM permission 
+            WHERE name IN ('view all patients', 'view department patients', 'view assigned patients');
         `);
     }
 }
