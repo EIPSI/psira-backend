@@ -4,17 +4,24 @@ export class AddPatientPermissionsToSuperAdmin1776349969188 implements Migration
     name = 'AddPatientPermissionsToSuperAdmin1776349969188';
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        // Primero, asegurarnos de que los permisos existan (por si la migración ReportPermission no corrió)
+        // Usamos una subconsulta con NOT EXISTS para evitar el error de ON CONFLICT
         const insertPermissions = `
             INSERT INTO permission (name, "group")
-            VALUES 
-                ('view department patients', 'Patient Management'),
-                ('view assigned patients', 'Patient Management')
-            ON CONFLICT (name) DO NOTHING;
+            SELECT name, "group"
+            FROM (
+                VALUES 
+                    ('view department patients', 'Patient Management'),
+                    ('view assigned patients', 'Patient Management')
+            ) AS new_perms(name, "group")
+            WHERE NOT EXISTS (
+                SELECT 1 FROM permission WHERE permission.name = new_perms.name
+            );
         `;
         await queryRunner.query(insertPermissions);
 
-        // Asignar los permisos al rol SUPER_ADMIN
+        // ... el resto de la migración (asignación a roles, etc.)
+    }
+            // Asignar los permisos al rol SUPER_ADMIN
         const assignPermissions = `
             INSERT INTO role_permission ("roleId", "permissionId")
             SELECT r.id, p.id
