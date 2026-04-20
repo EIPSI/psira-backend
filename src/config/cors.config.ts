@@ -11,8 +11,8 @@ export const corsConfig = {
 
     origin: [
         // production
-        'https://mhira.net',
-        /\.mhira\.net$/,
+        'https://psira.net',
+        /\.psira\.net$/,
 
         // local development
         'http://localhost',
