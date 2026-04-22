@@ -22,6 +22,7 @@ import {
     AssessmentResponse,
 } from 'src/modules/assessment/models/assessment.model';
 import { QuestionnaireScriptService } from 'src/modules/questionnaire/services/questionnaire-script.service';
+import { SendMailService } from 'src/modules/mail/services/send-mail.service';
 import { Exception } from 'handlebars';
 
 @QueryService(Patient)
@@ -33,6 +34,9 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
 
     @Inject(UserCrudService)
     private readonly userCrudService: UserCrudService;
+
+    @Inject(SendMailService)
+    private readonly sendMailService: SendMailService;
 
     constructor(@InjectRepository(Patient) repo: Repository<Patient>) {
         // pass the use soft delete option to the service.
@@ -99,17 +103,21 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
                 // Generate username from email (before @)
                 const username = input.email.split('@')[0];
 
+                const tempPassword = this.generateRandomPassword();
+
                 // Create user with PATIENT role
                 const newUser = await this.userCrudService.createOne({
                     username: username,
                     email: input.email,
                     firstName: input.firstName,
                     lastName: input.lastName,
-                    password: this.generateRandomPassword(), // Temporal password
+                    password: tempPassword, // Temporal password
                 });
 
                 // Assign PATIENT role
-                const patientRole = await Role.findOne({ code: RoleCode.PATIENT });
+                const patientRole = await Role.findOne({
+                    where: { code: RoleCode.PATIENT },
+                });
                 if (patientRole) {
                     newUser.roles = [patientRole];
                     await newUser.save();
@@ -119,13 +127,23 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
                 await this.repo.update(patient.id, { userId: newUser.id });
                 patient.userId = newUser.id;
 
-                // TODO: Send welcome email with login instructions
-                // This requires implementing email service integration
-                // await this.sendWelcomeEmail(newUser, input.email);
+                // Send welcome email with login instructions
+                const emailSent = await this.sendMailService.sendWelcomeEmail(
+                    newUser,
+                    tempPassword,
+                );
 
+                if (!emailSent) {
+                    console.warn(
+                        `Failed to send welcome email to ${newUser.email}, but patient was created`,
+                    );
+                }
             } catch (error) {
                 // Log error but don't fail patient creation
-                console.error('Failed to create user for patient:', error);
+                console.error(
+                    'Failed to create user or send welcome email for patient:',
+                    error,
+                );
                 // Optionally: set a flag on patient to indicate user creation failed
             }
         }
@@ -219,16 +237,19 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
             if (patientInput.email) {
                 try {
                     const username = patientInput.email.split('@')[0];
+
+                    const tempPassword = this.generateRandomPassword();
+
                     const newUser = await this.userCrudService.createOne({
                         username: username,
                         email: patientInput.email,
                         firstName: patientInput.firstName,
                         lastName: patientInput.lastName,
-                        password: this.generateRandomPassword(),
+                        password: tempPassword,
                     });
 
                     const patientRole = await Role.findOne({
-                        code: RoleCode.PATIENT,
+                        where: { code: RoleCode.PATIENT },
                     });
                     if (patientRole) {
                         newUser.roles = [patientRole];
@@ -237,8 +258,17 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
 
                     await this.repo.update(patient.id, { userId: newUser.id });
                     patient.userId = newUser.id;
+
+                    // Send welcome email
+                    await this.sendMailService.sendWelcomeEmail(
+                        newUser,
+                        tempPassword,
+                    );
                 } catch (error) {
-                    console.error('Failed to create user for patient:', error);
+                    console.error(
+                        'Failed to create user or send welcome email for patient:',
+                        error,
+                    );
                 }
             }
         }
