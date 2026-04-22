@@ -73,20 +73,40 @@ export class Role extends BaseEntity {
     }
 
     @Field()
+    get isPatient(): boolean {
+        return this.code === RoleCode.PATIENT;
+    }
+
+    @Field()
+    get isCaregiver(): boolean {
+        return this.code === RoleCode.CAREGIVER;
+    }
+
+    @Field()
+    get isTherapist(): boolean {
+        return this.code === RoleCode.THERAPIST;
+    }
+
+    @Field()
+    get isSupervisor(): boolean {
+        return this.code === RoleCode.SUPERVISOR;
+    }
+
+    @Field()
     get isNoRole(): boolean {
         return this.code === RoleCode.NO_ROLE;
     }
 
     @BeforeUpdate()
     beforeUpdate() {
-        if (this.isSuperAdmin)
-            throw new Error('Cannot update super admin role');
+        if (this.isSuperAdmin || this.isPatient || this.isCaregiver || this.isTherapist || this.isSupervisor)
+            throw new Error('Cannot update system roles');
     }
 
     @BeforeRemove()
     beforeDelete() {
-        if (this.isSuperAdmin)
-            throw new Error('Cannot delete super admin role');
+        if (this.isSuperAdmin || this.isPatient || this.isCaregiver || this.isTherapist || this.isSupervisor)
+            throw new Error('Cannot delete system roles');
     }
 
     @ManyToMany(
