@@ -23,7 +23,7 @@ export class CaseManagerService {
         // Filter by patientId
         if (caseManagerFilter.patientId) {
             query.innerJoin(
-                "caseManager.patients",
+                "caseManager.caseManagedPatients",
                 "patient",
                 "patient.id = :patientId",
                 { patientId: caseManagerFilter.patientId });
@@ -32,7 +32,7 @@ export class CaseManagerService {
         // Filter by Case Manager Id
         else if (caseManagerFilter.caseManagerId) {
             query.innerJoin(
-                "caseManager.patients",
+                "caseManager.caseManagedPatients",
                 "patient",
                 "caseManager.id = :caseManagerId",
                 { caseManagerId: caseManagerFilter.caseManagerId });
@@ -41,7 +41,7 @@ export class CaseManagerService {
         // Filter all case-managers
         else {
             query.innerJoin(
-                "caseManager.patients",
+                "caseManager.caseManagedPatients",
                 "patient",
             );
         }

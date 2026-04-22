@@ -37,5 +37,6 @@ export class UserAuthorizer implements Authorizer<User> {
         ChangePasswordResolver,
         UserAuthorizer,
     ],
+    exports: [UserCrudService],
 })
 export class UserModule { }
