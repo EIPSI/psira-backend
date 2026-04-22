@@ -11,6 +11,7 @@ import { url } from '../../../shared';
 import { configService } from 'src/config/config.service';
 import { QuestionnaireAssessmentService } from 'src/modules/questionnaire/services/questionnaire-assessment.service';
 import { AssessmentStatus } from 'src/modules/questionnaire/enums/assessment-status.enum';
+import { User } from 'src/modules/user/models/user.model';
 
 @Injectable()
 export class SendMailService {
@@ -127,5 +128,90 @@ export class SendMailService {
         return url(
             `assessment/overview?assessment=${encodeURIComponent(cryptoId)}`,
         );
+    }
+
+    /**
+     * Send welcome email to new patients/caregivers with temporary credentials
+     */
+    async sendWelcomeEmail(user: User, tempPassword: string): Promise<boolean> {
+        try {
+            // Compile HTML template with Handlebars
+            const template = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Bienvenido a PSIRA - Tu cuenta de acceso</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                        .header { background: #4a90e2; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+                        .content { background: #f9f9f9; padding: 30px; border-radius: 5px; margin-top: 20px; }
+                        .button { display: inline-block; background: #4a90e2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; }
+                        .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+                        .credentials { background: #fff; padding: 15px; border: 2px solid #4a90e2; border-radius: 5px; margin: 20px 0; }
+                        .credentials p { margin: 5px 0; }
+                        .label { font-weight: bold; color: #4a90e2; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h1>Bienvenido a PSIRA</h1>
+                            <p>Tu cuenta de acceso está lista</p>
+                        </div>
+                        <div class="content">
+                            <h2>Hola {{{firstName}}}!</h2>
+                            <p>Se ha creado una cuenta para que puedas acceder a tu portal de salud, ver tus próximas sesiones y completar evaluaciones.</p>
+                            
+                            <div class="credentials">
+                                <p><span class="label">Usuario:</span> {{{username}}}</p>
+                                <p><span class="label">Contraseña Temporal:</span> {{{password}}}</p>
+                            </div>
+                            
+                            <p style="text-align: center; margin-top: 30px;">
+                                <a href="{{loginUrl}}" class="button">Acceder a mi Portal</a>
+                            </p>
+                            
+                            <p><strong>Nota de seguridad:</strong> Por seguridad, se te pedirá cambiar esta contraseña en tu primer ingreso.</p>
+                        </div>
+                        <div class="footer">
+                            <p>Este es un correo automático, por favor no responder.</p>
+                            <p>&copy; 2024 PSIRA - Todos los derechos reservados.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            const templateFn = Handlebars.compile(template);
+            const html = templateFn({
+                firstName: user.firstName,
+                username: user.username,
+                password: tempPassword,
+                loginUrl: this.getLoginUrl(),
+            });
+
+            // Send email using MailerService
+            await this.mailerService.sendMail({
+                to: user.email,
+                from: process.env.EMAIL_SENDER || 'noreply@psira.com',
+                subject: 'Bienvenido a PSIRA - Tu cuenta de acceso',
+                html: html,
+            });
+
+            console.log(`Welcome email sent to ${user.email}`);
+            return true;
+        } catch (error) {
+            console.error('Error sending welcome email:', error);
+            return false;
+        }
+    }
+
+    private getLoginUrl(): string {
+        // TODO: Obtener URL del frontend desde configuración
+        // Por ahora, usar un valor por defecto o leer desde .env
+        return process.env.FRONTEND_URL || 'https://psira.localhost:8443/auth/login';
     }
 }
