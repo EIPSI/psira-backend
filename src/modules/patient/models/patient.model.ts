@@ -163,6 +163,17 @@ export class Patient extends BaseEntity {
     @Column({ nullable: true })
     deleted: boolean;
 
+    @FilterableField({ nullable: true })
+    @Column({ nullable: true })
+    userId?: number;
+
+    @ManyToOne(
+        () => User,
+        user => user.patients,
+        { nullable: true },
+    )
+    user?: User;
+
     @ManyToOne(
         () => PatientStatus,
         status => status.patients,
@@ -171,7 +182,7 @@ export class Patient extends BaseEntity {
 
     @ManyToMany(
         () => User,
-        user => user.patients,
+        user => user.caseManagedPatients,
     )
     @JoinTable({ name: 'patient_case_manager' })
     caseManagers: User[];

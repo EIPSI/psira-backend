@@ -156,6 +156,12 @@ export class User extends BaseEntity {
         () => Patient,
         patient => patient.caseManagers,
     )
+    caseManagedPatients: Patient[];
+
+    @OneToMany(
+        () => Patient,
+        patient => patient.user,
+    )
     patients: Patient[];
 
     @OneToMany(
