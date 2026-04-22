@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Types } from 'mongoose';
 import { getConnection, Repository } from 'typeorm';
@@ -28,6 +28,7 @@ import { AssessmentStatus } from 'src/modules/questionnaire/enums/assessment-sta
 import { AssessmentType } from '../models/assessment-type.model';
 import { AssessmentEmailStatus } from '../enums/assessment-emailstatus.enum';
 import { Validator } from 'src/shared';
+import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 
 @Injectable()
 export class AssessmentService {
@@ -60,38 +61,37 @@ export class AssessmentService {
         query: AssessmentQuery,
         currentUser: User,
     ): Promise<ConnectionType<Assessment>> {
-        const patientAuthorizeFilter = await PatientAuthorizer.authorizePatient(
-            currentUser?.id,
-        );
-        /**
-         * Get Current User's patients
-         *
-         * This is required to filter assessment by patient departments
-         * as the current filter mechanism does not support nested
-         * filter that is more than 3 relationships deep.
-         *
-         * @TODO add caching for current users patients for performance
-         */
-        const currentUsersPatients = await this.patientQueryService.query({
-            filter: patientAuthorizeFilter,
-        });
+        // Check if user has VIEW_ALL_PATIENTS or VIEW_DEPARTMENT_PATIENTS
+        const canViewAllPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_ALL_PATIENTS);
+        const canViewDepartmentPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_DEPARTMENT_PATIENTS);
+        const canViewAssignedPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_ASSIGNED_PATIENTS);
 
-        // Return empty result if no department assigned
-        if (currentUsersPatients.length === 0) {
-            return AssessmentConnection.createFromPromise(
-                () => Promise.resolve([]),
-                query,
-                () => Promise.resolve(0),
-            );
+        // Filter assessments assigned to the current user as target
+        const targetUserFilter = { targetUserId: { eq: currentUser.id } };
+
+        if (canViewAllPatients) {
+            // Can see all assessments - no filter needed
+        } else if (canViewDepartmentPatients || canViewAssignedPatients) {
+            // Get patient authorizer for department or assigned filtering
+            const patientAuthorizeFilter = await PatientAuthorizer.authorizePatient(currentUser?.id);
+
+            const currentUsersPatients = await this.patientQueryService.query({
+                filter: patientAuthorizeFilter,
+            });
+
+            // Filter by patient's departments OR targetUser (assessments assigned to current user)
+            const combinedFilter = mergeFilter(query.filter, {
+                or: [
+                    { patientId: { in: currentUsersPatients.map(p => p.id) } },
+                    targetUserFilter,
+                ],
+            });
+            query.filter = combinedFilter;
+        } else {
+            // Default - only see assessments where they are target
+            const combinedFilter = mergeFilter(query.filter, targetUserFilter);
+            query.filter = combinedFilter;
         }
-
-        const combinedFilter = mergeFilter(query.filter, {
-            patientId: {
-                in: currentUsersPatients.map(patient => patient.id),
-            },
-        });
-        // Apply combined authorized filter
-        query.filter = combinedFilter;
 
         // Apply default sort if not provided
         query.sorting = query.sorting?.length
@@ -106,7 +106,6 @@ export class AssessmentService {
 
         for (let i = 0; i < result.edges.length; i++) {
             const assessment = result.edges[i].node;
-
             await this.changeQuestionnaireAssessmentStatus(assessment);
         }
 
@@ -123,22 +122,52 @@ export class AssessmentService {
         assessmentId: number,
         currentUser: User,
     ): Promise<Assessment> {
-        const patientAuthorizeFilter = await PatientAuthorizer.authorizePatient(
-            currentUser?.id,
-        );
+        // Check if user can access this assessment
+        const canViewAllPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_ALL_PATIENTS);
+        const canViewDepartmentPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_DEPARTMENT_PATIENTS);
+        const canViewAssignedPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_ASSIGNED_PATIENTS);
 
-        const combinedFilter = mergeFilter(
-            { id: { eq: assessmentId } } as Filter<Assessment>,
-            { patient: patientAuthorizeFilter },
-        );
+        if (canViewAllPatients) {
+            // Can access any assessment
+            return await this.assessmentRepository.findOneOrFail(assessmentId);
+        }
+
+        // For other users, check if they are the target user or have access via patient
+        let filter: any = { id: { eq: assessmentId } };
+
+        if (canViewDepartmentPatients || canViewAssignedPatients) {
+            const patientAuthorizeFilter = await PatientAuthorizer.authorizePatient(currentUser?.id);
+            const currentUsersPatients = await this.patientQueryService.query({
+                filter: patientAuthorizeFilter,
+            });
+
+            filter = {
+                and: [
+                    { id: { eq: assessmentId } },
+                    {
+                        or: [
+                            { patientId: { in: currentUsersPatients.map(p => p.id) } },
+                            { targetUserId: { eq: currentUser.id } },
+                        ],
+                    },
+                ],
+            };
+        } else {
+            // Default only see if they are the target
+            filter = {
+                and: [
+                    { id: { eq: assessmentId } },
+                    { targetUserId: { eq: currentUser.id } },
+                ],
+            };
+        }
 
         const assessments = await this.assessmentQueryService.query({
             paging: { limit: 1 },
-            filter: combinedFilter,
+            filter,
         });
 
         const assessment = assessments?.[0];
-
         if (!assessment) {
             throw new NotFoundException();
         }
@@ -148,7 +177,6 @@ export class AssessmentService {
 
     async createNewAssessment(assessmentInput: CreateFullAssessmentInput) {
         const assessmentLength = assessmentInput.dates.length || 1;
-
         const assessmentArray = [];
 
         for (let i = 0; i < assessmentLength; i++) {
@@ -162,7 +190,14 @@ export class AssessmentService {
                 throw new NotFoundException('Assessment type not found!');
             }
 
-            // create mongo assessment
+            // Validate: must have either patientId OR targetUserId
+            if (!assessmentInput.patientId && !assessmentInput.targetUserId) {
+                throw new BadRequestException(
+                    'Assessment must have either patientId or targetUserId',
+                );
+            }
+
+            // Create mongo assessment
             const questionnaireAssessment = await this.questionnaireAssessmentService.createNewAssessment(
                 assessmentInput.questionnaires,
                 assessmentInput.questionnaireBundles
@@ -172,8 +207,24 @@ export class AssessmentService {
                 d2 = new Date();
 
             try {
-                // create postgres assessment
                 assessment = new Assessment();
+
+                // Set targetUserId if provided
+                if (assessmentInput.targetUserId) {
+                    const targetUser = await this.userRepository.findOne({
+                        where: { id: assessmentInput.targetUserId },
+                    });
+                    if (!targetUser) {
+                        throw new NotFoundException('Target user not found!');
+                    }
+                    assessment.targetUserId = assessmentInput.targetUserId;
+                }
+
+                // Set patientId if provided
+                if (assessmentInput.patientId) {
+                    assessment.patientId = assessmentInput.patientId;
+                }
+
                 if (!assessmentInput.dates[i].deliveryDate || d1 < d2) {
                     await this.questionnaireAssessmentService.changeAssessmentStatus(
                         questionnaireAssessment.id,
@@ -183,18 +234,16 @@ export class AssessmentService {
 
                 assessment.status = AssessmentStatus.OPEN_FOR_COMPLETION;
                 assessment.assessmentType = assessmentType;
-                assessment.patientId = assessmentInput.patientId;
                 assessment.clinicianId = assessmentInput.clinicianId;
                 assessment.informantType = assessmentInput.informantType;
-                assessment.expirationDate =
-                    assessmentInput.dates[i].expirationDate;
+                assessment.expirationDate = assessmentInput.dates[i].expirationDate;
                 assessment.note = assessmentInput.note;
                 assessment.deliveryDate = assessmentInput.dates[i].deliveryDate;
-                assessment.questionnaireAssessmentId =
-                    questionnaireAssessment.id;
+                assessment.questionnaireAssessmentId = questionnaireAssessment.id;
+
                 if (assessmentInput.informantClinicianId) {
                     const clinician = await this.userRepository.findOne({
-                        id: assessmentInput.informantClinicianId,
+                        where: { id: assessmentInput.informantClinicianId },
                     });
                     if (!clinician)
                         throw new NotFoundException(
@@ -234,7 +283,6 @@ export class AssessmentService {
                 await assessment.save();
                 assessmentArray.push(assessment);
             } catch (err) {
-                // undo mongo assessment and rethrow
                 await questionnaireAssessment.remove();
                 throw err;
             }
@@ -258,6 +306,7 @@ export class AssessmentService {
                 relations: [
                     'clinician',
                     'patient',
+                    'targetUser',
                     'informantClinician',
                     'assessmentType',
                 ],
@@ -284,6 +333,13 @@ export class AssessmentService {
         if (!assessmentType)
             throw new NotFoundException('Assessment type not found!');
 
+        // Validate: must have either patientId OR targetUserId
+        if (!assessmentInput.patientId && !assessmentInput.targetUserId) {
+            throw new BadRequestException(
+                'Assessment must have either patientId or targetUserId',
+            );
+        }
+
         // find & update mongo assessment
         let questionnaireAssessment = await this.questionnaireAssessmentService.getById(
             assessment.questionnaireAssessmentId,
@@ -309,7 +365,8 @@ export class AssessmentService {
         try {
             // update postgres assessment
             assessment.assessmentType = assessmentType;
-            assessment.patientId = assessmentInput.patientId;
+            assessment.patientId = assessmentInput.patientId || null;
+            assessment.targetUserId = assessmentInput.targetUserId || null;
             assessment.clinicianId = assessmentInput.clinicianId;
             assessment.informantType = assessmentInput.informantType;
             assessment.questionnaireAssessmentId = questionnaireAssessment.id;
@@ -320,7 +377,7 @@ export class AssessmentService {
             assessment.informantClinician = null;
             if (assessmentInput.informantClinicianId) {
                 const clinician = await this.userRepository.findOne({
-                    id: assessmentInput.informantClinicianId,
+                    where: { id: assessmentInput.informantClinicianId },
                 });
                 if (!clinician)
                     throw new NotFoundException(
@@ -484,5 +541,17 @@ export class AssessmentService {
         }
 
         return questionnaireAssessment;
+    }
+
+    // Helper method to check permissions
+    private async checkPermission(userId: number, permission: string): Promise<boolean> {
+        const user = await this.userRepository.findOne({
+            where: { id: userId },
+            relations: ['permissions', 'roles', 'roles.permissions'],
+        });
+        if (!user) return false;
+
+        return user.permissions?.some(p => p.name === permission) ||
+               user.roles?.some(r => r.permissions?.some(p => p.name === permission));
     }
 }
