@@ -5,8 +5,11 @@ import { Types } from 'mongoose';
 
 @InputType()
 export class CreateAssessmentInput {
-    @FilterableField(() => Int)
-    patientId: number;
+    @FilterableField(() => Int, { nullable: true })
+    patientId?: number;
+
+    @FilterableField(() => Int, { nullable: true })
+    targetUserId?: number;
 
     @FilterableField(() => GraphQLISODateTime, { nullable: true })
     date?: Date;
@@ -35,8 +38,11 @@ export class CreateFullAssessmentInput {
     @Field(() => Int)
     assessmentTypeId: number;
 
-    @Field(() => Int)
-    patientId: number;
+    @Field(() => Int, { nullable: true })
+    patientId?: number;
+
+    @Field(() => Int, { nullable: true })
+    targetUserId?: number;
 
     @Field(() => Int)
     clinicianId: number;
