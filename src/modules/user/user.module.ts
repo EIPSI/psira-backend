@@ -7,6 +7,7 @@ import { UserCrudResolver } from './resolvers/user-crud.resolver';
 import { SettingModule } from '../setting/setting.module';
 import { ChangePasswordService } from './providers/change-password.service';
 import { ChangePasswordResolver } from './resolvers/change-password.resolver';
+import { UserDepartmentAccessService } from './services/user-department-access.service';
 
 @Injectable()
 export class UserAuthorizer implements Authorizer<User> {
@@ -36,6 +37,7 @@ export class UserAuthorizer implements Authorizer<User> {
         ChangePasswordService,
         ChangePasswordResolver,
         UserAuthorizer,
+        UserDepartmentAccessService,
     ],
     exports: [UserCrudService],
 })

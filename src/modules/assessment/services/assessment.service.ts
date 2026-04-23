@@ -23,6 +23,7 @@ import { PatientAuthorizer } from 'src/modules/patient/authorizers/patient.autho
 import { User } from 'src/modules/user/models/user.model';
 import { ConnectionType } from '@nestjs-query/query-graphql';
 import { PatientQueryService } from 'src/modules/patient/providers/patient-query.service';
+import { PatientPermissionService, PatientAccessScope } from 'src/modules/patient/services/patient-permission.service';
 import { Caregiver } from 'src/modules/caregiver/models/caregiver.model';
 import { AssessmentStatus } from 'src/modules/questionnaire/enums/assessment-status.enum';
 import { AssessmentType } from '../models/assessment-type.model';
@@ -44,6 +45,7 @@ export class AssessmentService {
         @InjectRepository(AssessmentType)
         private readonly assessmentTypeRepo: Repository<AssessmentType>,
         private readonly patientQueryService: PatientQueryService,
+        private readonly patientPermissionService: PatientPermissionService,
     ) {}
 
     getQuestionnaireAssessment(id: string) {
@@ -61,37 +63,33 @@ export class AssessmentService {
         query: AssessmentQuery,
         currentUser: User,
     ): Promise<ConnectionType<Assessment>> {
-        // Check if user has VIEW_ALL_PATIENTS or VIEW_DEPARTMENT_PATIENTS
-        const canViewAllPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_ALL_PATIENTS);
-        const canViewDepartmentPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_DEPARTMENT_PATIENTS);
-        const canViewAssignedPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_ASSIGNED_PATIENTS);
+        // Aplicar filtro de departamento si el usuario no tiene acceso total
+        const access = await this.patientPermissionService.getUserAccessScope(currentUser.id);
 
-        // Filter assessments assigned to the current user as target
+        let departmentFilter: any = {};
         const targetUserFilter = { targetUserId: { eq: currentUser.id } };
 
-        if (canViewAllPatients) {
-            // Can see all assessments - no filter needed
-        } else if (canViewDepartmentPatients || canViewAssignedPatients) {
-            // Get patient authorizer for department or assigned filtering
+        if (access.type !== PatientAccessScope.ALL) {
             const patientAuthorizeFilter = await PatientAuthorizer.authorizePatient(currentUser?.id);
 
             const currentUsersPatients = await this.patientQueryService.query({
                 filter: patientAuthorizeFilter,
             });
 
-            // Filter by patient's departments OR targetUser (assessments assigned to current user)
-            const combinedFilter = mergeFilter(query.filter, {
-                or: [
-                    { patientId: { in: currentUsersPatients.map(p => p.id) } },
-                    targetUserFilter,
-                ],
-            });
-            query.filter = combinedFilter;
-        } else {
-            // Default - only see assessments where they are target
-            const combinedFilter = mergeFilter(query.filter, targetUserFilter);
-            query.filter = combinedFilter;
+            if (currentUsersPatients.length > 0) {
+                departmentFilter = {
+                    or: [
+                        { patientId: { in: currentUsersPatients.map(p => p.id) } },
+                        targetUserFilter,
+                    ],
+                };
+            } else {
+                departmentFilter = targetUserFilter;
+            }
         }
+
+        const combinedFilter = mergeFilter(query.filter, departmentFilter);
+        query.filter = combinedFilter;
 
         // Apply default sort if not provided
         query.sorting = query.sorting?.length
