@@ -1,4 +1,4 @@
-import { InputType, Field } from '@nestjs/graphql';
+import { InputType, Field, Int } from '@nestjs/graphql';
 import { IsDate, IsEmail, IsLowercase, MaxDate, MinDate } from 'class-validator';
 import * as moment from 'moment';
 import { GenderEnum } from 'src/modules/patient/models/gender.enum';
@@ -54,4 +54,10 @@ export class CreateUserInput {
 
   @Field({ nullable: true })
   nationality?: string;
+
+  @Field(() => [Int], { nullable: true })
+  departmentIds?: number[];
+
+  @Field(() => [String], { nullable: true })
+  roleCodes?: string[];
 }
