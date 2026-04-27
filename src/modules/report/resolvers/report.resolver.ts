@@ -6,10 +6,14 @@ import {
     Mutation,
     ObjectType,
     PartialType,
+    Int,
 } from '@nestjs/graphql';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
 
 import { Report } from '../models/report.model';
+import { ReportEmbed } from '../models/report-embed.model';
+import { ReportSession } from '../models/report-session.model';
+import { ShinyApp } from '../models/shiny-app.model';
 
 import { ReportService } from '../services/report.service';
 import {
@@ -36,6 +40,74 @@ export class ReportResolver {
     @UsePermission(PermissionEnum.VIEW_REPORTS)
     async reports(@Args({ type: () => ReportQuery }) query: ReportQuery) {
         return this.reportService.getReports(query);
+    }
+
+    @Query(() => [ShinyApp])
+    @UsePermission(PermissionEnum.VIEW_REPORTS)
+    async availableShinyApps(): Promise<ShinyApp[]> {
+        return this.reportService.getAvailableShinyApps();
+    }
+
+    @Query(() => Report, { nullable: true })
+    @UsePermission(PermissionEnum.VIEW_REPORTS)
+    async getReportForCurrentUser(
+        @Args('id', { type: () => Int }) id: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<Report> {
+        return this.reportService.getReportForCurrentUser(id, currentUser);
+    }
+
+    @Query(() => ReportEmbed, { nullable: true })
+    @UsePermission(PermissionEnum.VIEW_REPORTS)
+    async getReportEmbed(
+        @Args('id', { type: () => Int }) id: number,
+        @Args('patientId', { type: () => Int, nullable: true })
+        patientId: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<ReportEmbed> {
+        return this.reportService.getReportEmbed(id, currentUser, patientId);
+    }
+
+    @Mutation(() => ReportSession, { nullable: true })
+    @UsePermission(PermissionEnum.VIEW_REPORTS)
+    async startReportSession(
+        @Args('reportId', { type: () => Int }) reportId: number,
+        @Args('patientId', { type: () => Int, nullable: true })
+        patientId: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<ReportSession> {
+        return this.reportService.startReportSession(
+            reportId,
+            currentUser,
+            patientId,
+        );
+    }
+
+    @Query(() => [ReportSession])
+    @UsePermission(PermissionEnum.MANAGE_REPORTS)
+    async reportSessions(): Promise<ReportSession[]> {
+        return this.reportService.getReportSessions();
+    }
+
+    @Mutation(() => ReportSession, { nullable: true })
+    @UsePermission(PermissionEnum.VIEW_REPORTS)
+    async heartbeatReportSession(
+        @Args('sessionId', { type: () => Int }) sessionId: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<ReportSession> {
+        return this.reportService.heartbeatReportSession(
+            sessionId,
+            currentUser,
+        );
+    }
+
+    @Mutation(() => ReportSession, { nullable: true })
+    @UsePermission(PermissionEnum.VIEW_REPORTS)
+    async endReportSession(
+        @Args('sessionId', { type: () => Int }) sessionId: number,
+        @CurrentUser() currentUser: User,
+    ): Promise<ReportSession> {
+        return this.reportService.endReportSession(sessionId, currentUser);
     }
 
     @Query(() => [Report])
