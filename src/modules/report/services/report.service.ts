@@ -159,12 +159,19 @@ export class ReportService {
             expiresAt,
         });
 
+        const embedParams: Record<string, string | number> = {};
+        embedParams['embed_token'] = embedToken;
+        
+        if (patientId) {
+            embedParams['patient_id'] = patientId;
+        }
+        
         return {
             report,
-            embedUrl: this.appendQueryParams(this.getReportEmbedUrl(report, embedToken), {
-                embed_token: embedToken,
-                ...(patientId ? { patient_id: patientId } : {}),
-            }),
+            embedUrl: this.appendQueryParams(
+                this.getReportEmbedUrl(report, embedToken),
+                embedParams,
+            ),
             expiresAt,
         };
     }
@@ -292,9 +299,10 @@ export class ReportService {
 
     private getReportEmbedUrl(report: Report, token: string): string {
         if (!report.appName) {
-            return this.appendQueryParams(this.getReportUrl(report), {
-                embed_token: token,
-            });
+            const embedParams: Record<string, string | number> = {};
+            embedParams['embed_token'] = token;
+            
+            return this.appendQueryParams(this.getReportUrl(report), embedParams);
         }
 
         return `/shiny-embed/${encodeURIComponent(token)}/${report.appName}/`;
