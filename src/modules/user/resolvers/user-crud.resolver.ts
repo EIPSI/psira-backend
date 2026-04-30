@@ -177,7 +177,7 @@ export class UserCrudResolver extends CRUDResolver(User, {
             });
             const userRoleHierarchy = this.getMaxRoleHierarchy(currentUserWithRoles.roles);
 
-            if (targetRoleHierarchy > userRoleHierarchy) {
+            if (targetRoleHierarchy < userRoleHierarchy) {
                 throw new ForbiddenException(
                     'No puedes asignar roles de mayor jerarquía que los tuyos',
                 );
@@ -321,12 +321,12 @@ export class UserCrudResolver extends CRUDResolver(User, {
     }
 
     /**
-     * Get max role hierarchy from a user's roles
+     * Get strongest role hierarchy from a user's roles
      */
     private getMaxRoleHierarchy(roles: any[]): number {
         if (!roles || roles.length === 0) {
-            return 0;
+            return 999;
         }
-        return Math.max(...roles.map(r => r.hierarchy));
+        return Math.min(...roles.map(r => r.hierarchy));
     }
 }
