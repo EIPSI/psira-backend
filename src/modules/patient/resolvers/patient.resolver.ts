@@ -155,6 +155,7 @@ export class PatientResolver {
             patientInput.caseManagerIds = [currentUser.id];
         }
 
+        // Department validation
         const canViewAllPatients = await PermissionService.userCan(
             currentUser.id,
             PermissionEnum.VIEW_ALL_PATIENTS,
