@@ -112,7 +112,7 @@ export class UserDepartmentAccessService {
         }
 
         // Get max hierarchy of creator's roles
-        const creatorMaxHierarchy = Math.max(...creatorUser.roles.map(r => r.hierarchy));
+        const creatorMaxHierarchy = Math.min(...creatorUser.roles.map(r => r.hierarchy));
 
         // Get hierarchy of target role
         const targetRole = await this.roleRepository.findOne({
@@ -124,7 +124,7 @@ export class UserDepartmentAccessService {
         }
 
         // Can only assign roles of lower or equal hierarchy
-        if (targetRole.hierarchy > creatorMaxHierarchy) {
+        if (targetRole.hierarchy < creatorMaxHierarchy) {
             return false;
         }
 
@@ -146,15 +146,15 @@ export class UserDepartmentAccessService {
      */
     async getRoleHierarchy(roleCodes: string[]): Promise<number> {
         if (!roleCodes || roleCodes.length === 0) {
-            return 0;
+            return 999;
         }
 
         const roles = await this.roleRepository.find({
             where: { code: In(roleCodes) },
         });
 
-        if (roles.length === 0) return 0;
+        if (roles.length === 0) return 999;
 
-        return Math.max(...roles.map(r => r.hierarchy));
+        return Math.min(...roles.map(r => r.hierarchy));
     }
 }

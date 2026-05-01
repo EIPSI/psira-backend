@@ -10,10 +10,10 @@ export class CreateBaseRolesAndPermissions1776888121327 implements MigrationInte
             SELECT name, code, hierarchy
             FROM (
                 VALUES 
-                    ('Patient', 'PATIENT', 10),
-                    ('Caregiver', 'CAREGIVER', 10),
-                    ('Therapist', 'THERAPIST', 50),
-                    ('Supervisor', 'SUPERVISOR', 70)
+                    ('Patient', 'PATIENT', 700),
+                    ('Caregiver', 'CAREGIVER', 600),
+                    ('Therapist', 'THERAPIST', 500),
+                    ('Supervisor', 'SUPERVISOR', 300)
             ) AS new_roles(name, code, hierarchy)
             WHERE NOT EXISTS (
                 SELECT 1 FROM role WHERE role.code = new_roles.code

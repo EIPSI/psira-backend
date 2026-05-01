@@ -67,14 +67,14 @@ export class RoleResolver extends CRUDResolver(Role, {
             where: { id: currentUser.id },
             relations: ['roles'],
         });
-        const currentUserMaxRole = currentUser.roles.reduce((prev, current) => {
-            return prev.hierarchy > current.hierarchy ? prev : current;
+        const currentUserStrongestRole = currentUser.roles.reduce((prev, current) => {
+            return prev.hierarchy < current.hierarchy ? prev : current;
         });
 
-        if (roleInput.hierarchy <= currentUserMaxRole.hierarchy) {
+        if (roleInput.hierarchy <= currentUserStrongestRole.hierarchy) {
             throw new BadRequestException(
                 'Cannot create role with higher hierarchy than your own. ' +
-                    `Please provide hierarchy number greater than ${currentUserMaxRole.hierarchy}`,
+                    `Please provide hierarchy number greater than ${currentUserStrongestRole.hierarchy}`,
             );
         }
 
@@ -237,21 +237,21 @@ export class RoleResolver extends CRUDResolver(Role, {
             where: { id: currentUser.id },
             relations: ['roles'],
         });
-        const currentUserMaxRole = currentUser.roles.reduce((prev, current) => {
-            return prev.hierarchy > current.hierarchy ? prev : current;
+        const currentUserStrongestRole = currentUser.roles.reduce((prev, current) => {
+            return prev.hierarchy < current.hierarchy ? prev : current;
         });
 
-        if (roleInDb.hierarchy <= currentUserMaxRole.hierarchy) {
+        if (roleInDb.hierarchy <= currentUserStrongestRole.hierarchy) {
             throw new BadRequestException(
                 'Permission denied! Cannot modify role with a higher hierarchy than your own. ' +
-                    `Please provide hierarchy number greater than ${currentUserMaxRole.hierarchy}`,
+                    `Please provide hierarchy number greater than ${currentUserStrongestRole.hierarchy}`,
             );
         }
 
-        if (update && update.hierarchy <= currentUserMaxRole.hierarchy) {
+        if (update && update.hierarchy <= currentUserStrongestRole.hierarchy) {
             throw new BadRequestException(
                 'Permission denied! Cannot modify role to a higher hierarchy than your own. ' +
-                    `Please provide hierarchy number greater than ${currentUserMaxRole.hierarchy}`,
+                    `Please provide hierarchy number greater than ${currentUserStrongestRole.hierarchy}`,
             );
         }
     }
