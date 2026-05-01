@@ -112,6 +112,7 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
                     firstName: input.firstName,
                     lastName: input.lastName,
                     password: tempPassword, // Temporal password
+                    active: true,
                 });
 
                 // Assign PATIENT role
@@ -246,6 +247,7 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
                         firstName: patientInput.firstName,
                         lastName: patientInput.lastName,
                         password: tempPassword,
+                        active: true,
                     });
 
                     const patientRole = await Role.findOne({
