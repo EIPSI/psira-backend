@@ -5,6 +5,9 @@ import { Repository } from 'typeorm';
 import { Patient, PatientReport } from '../models/patient.model';
 import { CreatePatientInput } from '../dto/create-patient.input';
 import { User } from 'src/modules/user/models/user.model';
+import { UserCrudService } from 'src/modules/user/providers/user-crud.service';
+import { Role } from 'src/modules/permission/models/role.model';
+import { RoleCode } from 'src/modules/permission/enums/role-code.enum';
 import { PatientAuthorizer } from '../authorizers/patient.authorizer';
 import { Inject, NotFoundException } from '@nestjs/common';
 import { QuestionnaireAssessmentService } from 'src/modules/questionnaire/services/questionnaire-assessment.service';
@@ -19,6 +22,7 @@ import {
     AssessmentResponse,
 } from 'src/modules/assessment/models/assessment.model';
 import { QuestionnaireScriptService } from 'src/modules/questionnaire/services/questionnaire-script.service';
+import { SendMailService } from 'src/modules/mail/services/send-mail.service';
 import { Exception } from 'handlebars';
 
 @QueryService(Patient)
@@ -27,6 +31,12 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
     questionnaireAssessmentService: QuestionnaireAssessmentService;
     @Inject(QuestionnaireScriptService)
     questionnaireScriptService: QuestionnaireScriptService;
+
+    @Inject(UserCrudService)
+    private readonly userCrudService: UserCrudService;
+
+    @Inject(SendMailService)
+    private readonly sendMailService: SendMailService;
 
     constructor(@InjectRepository(Patient) repo: Repository<Patient>) {
         // pass the use soft delete option to the service.
@@ -87,7 +97,71 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
             );
         }
 
+        // Auto-create user if patient has email
+        if (input.email) {
+            try {
+                // Generate username from email (before @)
+                const username = input.email.split('@')[0];
+
+                const tempPassword = this.generateRandomPassword();
+
+                // Create user with PATIENT role
+                const newUser = await this.userCrudService.createOne({
+                    username: username,
+                    email: input.email,
+                    firstName: input.firstName,
+                    lastName: input.lastName,
+                    password: tempPassword, // Temporal password
+                    active: true,
+                });
+
+                // Assign PATIENT role
+                const patientRole = await Role.findOne({
+                    where: { code: RoleCode.PATIENT },
+                });
+                if (patientRole) {
+                    newUser.roles = [patientRole];
+                    await newUser.save();
+                }
+
+                // Link patient to user
+                await this.repo.update(patient.id, { userId: newUser.id });
+                patient.userId = newUser.id;
+
+                // Send welcome email with login instructions
+                const emailSent = await this.sendMailService.sendWelcomeEmail(
+                    newUser,
+                    tempPassword,
+                );
+
+                if (!emailSent) {
+                    console.warn(
+                        `Failed to send welcome email to ${newUser.email}, but patient was created`,
+                    );
+                }
+            } catch (error) {
+                // Log error but don't fail patient creation
+                console.error(
+                    'Failed to create user or send welcome email for patient:',
+                    error,
+                );
+                // Optionally: set a flag on patient to indicate user creation failed
+            }
+        }
+
         return patient;
+    }
+
+    private generateRandomPassword(): string {
+        // Generate a temporary random password
+        // Patient will need to change it on first login
+        const length = 12;
+        const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+        let password = '';
+        for (let i = 0; i < length; i++) {
+            password += charset.charAt(Math.floor(Math.random() * charset.length));
+        }
+        return password;
     }
 
     async archiveOnePatient(id: number, patient: Patient) {
@@ -158,6 +232,46 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
                     patient.id,
                     patientInput.caseManagerIds,
                 );
+            }
+
+            // Auto-create user if patient has email
+            if (patientInput.email) {
+                try {
+                    const username = patientInput.email.split('@')[0];
+
+                    const tempPassword = this.generateRandomPassword();
+
+                    const newUser = await this.userCrudService.createOne({
+                        username: username,
+                        email: patientInput.email,
+                        firstName: patientInput.firstName,
+                        lastName: patientInput.lastName,
+                        password: tempPassword,
+                        active: true,
+                    });
+
+                    const patientRole = await Role.findOne({
+                        where: { code: RoleCode.PATIENT },
+                    });
+                    if (patientRole) {
+                        newUser.roles = [patientRole];
+                        await newUser.save();
+                    }
+
+                    await this.repo.update(patient.id, { userId: newUser.id });
+                    patient.userId = newUser.id;
+
+                    // Send welcome email
+                    await this.sendMailService.sendWelcomeEmail(
+                        newUser,
+                        tempPassword,
+                    );
+                } catch (error) {
+                    console.error(
+                        'Failed to create user or send welcome email for patient:',
+                        error,
+                    );
+                }
             }
         }
 

@@ -23,7 +23,8 @@ import { AssessmentType } from './assessment-type.model';
 import { MailTemplate } from 'src/modules/mail/models/mail-template.model';
 
 @ObjectType()
-@FilterableRelation('patient', () => Patient)
+@FilterableRelation('patient', () => Patient, { nullable: true })
+@FilterableRelation('targetUser', () => User, { nullable: true })
 @FilterableRelation('clinician', () => User, { nullable: true })
 @FilterableRelation('informantClinician', () => User, { nullable: true })
 @FilterableRelation('assessmentType', () => AssessmentType, { nullable: true })
@@ -45,9 +46,13 @@ export class Assessment extends BaseEntity {
     // @Column({ nullable: true })
     // name: string;
 
-    @FilterableField(() => Int)
-    @Column()
+    @FilterableField(() => Int, { nullable: true })
+    @Column({ nullable: true })
     patientId: number;
+
+    @FilterableField(() => Int, { nullable: true })
+    @Column({ nullable: true })
+    targetUserId?: number;
 
     @FilterableField(() => Int, { nullable: true })
     @Column({ nullable: true })
@@ -133,8 +138,12 @@ export class Assessment extends BaseEntity {
     @ManyToOne(
         () => Patient,
         patient => patient.assessments,
+        { nullable: true }
     )
     patient: Patient;
+
+    @ManyToOne(() => User, user => user.targetAssessments, { nullable: true })
+    targetUser: User;
 
     @ManyToOne(() => User)
     clinician: User;
@@ -163,8 +172,11 @@ export class FullAssessment extends Assessment {
     @Field(() => User)
     clinician: User;
 
-    @Field(() => Patient)
+    @Field(() => Patient, { nullable: true })
     patient: Patient;
+
+    @Field(() => User, { nullable: true })
+    targetUser: User;
 
     @Field(() => User, { nullable: true })
     informantClinician: User;

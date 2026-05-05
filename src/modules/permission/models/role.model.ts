@@ -17,7 +17,7 @@ import { Permission } from './permission.model';
 import { FilterableField, UnPagedRelation } from '@nestjs-query/query-graphql';
 import { User } from 'src/modules/user/models/user.model';
 import { RoleCode } from '../enums/role-code.enum';
-import { MAX_ROLE_HIERARCHY } from '../constants';
+import { MIN_ROLE_HIERARCHY } from '../constants';
 import { Report } from 'src/modules/report/models/report.model';
 
 @ObjectType()
@@ -38,7 +38,7 @@ export class Role extends BaseEntity {
     code: RoleCode;
 
     @FilterableField()
-    @Column({ default: MAX_ROLE_HIERARCHY })
+    @Column({ default: MIN_ROLE_HIERARCHY })
     hierarchy: number;
 
     @FilterableField()
@@ -73,20 +73,44 @@ export class Role extends BaseEntity {
     }
 
     @Field()
+    get isPatient(): boolean {
+        return this.code === RoleCode.PATIENT;
+    }
+
+    @Field()
+    get isCaregiver(): boolean {
+        return this.code === RoleCode.CAREGIVER;
+    }
+
+    @Field()
+    get isTherapist(): boolean {
+        return this.code === RoleCode.THERAPIST;
+    }
+
+    @Field()
+    get isSupervisor(): boolean {
+        return this.code === RoleCode.SUPERVISOR;
+    }
+
+    @Field()
     get isNoRole(): boolean {
         return this.code === RoleCode.NO_ROLE;
     }
 
     @BeforeUpdate()
     beforeUpdate() {
-        if (this.isSuperAdmin)
-            throw new Error('Cannot update super admin role');
+        if (this.isSuperAdmin || this.isPatient || this.isCaregiver || 
+            this.isTherapist || this.isSupervisor || 
+            this.code === RoleCode.DEPARTMENT_ADMIN)
+            throw new Error('Cannot update system roles');
     }
 
     @BeforeRemove()
     beforeDelete() {
-        if (this.isSuperAdmin)
-            throw new Error('Cannot delete super admin role');
+        if (this.isSuperAdmin || this.isPatient || this.isCaregiver || 
+            this.isTherapist || this.isSupervisor || 
+            this.code === RoleCode.DEPARTMENT_ADMIN)
+            throw new Error('Cannot delete system roles');
     }
 
     @ManyToMany(

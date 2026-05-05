@@ -1,7 +1,7 @@
 import { QueryService } from '@nestjs-query/core';
 import { TypeOrmQueryService } from '@nestjs-query/query-typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { User } from '../models/user.model';
 import * as moment from 'moment';
 import { CreateUserInput } from '../dto/create-user.input';
@@ -11,6 +11,7 @@ import { RoleCode } from 'src/modules/permission/enums/role-code.enum';
 import { UpdateUserInput } from '../dto/update-user.input';
 import { PermissionService } from 'src/modules/permission/providers/permission.service';
 import {Hash} from "../../../shared";
+import { Department } from 'src/modules/department/models/department.model';
 
 @QueryService(User)
 export class UserCrudService extends TypeOrmQueryService<User> {
@@ -29,17 +30,28 @@ export class UserCrudService extends TypeOrmQueryService<User> {
             throw new BadRequestException('Username already exists');
         }
 
-        const user = await super.createOne(input);
+        const { departmentIds, roleCodes, ...rest } = input as any;
+        const user = await super.createOne(rest);
 
         user.passwordExpiresAt = moment().toDate();
         user.password = await Hash.make(user.password);
 
-        const defaultRole = await Role.findOne({ code: RoleCode.NO_ROLE });
-
-        if (defaultRole) {
-            user.roles = [defaultRole];
-            await user.save();
+        if (roleCodes && roleCodes.length > 0) {
+            const roles = await Role.find({ where: { code: In(roleCodes) } });
+            user.roles = roles;
+        } else {
+            const defaultRole = await Role.findOne({ code: RoleCode.NO_ROLE });
+            if (defaultRole) {
+                user.roles = [defaultRole];
+            }
         }
+
+        if (departmentIds && departmentIds.length > 0) {
+            const departments = await Department.find({ where: { id: In(departmentIds) } });
+            user.departments = departments;
+        }
+
+        await user.save();
 
         return user;
     }
@@ -72,7 +84,18 @@ export class UserCrudService extends TypeOrmQueryService<User> {
             }
         }
 
-        return super.updateOne(id, update);
+        const { departmentIds, roleCodes, ...rest } = update as any;
+
+        if (roleCodes) {
+            const roles = await Role.find({ where: { code: In(roleCodes) } });
+            await this.setRelations('roles', id, roles.map(r => r.id));
+        }
+
+        if (departmentIds) {
+            await this.setRelations('departments', id, departmentIds);
+        }
+
+        return super.updateOne(id, rest);
     }
 
     async updateUserAcceptedTerm(

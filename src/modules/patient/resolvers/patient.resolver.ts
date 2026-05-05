@@ -124,6 +124,20 @@ export class PatientResolver {
     ): Promise<Patient> {
         const patientInput = input['patient'] as CreatePatientInput;
 
+        // Validar que los departmentIds sean del usuario
+        if (patientInput.departmentIds && patientInput.departmentIds.length > 0) {
+            const canAccess = await this.patientPermissionService.canCreateInDepartments(
+                currentUser.id,
+                patientInput.departmentIds,
+            );
+
+            if (!canAccess) {
+                throw new BadRequestException(
+                    'No puedes crear pacientes en departamentos a los que no perteneces',
+                );
+            }
+        }
+
         // Reload current user with departments
         currentUser = await User.findOne({
             where: { id: currentUser.id },
@@ -146,21 +160,6 @@ export class PatientResolver {
             currentUser.id,
             PermissionEnum.VIEW_ALL_PATIENTS,
         );
-
-        if (!canViewAllPatients) {
-            const departmentIds = currentUser.departments.map(
-                department => department.id,
-            );
-            const exceptionDepartments = patientInput.departmentIds.filter(
-                inputId => departmentIds.indexOf(inputId) < 0,
-            );
-
-            if (exceptionDepartments?.length) {
-                throw new BadRequestException(
-                    `User cannot create patients in departments of which they are not a member`,
-                );
-            }
-        }
 
         if (!canViewAllPatients && !hasAssignedPermission) {
             // Validate case managers belong to the assigned departments
@@ -224,6 +223,20 @@ export class PatientResolver {
             currentUser,
             Number(input.id),
         );
+
+        // Validar departamentos si se están actualizando
+        if (update.departmentIds && update.departmentIds.length > 0) {
+            const canAccess = await this.patientPermissionService.canCreateInDepartments(
+                currentUser.id,
+                update.departmentIds,
+            );
+
+            if (!canAccess) {
+                throw new BadRequestException(
+                    'No puedes asignar pacientes a departamentos a los que no perteneces',
+                );
+            }
+        }
 
         // Get user's access scope (deterministic, priority-based)
         const scope = await this.patientPermissionService.getUserAccessScope(

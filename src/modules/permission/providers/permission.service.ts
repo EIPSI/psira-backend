@@ -73,7 +73,7 @@ export class PermissionService implements OnModuleInit {
             superAdminRole = new Role();
             superAdminRole.name = 'Super Admin';
             superAdminRole.code = RoleCode.SUPER_ADMIN;
-            superAdminRole.hierarchy = MIN_ROLE_HIERARCHY;
+            superAdminRole.hierarchy = MAX_ROLE_HIERARCHY;
             await superAdminRole.save();
         }
 
@@ -85,7 +85,7 @@ export class PermissionService implements OnModuleInit {
             noRole = new Role();
             noRole.name = 'Default';
             noRole.code = RoleCode.NO_ROLE;
-            noRole.hierarchy = MAX_ROLE_HIERARCHY;
+            noRole.hierarchy = MIN_ROLE_HIERARCHY;
             await noRole.save();
         }
 
