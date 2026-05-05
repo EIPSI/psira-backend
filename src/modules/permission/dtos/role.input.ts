@@ -9,7 +9,7 @@ export class RoleInput {
     name: string;
 
     @Field()
-    @Max(MAX_ROLE_HIERARCHY)
-    @Min(MIN_ROLE_HIERARCHY)
+    @Max(MIN_ROLE_HIERARCHY)
+    @Min(MAX_ROLE_HIERARCHY)
     hierarchy: number;
 }

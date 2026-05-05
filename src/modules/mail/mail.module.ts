@@ -53,6 +53,7 @@ import {
       ],
     }),
   ],
-  providers: [MailResolver, MailTemplateService, SendMailService, QuestionnaireAssessmentService]
+  providers: [MailResolver, MailTemplateService, SendMailService, QuestionnaireAssessmentService],
+  exports: [SendMailService]
 })
 export class MailModule {}

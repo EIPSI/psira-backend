@@ -24,6 +24,7 @@ import {Role} from 'src/modules/permission/models/role.model';
 import {UserPreviousPassword} from './user-previous-password.model';
 import {Department} from 'src/modules/department/models/department.model';
 import {Patient} from 'src/modules/patient/models/patient.model';
+import {Assessment} from 'src/modules/assessment/models/assessment.model';
 
 @ObjectType()
 @KeySet(['id'])
@@ -156,7 +157,19 @@ export class User extends BaseEntity {
         () => Patient,
         patient => patient.caseManagers,
     )
+    caseManagedPatients: Patient[];
+
+    @OneToMany(
+        () => Patient,
+        patient => patient.user,
+    )
     patients: Patient[];
+
+    @OneToMany(
+        () => Assessment,
+        assessment => assessment.targetUser,
+    )
+    targetAssessments: Assessment[];
 
     @OneToMany(
         () => AccessToken,
