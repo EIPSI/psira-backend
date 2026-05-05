@@ -215,7 +215,7 @@ export class UserCrudResolver extends CRUDResolver(User, {
                 creatorDeptIds.includes(d.id)
             );
 
-            const isSuperAdmin = await this.permissionService.userCan(currentUser.id, PermissionEnum.VIEW_ALL_USERS);
+            const isSuperAdmin = await this.permissionService.userCan(currentUser.id, PermissionEnum.MANAGE_USERS);
 
             if (!userInSameDept && !isSuperAdmin) {
                 throw new ForbiddenException(
@@ -248,7 +248,7 @@ export class UserCrudResolver extends CRUDResolver(User, {
                 creatorDeptIds.includes(d.id)
             );
 
-            const isSuperAdmin = await this.permissionService.userCan(currentUser.id, PermissionEnum.VIEW_ALL_USERS);
+            const isSuperAdmin = await this.permissionService.userCan(currentUser.id, PermissionEnum.MANAGE_USERS);
 
             if (!userInSameDept && !isSuperAdmin) {
                 throw new ForbiddenException(
