@@ -31,7 +31,7 @@ export class UserDepartmentAccessService {
      * Get user's department access scope
      */
     async getUserDepartmentAccess(userId: number): Promise<UserDepartmentAccess> {
-        if (await this.permissionService.userCan(userId, PermissionEnum.VIEW_ALL_USERS)) {
+        if (await this.permissionService.userCan(userId, PermissionEnum.MANAGE_USERS)) {
             return { scope: DepartmentAccessScope.ALL };
         }
 
@@ -130,7 +130,7 @@ export class UserDepartmentAccessService {
 
         // If target has departments, creator must have access to those departments
         if (targetDepartmentIds && targetDepartmentIds.length > 0) {
-            if (creatorAccess.scope === DepartmentAccessScope.ALL) {
+            if ((creatorAccess.scope as DepartmentAccessScope) === DepartmentAccessScope.ALL) {
                 return true; // SuperAdmin can assign any departments
             }
 
