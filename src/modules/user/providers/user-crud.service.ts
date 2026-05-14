@@ -46,7 +46,9 @@ export class UserCrudService extends TypeOrmQueryService<User> {
             throw new BadRequestException('Username already exists');
         }
 
-        let { departmentIds, roleCodes, ...rest } = input as any;
+        const { roleCodes, ...userInput } = input as any;
+        const { departmentIds: inputDepartmentIds, ...rest } = userInput;
+        let departmentIds = inputDepartmentIds;
         const plainPassword = rest.password;
         const user = await super.createOne(rest);
 
@@ -113,7 +115,9 @@ export class UserCrudService extends TypeOrmQueryService<User> {
             }
         }
 
-        let { departmentIds, roleCodes, ...rest } = update as any;
+        const { roleCodes, ...userInput } = update as any;
+        const { departmentIds: inputDepartmentIds, ...rest } = userInput;
+        let departmentIds = inputDepartmentIds;
 
         let roles: Role[] = [];
         if (roleCodes) {
