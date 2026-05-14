@@ -14,7 +14,7 @@ export class SettingService {
             const storedSetting = storedSettings.find(row => row.key === key);
 
             const value = storedSetting
-                ? (storedSetting.value as SettingDto[K])
+                ? this.parseValue(key as K, storedSetting.value)
                 : defaultConfig[key];
 
             settingDto[key] = value;
@@ -27,7 +27,7 @@ export class SettingService {
         const storedSetting = await Setting.findOne({ key });
 
         const value: SettingDto[K] = storedSetting
-            ? (storedSetting.value as SettingDto[K])
+            ? this.parseValue(key, storedSetting.value)
             : defaultConfig[key];
 
         return value;
@@ -40,7 +40,7 @@ export class SettingService {
             const settingKey = key as K;
             const value = settingDto[settingKey];
 
-            if (value !== null) {
+            if (value !== null && value !== undefined) {
                 await this.updateKey(settingKey, value);
             }
         }
@@ -75,5 +75,20 @@ export class SettingService {
         await setting.save();
 
         return true;
+    }
+
+    private parseValue<K extends keyof SettingDto>(key: K, value: string): SettingDto[K] {
+        const defaultValue = defaultConfig[key];
+
+        if (typeof defaultValue === 'boolean') {
+            return (value === 'true') as SettingDto[K];
+        }
+
+        if (typeof defaultValue === 'number' || key === 'welcomeEmailTemplateId') {
+            const parsed = parseInt(value, 10);
+            return (Number.isNaN(parsed) ? null : parsed) as SettingDto[K];
+        }
+
+        return value as SettingDto[K];
     }
 }

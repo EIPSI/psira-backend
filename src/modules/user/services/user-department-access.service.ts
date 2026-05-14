@@ -31,7 +31,10 @@ export class UserDepartmentAccessService {
      * Get user's department access scope
      */
     async getUserDepartmentAccess(userId: number): Promise<UserDepartmentAccess> {
-        if (await this.permissionService.userCan(userId, PermissionEnum.MANAGE_USERS)) {
+        if (
+            await this.permissionService.userCan(userId, PermissionEnum.MANAGE_USERS) ||
+            await this.permissionService.userCan(userId, PermissionEnum.ASSIGN_ANY_ASSESSMENT_USER)
+        ) {
             return { scope: DepartmentAccessScope.ALL };
         }
 

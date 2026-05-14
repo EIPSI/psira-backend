@@ -44,6 +44,9 @@ export class CreateFullAssessmentInput {
     @Field(() => Int, { nullable: true })
     targetUserId?: number;
 
+    @Field(() => Int, { nullable: true })
+    responderUserId?: number;
+
     @Field(() => Int)
     clinicianId: number;
 

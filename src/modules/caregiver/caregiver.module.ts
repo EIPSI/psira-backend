@@ -14,10 +14,12 @@ import { CaregiverInput } from './dtos/caregiver.input';
 import { PatientCaregiverResolver } from './resolvers/patient-caregiver.resolver';
 import { PatientCaregiverService } from './services/patient.caregiver.service';
 import { PatientCaregiverInput } from './dtos/patient.caregiver.input';
+import { UserModule } from '../user/user.module';
 
 const guards = [GqlAuthGuard, PermissionGuard];
 @Module({
     imports: [
+        UserModule,
         NestjsQueryGraphQLModule.forFeature({
             imports: [NestjsQueryTypeOrmModule.forFeature([
                 Caregiver,

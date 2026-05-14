@@ -1,5 +1,5 @@
 import { Field, InputType } from "@nestjs/graphql";
-import { IsOptional } from "class-validator";
+import { IsEmail, IsOptional } from "class-validator";
 
 
 @InputType()
@@ -17,9 +17,9 @@ export class CaregiverInput {
     @Field()
     lastName: string;
 
-    @IsOptional()
-    @Field({ nullable: true })
-    email?: string;
+    @IsEmail()
+    @Field()
+    email: string;
 
     @IsOptional()
     @Field({ nullable: true })

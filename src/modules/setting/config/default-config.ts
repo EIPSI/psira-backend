@@ -9,4 +9,6 @@ export const defaultConfig: SettingDto = {
     passwordLifeTimeInDays: 365,
     passwordReUseCutoffInDays: 365,
     maxLoginAttempts: 5,
+    sendWelcomeEmails: true,
+    welcomeEmailTemplateId: null,
 };

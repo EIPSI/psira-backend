@@ -79,6 +79,11 @@ export const systemPermissions = [
         group: 'Assessments',
     },
     {
+        key: 'ASSIGN_ANY_ASSESSMENT_USER',
+        name: 'assign any assessment user',
+        group: 'Assessments',
+    },
+    {
         key: 'DELETE_ASSESSMENTS',
         name: 'delete assessments',
         group: 'Assessments',

@@ -8,8 +8,8 @@ import { IsOptional, IsPhoneNumber } from 'src/shared';
 export class CreateUserInput {
 
   @IsLowercase()
-  @Field()
-  username: string;
+  @Field({ nullable: true })
+  username?: string;
 
   @Field()
   password: string;
@@ -26,10 +26,9 @@ export class CreateUserInput {
   @Field()
   lastName: string;
 
-  @IsOptional()
   @IsEmail()
-  @Field({ nullable: true })
-  email?: string;
+  @Field()
+  email: string;
 
   @IsOptional()
   @IsPhoneNumber()

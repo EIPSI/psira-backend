@@ -24,6 +24,7 @@ import { Caregiver } from '../caregiver/models/caregiver.model';
 import { AssessmentTypeService } from './services/assessment-type.service';
 import { AssessmentTypeResolver } from './resolvers/assessment-type.resolver';
 import { AssessmentType } from './models/assessment-type.model';
+import { Patient } from '../patient/models/patient.model';
 
 const guards = [GqlAuthGuard, PermissionGuard];
 @Module({
@@ -36,6 +37,7 @@ const guards = [GqlAuthGuard, PermissionGuard];
                     Assessment,
                     User,
                     Caregiver,
+                    Patient,
                     AssessmentType,
                 ]),
 

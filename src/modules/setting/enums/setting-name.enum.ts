@@ -7,4 +7,6 @@ export enum SettingKey {
     MAX_LOGIN_ATTEMPTS = 'maxLoginAttempts',
     PASSWORD_LIFETIME_IN_DAYS = 'passwordLifeTimeInDays',
     PASSWORD_REUSE_CUTOFF_IN_DAYS = 'passwordReUseCutoffInDays',
+    SEND_WELCOME_EMAILS = 'sendWelcomeEmails',
+    WELCOME_EMAIL_TEMPLATE_ID = 'welcomeEmailTemplateId',
 }

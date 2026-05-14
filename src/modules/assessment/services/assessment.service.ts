@@ -23,6 +23,7 @@ import { PatientAuthorizer } from 'src/modules/patient/authorizers/patient.autho
 import { User } from 'src/modules/user/models/user.model';
 import { ConnectionType } from '@nestjs-query/query-graphql';
 import { PatientQueryService } from 'src/modules/patient/providers/patient-query.service';
+import { Patient } from 'src/modules/patient/models/patient.model';
 import { PatientPermissionService, PatientAccessScope } from 'src/modules/patient/services/patient-permission.service';
 import { Caregiver } from 'src/modules/caregiver/models/caregiver.model';
 import { AssessmentStatus } from 'src/modules/questionnaire/enums/assessment-status.enum';
@@ -40,6 +41,8 @@ export class AssessmentService {
         @InjectRepository(User) private userRepository: Repository<User>,
         @InjectRepository(Caregiver)
         private caregiverRepository: Repository<Caregiver>,
+        @InjectRepository(Patient)
+        private patientRepository: Repository<Patient>,
         @InjectQueryService(Assessment)
         private readonly assessmentQueryService: QueryService<Assessment>,
         @InjectRepository(AssessmentType)
@@ -67,7 +70,7 @@ export class AssessmentService {
         const access = await this.patientPermissionService.getUserAccessScope(currentUser.id);
 
         let departmentFilter: any = {};
-        const targetUserFilter = { targetUserId: { eq: currentUser.id } };
+        const targetUserFilter = { responderUserId: { eq: currentUser.id } };
 
         if (access.type !== PatientAccessScope.ALL) {
             const patientAuthorizeFilter = await PatientAuthorizer.authorizePatient(currentUser?.id);
@@ -145,7 +148,7 @@ export class AssessmentService {
                     {
                         or: [
                             { patientId: { in: currentUsersPatients.map(p => p.id) } },
-                            { targetUserId: { eq: currentUser.id } },
+                            { responderUserId: { eq: currentUser.id } },
                         ],
                     },
                 ],
@@ -155,7 +158,7 @@ export class AssessmentService {
             filter = {
                 and: [
                     { id: { eq: assessmentId } },
-                    { targetUserId: { eq: currentUser.id } },
+                    { responderUserId: { eq: currentUser.id } },
                 ],
             };
         }
@@ -173,9 +176,15 @@ export class AssessmentService {
         return assessment;
     }
 
-    async createNewAssessment(assessmentInput: CreateFullAssessmentInput) {
+    async createNewAssessment(assessmentInput: CreateFullAssessmentInput, currentUser?: User) {
         const assessmentLength = assessmentInput.dates.length || 1;
         const assessmentArray = [];
+        await this.validateResponderUserAccess(
+            assessmentInput.responderUserId,
+            currentUser,
+            assessmentInput.patientId,
+            assessmentInput.targetUserId,
+        );
 
         for (let i = 0; i < assessmentLength; i++) {
             let assessment: Assessment;
@@ -188,11 +197,13 @@ export class AssessmentService {
                 throw new NotFoundException('Assessment type not found!');
             }
 
-            // Validate: must have either patientId OR targetUserId
-            if (!assessmentInput.patientId && !assessmentInput.targetUserId) {
+            if (!assessmentInput.targetUserId && !assessmentInput.patientId) {
                 throw new BadRequestException(
-                    'Assessment must have either patientId or targetUserId',
+                    'Assessment must have an evaluation target',
                 );
+            }
+            if (!assessmentInput.responderUserId) {
+                throw new BadRequestException('Assessment must be assigned to a responder user');
             }
 
             // Create mongo assessment
@@ -217,6 +228,15 @@ export class AssessmentService {
                     }
                     assessment.targetUserId = assessmentInput.targetUserId;
                 }
+
+                const responderUser = await this.userRepository.findOne({
+                    where: { id: assessmentInput.responderUserId },
+                });
+                if (!responderUser) {
+                    throw new NotFoundException('Responder user not found!');
+                }
+                assessment.responderUserId = responderUser.id;
+                assessment.receiverEmail = responderUser.email;
 
                 // Set patientId if provided
                 if (assessmentInput.patientId) {
@@ -261,7 +281,7 @@ export class AssessmentService {
                 if (!assessmentInput.emailReminder) {
                     assessment.emailStatus =
                         AssessmentEmailStatus.NOT_SCHEDULED;
-                    assessment.receiverEmail = null;
+                    assessment.receiverEmail = assessment.receiverEmail || assessmentInput.receiverEmail || null;
                 } else if (Validator.isEmail(assessmentInput.receiverEmail)) {
                     if (!assessmentInput.mailTemplateId) {
                         throw new Error('Mail template not found!');
@@ -294,7 +314,11 @@ export class AssessmentService {
      * @param assessmentId
      * @returns
      */
-    async getFullAssessment(assessmentId: number): Promise<FullAssessment> {
+    async getFullAssessment(assessmentId: number, currentUser?: User): Promise<FullAssessment> {
+        if (currentUser) {
+            await this.getAssessment(assessmentId, currentUser);
+        }
+
         const assessment: FullAssessment = (await this.assessmentRepository.findOne(
             {
                 where: {
@@ -305,6 +329,7 @@ export class AssessmentService {
                     'clinician',
                     'patient',
                     'targetUser',
+                    'responderUser',
                     'informantClinician',
                     'assessmentType',
                 ],
@@ -318,7 +343,14 @@ export class AssessmentService {
         return assessment;
     }
 
-    async updateAssessment(assessmentInput: UpdateFullAssessmentInput) {
+    async updateAssessment(assessmentInput: UpdateFullAssessmentInput, currentUser?: User) {
+        await this.validateResponderUserAccess(
+            assessmentInput.responderUserId,
+            currentUser,
+            assessmentInput.patientId,
+            assessmentInput.targetUserId,
+        );
+
         // find postgres assessment
         const assessment = await this.assessmentRepository.findOneOrFail(
             assessmentInput.assessmentId,
@@ -331,11 +363,13 @@ export class AssessmentService {
         if (!assessmentType)
             throw new NotFoundException('Assessment type not found!');
 
-        // Validate: must have either patientId OR targetUserId
-        if (!assessmentInput.patientId && !assessmentInput.targetUserId) {
+        if (!assessmentInput.targetUserId && !assessmentInput.patientId) {
             throw new BadRequestException(
-                'Assessment must have either patientId or targetUserId',
+                'Assessment must have an evaluation target',
             );
+        }
+        if (!assessmentInput.responderUserId) {
+            throw new BadRequestException('Assessment must be assigned to a responder user');
         }
 
         // find & update mongo assessment
@@ -365,6 +399,14 @@ export class AssessmentService {
             assessment.assessmentType = assessmentType;
             assessment.patientId = assessmentInput.patientId || null;
             assessment.targetUserId = assessmentInput.targetUserId || null;
+            assessment.responderUserId = assessmentInput.responderUserId;
+            const responderUser = await this.userRepository.findOne({
+                where: { id: assessment.responderUserId },
+            });
+            if (!responderUser) {
+                throw new NotFoundException('Responder user not found!');
+            }
+            assessment.receiverEmail = responderUser.email;
             assessment.clinicianId = assessmentInput.clinicianId;
             assessment.informantType = assessmentInput.informantType;
             assessment.questionnaireAssessmentId = questionnaireAssessment.id;
@@ -393,7 +435,7 @@ export class AssessmentService {
             assessment.emailReminder = assessmentInput.emailReminder || false;
             if (!assessmentInput.emailReminder) {
                 assessment.emailStatus = AssessmentEmailStatus.NOT_SCHEDULED;
-                assessment.receiverEmail = null;
+                assessment.receiverEmail = assessment.receiverEmail || assessmentInput.receiverEmail || null;
                 assessment.mailTemplateId = null;
             } else if (Validator.isEmail(assessmentInput.receiverEmail)) {
                 if (!assessmentInput.mailTemplateId) {
@@ -551,5 +593,64 @@ export class AssessmentService {
 
         return user.permissions?.some(p => p.name === permission) ||
                user.roles?.some(r => r.permissions?.some(p => p.name === permission));
+    }
+
+    private async validateResponderUserAccess(
+        targetUserId?: number,
+        currentUser?: User,
+        patientId?: number,
+        assessmentTargetUserId?: number,
+    ): Promise<void> {
+        if (!targetUserId || !currentUser) return;
+
+        if (await this.checkPermission(currentUser.id, PermissionEnum.ASSIGN_ANY_ASSESSMENT_USER)) {
+            return;
+        }
+
+        if (assessmentTargetUserId === targetUserId) {
+            return;
+        }
+
+        if (patientId) {
+            const patient = await this.patientRepository.findOne(patientId, {
+                relations: ['caseManagers'],
+            });
+
+            if (patient?.userId === targetUserId || patient?.caseManagers?.some(user => user.id === targetUserId)) {
+                return;
+            }
+
+            const caregiver = await this.caregiverRepository.findOne({
+                where: { userId: targetUserId },
+                relations: ['patientCaregivers'],
+            });
+
+            if (caregiver?.patientCaregivers?.some(relation => relation.patientId === patientId)) {
+                return;
+            }
+        }
+
+        const [assigner, targetUser] = await Promise.all([
+            this.userRepository.findOne({
+                where: { id: currentUser.id },
+                relations: ['departments'],
+            }),
+            this.userRepository.findOne({
+                where: { id: targetUserId },
+                relations: ['departments'],
+            }),
+        ]);
+
+        if (!targetUser) {
+            throw new NotFoundException('Target user not found!');
+        }
+
+        const assignerDepartmentIds = assigner?.departments?.map(department => department.id) ?? [];
+        const targetDepartmentIds = targetUser.departments?.map(department => department.id) ?? [];
+        const hasSharedDepartment = targetDepartmentIds.some(id => assignerDepartmentIds.includes(id));
+
+        if (!hasSharedDepartment && targetUser.id !== currentUser.id) {
+            throw new BadRequestException('Assessment can only be assigned to a visible user.');
+        }
     }
 }

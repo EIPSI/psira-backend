@@ -86,7 +86,7 @@ export class MailTemplateService {
     async createEmailTemplate(
         input: CreateEmailTemplate,
     ): Promise<MailTemplate> {
-        const { departmentIds, ...restInput } = input;
+        const { departmentIds = [], ...restInput } = input;
 
         if (!departmentIds.length && !restInput.isPublic) {
             throw new Error('Select at least one department!');
@@ -127,7 +127,7 @@ export class MailTemplateService {
     async updateEmailTemplate(
         input: UpdateEmailTemplate,
     ): Promise<MailTemplate> {
-        const { id, departmentIds, ...values } = input;
+        const { id, departmentIds = [], ...values } = input;
 
         if (!departmentIds.length && !values.isPublic) {
             throw new Error('Select at least one department!');

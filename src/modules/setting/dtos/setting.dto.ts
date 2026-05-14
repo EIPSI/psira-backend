@@ -42,4 +42,12 @@ export class SettingDto {
     @Min(0)
     @Field(() => Int, { nullable: true })
     passwordReUseCutoffInDays?: number;
+
+    @IsOptional()
+    @Field({ nullable: true, defaultValue: true })
+    sendWelcomeEmails?: boolean;
+
+    @IsOptional()
+    @Field(() => Int, { nullable: true })
+    welcomeEmailTemplateId?: number;
 }

@@ -16,6 +16,7 @@ import {
     UpdateDateColumn,
 } from 'typeorm';
 import { PatientCaregiver } from './patient-caregiver.model';
+import { User } from 'src/modules/user/models/user.model';
 
 @ObjectType()
 @FilterableUnPagedRelation('patientCaregivers', () => PatientCaregiver, {
@@ -102,6 +103,17 @@ export class Caregiver extends BaseEntity {
     @FilterableField(() => String, { nullable: true })
     @Column({ nullable: true })
     number?: string;
+
+    @FilterableField(() => Int, { nullable: true })
+    @Column({ nullable: true })
+    userId?: number;
+
+    @ManyToOne(
+        () => User,
+        user => user.caregivers,
+        { nullable: true },
+    )
+    user?: User;
 
     @OneToMany(
         () => PatientCaregiver,
