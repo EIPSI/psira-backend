@@ -25,6 +25,7 @@ import { MailTemplate } from 'src/modules/mail/models/mail-template.model';
 @ObjectType()
 @FilterableRelation('patient', () => Patient, { nullable: true })
 @FilterableRelation('targetUser', () => User, { nullable: true })
+@FilterableRelation('responderUser', () => User, { nullable: true })
 @FilterableRelation('clinician', () => User, { nullable: true })
 @FilterableRelation('informantClinician', () => User, { nullable: true })
 @FilterableRelation('assessmentType', () => AssessmentType, { nullable: true })
@@ -53,6 +54,10 @@ export class Assessment extends BaseEntity {
     @FilterableField(() => Int, { nullable: true })
     @Column({ nullable: true })
     targetUserId?: number;
+
+    @FilterableField(() => Int, { nullable: true })
+    @Column({ nullable: true })
+    responderUserId?: number;
 
     @FilterableField(() => Int, { nullable: true })
     @Column({ nullable: true })
@@ -145,6 +150,9 @@ export class Assessment extends BaseEntity {
     @ManyToOne(() => User, user => user.targetAssessments, { nullable: true })
     targetUser: User;
 
+    @ManyToOne(() => User, { nullable: true })
+    responderUser: User;
+
     @ManyToOne(() => User)
     clinician: User;
 
@@ -177,6 +185,9 @@ export class FullAssessment extends Assessment {
 
     @Field(() => User, { nullable: true })
     targetUser: User;
+
+    @Field(() => User, { nullable: true })
+    responderUser: User;
 
     @Field(() => User, { nullable: true })
     informantClinician: User;

@@ -8,6 +8,7 @@ import { UsePermission } from 'src/modules/permission/decorators/permission.deco
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { PermissionGuard } from 'src/modules/permission/guards/permission.guard';
 import { Role } from 'src/modules/permission/models/role.model';
+import { RoleCode } from 'src/modules/permission/enums/role-code.enum';
 import { User } from 'src/modules/user/models/user.model';
 import { CreateOneRoleInput } from '../dtos/create-one-role.input';
 import { DeleteOneRoleInput } from '../dtos/delete-one-role.input';
@@ -130,17 +131,21 @@ export class RoleResolver extends CRUDResolver(Role, {
         input: RemovePermissionsFromRoleInput,
         @CurrentUser() currentUser: User,
     ) {
-        const { role } = await this.canUpdatePermissions(
+        await this.canUpdatePermissions(
             input,
             currentUser,
             PermissionAction.REMOVE,
         );
 
-        role.permissions = role.permissions.filter(
-            permission => !input.relationIds.includes(permission.id),
-        );
+        await Role.createQueryBuilder()
+            .relation(Role, 'permissions')
+            .of(input.id)
+            .remove(input.relationIds);
 
-        return role.save();
+        return Role.findOneOrFail({
+            where: { id: input.id },
+            relations: ['permissions'],
+        });
     }
 
     @Mutation(() => Role)
@@ -150,15 +155,21 @@ export class RoleResolver extends CRUDResolver(Role, {
         input: AddPermissionsToRoleInput,
         @CurrentUser() currentUser: User,
     ) {
-        const { role, permissions } = await this.canUpdatePermissions(
+        const { permissions } = await this.canUpdatePermissions(
             input,
             currentUser,
             PermissionAction.ADD,
         );
 
-        role.permissions.push(...permissions);
+        await Role.createQueryBuilder()
+            .relation(Role, 'permissions')
+            .of(input.id)
+            .add(permissions.map(permission => permission.id));
 
-        return role.save();
+        return Role.findOneOrFail({
+            where: { id: input.id },
+            relations: ['permissions'],
+        });
     }
 
     private async canUpdatePermissions(
@@ -179,6 +190,7 @@ export class RoleResolver extends CRUDResolver(Role, {
         let errorMessage = '';
 
         const isOwnRole = currentUser.roles.some(role => role.id === input.id);
+        const isSuperAdminRole = role.code === RoleCode.SUPER_ADMIN;
         const hasHigherHierarchy = currentUser.roles.some(
             userRole => userRole.hierarchy < role.hierarchy,
         );
@@ -188,7 +200,9 @@ export class RoleResolver extends CRUDResolver(Role, {
             ),
         );
 
-        if (isOwnRole) {
+        if (isSuperAdminRole) {
+            errorMessage = 'Super Admin permissions are fixed and cannot be modified.';
+        } else if (isOwnRole) {
             errorMessage = 'You cannot modify your own permissions.';
         } else if (!hasHigherHierarchy) {
             errorMessage = 'Your hierarchy is not high enough.';

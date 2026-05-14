@@ -8,6 +8,14 @@ import { SettingModule } from '../setting/setting.module';
 import { ChangePasswordService } from './providers/change-password.service';
 import { ChangePasswordResolver } from './resolvers/change-password.resolver';
 import { UserDepartmentAccessService } from './services/user-department-access.service';
+import { PermissionModule } from '../permission/permission.module';
+import { Role } from '../permission/models/role.model';
+import { UserAccountProvisioningService } from './services/user-account-provisioning.service';
+import { TherapistSupervisionService } from './services/therapist-supervision.service';
+import { TherapistSupervisionResolver } from './resolvers/therapist-supervision.resolver';
+import { MailModule } from '../mail/mail.module';
+import { Patient } from '../patient/models/patient.model';
+import { Caregiver } from '../caregiver/models/caregiver.model';
 
 @Injectable()
 export class UserAuthorizer implements Authorizer<User> {
@@ -23,10 +31,12 @@ export class UserAuthorizer implements Authorizer<User> {
 @Module({
     imports: [
         SettingModule,
+        PermissionModule,
+        MailModule,
         NestjsQueryGraphQLModule.forFeature({
             // import the NestjsQueryTypeOrmModule to register the entity with typeorm
             // and provide a QueryService
-            imports: [NestjsQueryTypeOrmModule.forFeature([User])],
+            imports: [NestjsQueryTypeOrmModule.forFeature([User, Role, Patient, Caregiver])],
             // describe the resolvers you want to expose
             resolvers: [],
         }),
@@ -38,7 +48,10 @@ export class UserAuthorizer implements Authorizer<User> {
         ChangePasswordResolver,
         UserAuthorizer,
         UserDepartmentAccessService,
+        UserAccountProvisioningService,
+        TherapistSupervisionService,
+        TherapistSupervisionResolver,
     ],
-    exports: [UserCrudService],
+    exports: [UserCrudService, UserAccountProvisioningService],
 })
 export class UserModule { }

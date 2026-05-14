@@ -19,9 +19,11 @@ import {
   Questionnaire,
   QuestionnaireSchema,
 } from '../questionnaire/models/questionnaire.schema';
+import { SettingModule } from '../setting/setting.module';
 
 @Module({
   imports: [
+    SettingModule,
     NestjsQueryGraphQLModule.forFeature({
       imports: [
         NestjsQueryTypeOrmModule.forFeature([

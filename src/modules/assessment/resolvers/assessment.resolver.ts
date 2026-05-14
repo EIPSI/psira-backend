@@ -62,24 +62,27 @@ export class AssessmentResolver {
     @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
     getFullAssessment(
         @Args('id', { type: () => Int }) assessmentId: number,
+        @CurrentUser() currentUser: User,
     ): Promise<FullAssessment> {
-        return this.assessmentService.getFullAssessment(assessmentId);
+        return this.assessmentService.getFullAssessment(assessmentId, currentUser);
     }
 
     @Mutation(() => Assessment)
     @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
     createNewAssessment(
         @Args('assessment') assessmentInput: CreateFullAssessmentInput,
+        @CurrentUser() currentUser: User,
     ) {
-        return this.assessmentService.createNewAssessment(assessmentInput);
+        return this.assessmentService.createNewAssessment(assessmentInput, currentUser);
     }
 
     @Mutation(() => Assessment)
     @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
     updateAssessment(
         @Args('assessment') assessmentInput: UpdateFullAssessmentInput,
+        @CurrentUser() currentUser: User,
     ) {
-        return this.assessmentService.updateAssessment(assessmentInput);
+        return this.assessmentService.updateAssessment(assessmentInput, currentUser);
     }
 
     @Mutation(() => Boolean)

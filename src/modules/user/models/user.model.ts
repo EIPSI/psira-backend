@@ -25,6 +25,7 @@ import {UserPreviousPassword} from './user-previous-password.model';
 import {Department} from 'src/modules/department/models/department.model';
 import {Patient} from 'src/modules/patient/models/patient.model';
 import {Assessment} from 'src/modules/assessment/models/assessment.model';
+import {Caregiver} from 'src/modules/caregiver/models/caregiver.model';
 
 @ObjectType()
 @KeySet(['id'])
@@ -159,11 +160,34 @@ export class User extends BaseEntity {
     )
     caseManagedPatients: Patient[];
 
+    @ManyToMany(
+        () => User,
+        user => user.supervisedTherapists,
+    )
+    @JoinTable({
+        name: 'therapist_supervisor',
+        joinColumn: { name: 'therapistId', referencedColumnName: 'id' },
+        inverseJoinColumn: { name: 'supervisorId', referencedColumnName: 'id' },
+    })
+    supervisors: User[];
+
+    @ManyToMany(
+        () => User,
+        user => user.supervisors,
+    )
+    supervisedTherapists: User[];
+
     @OneToMany(
         () => Patient,
         patient => patient.user,
     )
     patients: Patient[];
+
+    @OneToMany(
+        () => Caregiver,
+        caregiver => caregiver.user,
+    )
+    caregivers: Caregiver[];
 
     @OneToMany(
         () => Assessment,
