@@ -50,4 +50,20 @@ export class SettingDto {
     @IsOptional()
     @Field(() => Int, { nullable: true })
     welcomeEmailTemplateId?: number;
+
+    @IsOptional()
+    @Field({ nullable: true, defaultValue: false })
+    googleCalendarEnabled?: boolean;
+
+    @IsOptional()
+    @Field({ nullable: true })
+    googleCalendarClientId?: string;
+
+    @IsOptional()
+    @Field({ nullable: true })
+    googleCalendarClientSecret?: string;
+
+    @IsOptional()
+    @Field({ nullable: true })
+    googleCalendarRedirectUri?: string;
 }

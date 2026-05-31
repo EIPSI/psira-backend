@@ -7,6 +7,24 @@ import { AssessmentStatus } from '../enums/assessment-status.enum';
 import { QuestionnaireBundle } from './questionnaire-bundle.schema';
 
 @ObjectType()
+export class ResolvedQuestionnaire {
+    @Field(() => String)
+    occurrenceId: string;
+
+    @Field(() => String)
+    questionnaireId: Types.ObjectId | string;
+
+    @Field(() => String, { nullable: true })
+    sourceBundleId?: Types.ObjectId | string;
+
+    @Field(() => [String], { nullable: true })
+    path?: string[];
+
+    @Field(() => Number)
+    orderIndex: number;
+}
+
+@ObjectType()
 @Schema({ collection: 'assessments', timestamps: true })
 export class QuestionnaireAssessment extends Document {
     @Field(() => String)
@@ -31,6 +49,10 @@ export class QuestionnaireAssessment extends Document {
     @Field(() => [QuestionnaireBundle])
     @Prop({ type: [Types.ObjectId], ref: QuestionnaireBundle.name })
     questionnaireBundles: Types.ObjectId[] | QuestionnaireBundle[];
+
+    @Field(() => [ResolvedQuestionnaire], { nullable: true })
+    @Prop({ type: [Object], default: [] })
+    resolvedQuestionnaires: ResolvedQuestionnaire[];
 
     @Field(() => [Answer])
     @Prop({ type: [AnswerSchema] })

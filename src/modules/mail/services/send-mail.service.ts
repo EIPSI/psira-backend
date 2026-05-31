@@ -43,6 +43,20 @@ export class SendMailService {
             selectAssessment.map(async assessmentInfo => {
                 await this.sendEmail(assessmentInfo);
             });
+
+            const reminderAssessments = await this.assessmentRepository
+                .createQueryBuilder('assessment')
+                .leftJoinAndSelect('assessment.mailTemplate', 'mailTemplate')
+                .where('assessment."emailReminder" = true')
+                .andWhere('assessment."deliveryDate" IS NOT NULL')
+                .andWhere('assessment."reminderMinutes" IS NOT NULL')
+                .getMany();
+
+            await Promise.all(
+                reminderAssessments.map(assessmentInfo =>
+                    this.sendDueReminderEmails(assessmentInfo),
+                ),
+            );
         } catch (error) {
             return error;
         }
@@ -70,6 +84,49 @@ export class SendMailService {
         }
     }
 
+    private async sendDueReminderEmails(assessmentInfo: Assessment) {
+        const reminderMinutes = assessmentInfo.reminderMinutes || [];
+        const sentReminderMinutes = assessmentInfo.sentReminderMinutes || [];
+        const deliveryDate = new Date(assessmentInfo.deliveryDate);
+        const now = new Date();
+
+        if (this.isAssessmentAnswered(assessmentInfo)) {
+            return;
+        }
+
+        if (!reminderMinutes.length || !assessmentInfo.receiverEmail) {
+            return;
+        }
+
+        const dueReminderMinutes = reminderMinutes.filter(reminderMinute => {
+            const reminderDate = new Date(
+                deliveryDate.getTime() + reminderMinute * 60 * 1000,
+            );
+            return (
+                reminderDate <= now &&
+                !sentReminderMinutes.includes(reminderMinute)
+            );
+        });
+
+        for (const reminderMinute of dueReminderMinutes) {
+            await this.sendEmail(assessmentInfo);
+            sentReminderMinutes.push(reminderMinute);
+            await this.assessmentRepository.update(assessmentInfo.id, {
+                sentReminderMinutes,
+            });
+        }
+    }
+
+    private isAssessmentAnswered(assessmentInfo: Assessment): boolean {
+        return (
+            !!assessmentInfo.submissionDate ||
+            [
+                AssessmentStatus.COMPLETED,
+                AssessmentStatus.PARTIALLY_COMPLETED,
+            ].includes(assessmentInfo.status as AssessmentStatus)
+        );
+    }
+
     async sendEmail(assessmentInfo: Assessment) {
         const mailTemplate = assessmentInfo.mailTemplate;
 
@@ -79,6 +136,7 @@ export class SendMailService {
 
         if (
             questionnaireAssessment.status === AssessmentStatus.CANCELLED ||
+            questionnaireAssessment.status === AssessmentStatus.COMPLETED ||
             (assessmentInfo.expirationDate && new Date(assessmentInfo.expirationDate) < new Date()) ||
             assessmentInfo.deleted ||
             !mailTemplate

@@ -9,4 +9,8 @@ export enum SettingKey {
     PASSWORD_REUSE_CUTOFF_IN_DAYS = 'passwordReUseCutoffInDays',
     SEND_WELCOME_EMAILS = 'sendWelcomeEmails',
     WELCOME_EMAIL_TEMPLATE_ID = 'welcomeEmailTemplateId',
+    GOOGLE_CALENDAR_ENABLED = 'googleCalendarEnabled',
+    GOOGLE_CALENDAR_CLIENT_ID = 'googleCalendarClientId',
+    GOOGLE_CALENDAR_CLIENT_SECRET = 'googleCalendarClientSecret',
+    GOOGLE_CALENDAR_REDIRECT_URI = 'googleCalendarRedirectUri',
 }

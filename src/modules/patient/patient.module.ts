@@ -29,6 +29,11 @@ import {
     Questionnaire,
     QuestionnaireSchema,
 } from '../questionnaire/models/questionnaire.schema';
+import {
+    QuestionnaireBundle,
+    QuestionnaireBundleSchema,
+} from '../questionnaire/models/questionnaire-bundle.schema';
+import { QuestionnaireBundleResolutionService } from '../questionnaire/services/questionnaire-bundle-resolution.service';
 import { QuestionnaireModule } from '../questionnaire/questionnaire.module';
 import { MailModule } from '../mail/mail.module';
 import { PatientStatusService } from './providers/patient-status.service';
@@ -64,6 +69,10 @@ const guards = [GqlAuthGuard, PermissionGuard];
                     {
                         name: Questionnaire.name,
                         schema: QuestionnaireSchema,
+                    },
+                    {
+                        name: QuestionnaireBundle.name,
+                        schema: QuestionnaireBundleSchema,
                     },
                 ]),
             ],
@@ -168,6 +177,7 @@ const guards = [GqlAuthGuard, PermissionGuard];
         EmergencyContactResolver,
         PatientQueryService,
         QuestionnaireAssessmentService,
+        QuestionnaireBundleResolutionService,
         PatientStatusService,
         PatientPermissionService,
     ],

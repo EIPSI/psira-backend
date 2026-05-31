@@ -205,11 +205,19 @@ export class AssessmentService {
             if (!assessmentInput.responderUserId) {
                 throw new BadRequestException('Assessment must be assigned to a responder user');
             }
+            if (
+                !assessmentInput.questionnaires?.length &&
+                !assessmentInput.questionnaireBundles?.length
+            ) {
+                throw new BadRequestException(
+                    'Assessment must include questionnaires or questionnaire bundles',
+                );
+            }
 
             // Create mongo assessment
             const questionnaireAssessment = await this.questionnaireAssessmentService.createNewAssessment(
-                assessmentInput.questionnaires,
-                assessmentInput.questionnaireBundles
+                assessmentInput.questionnaires || [],
+                assessmentInput.questionnaireBundles || []
             );
 
             const d1 = new Date(assessmentInput?.dates[i].deliveryDate),
@@ -257,6 +265,8 @@ export class AssessmentService {
                 assessment.expirationDate = assessmentInput.dates[i].expirationDate;
                 assessment.note = assessmentInput.note;
                 assessment.deliveryDate = assessmentInput.dates[i].deliveryDate;
+                assessment.reminderMinutes = assessmentInput.dates[i].reminderMinutes || [];
+                assessment.sentReminderMinutes = [];
                 assessment.questionnaireAssessmentId = questionnaireAssessment.id;
 
                 if (assessmentInput.informantClinicianId) {
@@ -379,9 +389,16 @@ export class AssessmentService {
         const originalQuestionnaires = [
             ...questionnaireAssessment.questionnaires,
         ] as Types.ObjectId[];
+        const originalQuestionnaireBundles = [
+            ...(questionnaireAssessment.questionnaireBundles || []),
+        ] as Types.ObjectId[];
+        const originalResolvedQuestionnaires = [
+            ...(questionnaireAssessment.resolvedQuestionnaires || []),
+        ];
         questionnaireAssessment = await this.questionnaireAssessmentService.updateAssessment(
             questionnaireAssessment,
             assessmentInput.questionnaires,
+            assessmentInput.questionnaireBundles,
         );
 
         const d1 = new Date(assessmentInput?.deliveryDate),
@@ -412,6 +429,8 @@ export class AssessmentService {
             assessment.questionnaireAssessmentId = questionnaireAssessment.id;
             assessment.expirationDate = assessmentInput.expirationDate;
             assessment.deliveryDate = assessmentInput.deliveryDate;
+            assessment.reminderMinutes = assessmentInput.reminderMinutes || [];
+            assessment.sentReminderMinutes = assessment.sentReminderMinutes || [];
             assessment.note = assessmentInput.note;
             assessment.informantCaregiverRelation = null;
             assessment.informantClinician = null;
@@ -454,10 +473,10 @@ export class AssessmentService {
             await assessment.save();
         } catch (err) {
             // undo mongo changes
-            await this.questionnaireAssessmentService.updateAssessment(
-                questionnaireAssessment,
-                originalQuestionnaires,
-            );
+            questionnaireAssessment.questionnaires = originalQuestionnaires;
+            questionnaireAssessment.questionnaireBundles = originalQuestionnaireBundles;
+            questionnaireAssessment.resolvedQuestionnaires = originalResolvedQuestionnaires;
+            await questionnaireAssessment.save();
             throw err;
         }
 

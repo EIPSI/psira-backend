@@ -9,6 +9,11 @@ export const systemPermissions = [
         group: 'Patient Management',
     },
     {
+        key: 'REMOVE_SELF_CASE_MANAGER',
+        name: 'remove self case manager',
+        group: 'Patient Management',
+    },
+    {
         key: 'VIEW_PATIENTS',
         name: 'view patients',
         group: 'Patient Management',

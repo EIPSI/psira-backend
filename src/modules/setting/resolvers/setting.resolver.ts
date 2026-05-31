@@ -16,7 +16,13 @@ export class SettingResolver {
 
     @Query(() => SettingDto)
     async settings(): Promise<SettingDto> {
-        return this.settingService.get();
+        const settings = await this.settingService.get();
+        return {
+            ...settings,
+            googleCalendarClientSecret: settings.googleCalendarClientSecret
+                ? '********'
+                : '',
+        };
     }
 
     @Mutation(() => Boolean)

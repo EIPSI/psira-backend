@@ -11,4 +11,8 @@ export const defaultConfig: SettingDto = {
     maxLoginAttempts: 5,
     sendWelcomeEmails: true,
     welcomeEmailTemplateId: null,
+    googleCalendarEnabled: false,
+    googleCalendarClientId: '',
+    googleCalendarClientSecret: '',
+    googleCalendarRedirectUri: '',
 };

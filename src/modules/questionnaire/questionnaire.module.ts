@@ -37,6 +37,7 @@ import {
 } from './models/questionnaire-bundle.schema';
 import { QuestionnaireBundleResolver } from './resolvers/questionnaire-bundle.resolver';
 import { QuestionnaireBundleService } from './services/questionnaire-bundle.service';
+import { QuestionnaireBundleResolutionService } from './services/questionnaire-bundle-resolution.service';
 
 const guards = [GqlAuthGuard, PermissionGuard]; 
 
@@ -110,6 +111,7 @@ const guards = [GqlAuthGuard, PermissionGuard];
         AssessmentResolver,
         QuestionnaireBundleResolver,
         QuestionnaireBundleService,
+        QuestionnaireBundleResolutionService,
     ],
     exports: [QuestionnaireScriptService],
 })

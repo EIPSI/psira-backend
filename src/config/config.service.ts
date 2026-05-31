@@ -27,6 +27,18 @@ class ConfigService {
         return this.getValue('APP_URL') ?? 'http://localhost:3000/';
     }
 
+    public getGoogleClientId(throwOnMissing = true) {
+        return this.getValue('GOOGLE_CLIENT_ID', throwOnMissing);
+    }
+
+    public getGoogleClientSecret(throwOnMissing = true) {
+        return this.getValue('GOOGLE_CLIENT_SECRET', throwOnMissing);
+    }
+
+    public getGoogleRedirectUri(throwOnMissing = true) {
+        return this.getValue('GOOGLE_REDIRECT_URI', throwOnMissing);
+    }
+
     public getPort() {
         return this.getValue('SERVER_PORT', true);
     }

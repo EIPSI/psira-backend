@@ -1,6 +1,5 @@
 import { FilterableField } from '@nestjs-query/query-graphql';
 import { Field, GraphQLISODateTime, InputType, Int } from '@nestjs/graphql';
-import { ArrayNotEmpty } from 'class-validator';
 import { Types } from 'mongoose';
 
 @InputType()
@@ -31,6 +30,9 @@ export class Dates {
 
     @Field(() => GraphQLISODateTime, { nullable: true })
     deliveryDate: Date;
+
+    @Field(() => [Int], { nullable: true })
+    reminderMinutes?: number[];
 }
 
 @InputType()
@@ -65,8 +67,7 @@ export class CreateFullAssessmentInput {
     @Field(() => String, { nullable: true })
     informantCaregiverRelation?: string;
 
-    @Field(() => [String])
-    @ArrayNotEmpty()
+    @Field(() => [String], { nullable: true })
     questionnaires: Types.ObjectId[];
 
     @Field(() => [String], { nullable: true })
@@ -80,6 +81,9 @@ export class CreateFullAssessmentInput {
 
     @Field(() => String, { nullable: true })
     receiverEmail: string;
+
+    @Field(() => [Int], { nullable: true })
+    reminderMinutes?: number[];
 }
 
 @InputType()

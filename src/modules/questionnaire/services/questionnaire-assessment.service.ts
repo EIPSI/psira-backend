@@ -3,10 +3,7 @@ import { isValidObjectId, Model, Types } from 'mongoose';
 import { AnswerAssessmentInput } from '../dtos/assessment.input';
 import { Answer } from '../models/answer.schema';
 import { QuestionnaireAssessment } from '../models/questionnaire-assessment.schema';
-import {
-    QuestionnaireStatus,
-    Questionnaire,
-} from '../models/questionnaire.schema';
+import { Questionnaire, QuestionnaireStatus } from '../models/questionnaire.schema';
 import { QuestionValidatorFactory } from '../helpers/question-validator.factory';
 import { AssessmentStatus } from '../enums/assessment-status.enum';
 import { UserInputError } from 'apollo-server-express';
@@ -14,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Assessment } from 'src/modules/assessment/models/assessment.model';
 import { Repository } from 'typeorm';
 import { QuestionnaireBundle } from '../models/questionnaire-bundle.schema';
+import { QuestionnaireBundleResolutionService } from './questionnaire-bundle-resolution.service';
 
 export class QuestionnaireAssessmentService {
     constructor(
@@ -25,36 +23,22 @@ export class QuestionnaireAssessmentService {
         private questionnaireModel: Model<Questionnaire>,
         @InjectRepository(Assessment)
         private assessmentRepository: Repository<Assessment>,
+        private questionnaireBundleResolutionService: QuestionnaireBundleResolutionService,
     ) {}
 
     async createNewAssessment(
         questionnaires: Types.ObjectId[],
         questionnaireBundles?: Types.ObjectId[],
     ) {
-        await Promise.all(
-            questionnaires.map(async versionId => {
-                const questionnaireVersion = await this.questionnaireModel.findById(
-                    versionId,
-                );
-
-                if (
-                    ![
-                        QuestionnaireStatus.PRIVATE,
-                        QuestionnaireStatus.PUBLISHED,
-                    ].includes(questionnaireVersion.status)
-                ) {
-                    throw new Error(
-                        `${questionnaireVersion.name} has status ${questionnaireVersion.status} and cannot be added to assessment.`,
-                    );
-                }
-
-                return questionnaireVersion;
-            }),
+        const resolvedSequence = await this.questionnaireBundleResolutionService.resolveQuestionnaireSequence(
+            questionnaires || [],
+            questionnaireBundles || [],
         );
 
         return this.assessmentModel.create({
-            questionnaires,
+            questionnaires: resolvedSequence.questionnaireIds,
             questionnaireBundles,
+            resolvedQuestionnaires: resolvedSequence.resolvedQuestionnaires,
         });
     }
 
@@ -91,8 +75,8 @@ export class QuestionnaireAssessmentService {
 
         if (
             !questionnaire ||
-            !(foundAssessment.questionnaires as Types.ObjectId[]).includes(
-                questionnaire._id,
+            !(foundAssessment.questionnaires as Types.ObjectId[]).some(
+                questionnaireId => questionnaireId.toString() === questionnaire._id.toString(),
             ) ||
             ![
                 QuestionnaireStatus.PUBLISHED,
@@ -117,12 +101,15 @@ export class QuestionnaireAssessmentService {
         }
 
         const answerExisting = foundAssessment.answers.find(
-            item => item.question === assessmentAnswerInput.question,
+            item =>
+                item.question?.toString() === assessmentAnswerInput.question?.toString() &&
+                (item.occurrenceId || null) === (assessmentAnswerInput.occurrenceId || null),
         );
 
         const answer = answerExisting ?? new this.answerModel();
 
         answer.question = assessmentAnswerInput.question;
+        answer.occurrenceId = assessmentAnswerInput.occurrenceId;
         answer.multipleChoiceValue = assessmentAnswerInput.multipleChoiceValue;
         answer.booleanValue = assessmentAnswerInput.booleanValue;
         answer.textValue = assessmentAnswerInput.textValue;
@@ -228,6 +215,7 @@ export class QuestionnaireAssessmentService {
     async updateAssessment(
         assessmentId: Types.ObjectId | QuestionnaireAssessment,
         questionnaires: Types.ObjectId[],
+        questionnaireBundles?: Types.ObjectId[],
     ) {
         let questionnaireAssessment: QuestionnaireAssessment;
 
@@ -240,7 +228,14 @@ export class QuestionnaireAssessmentService {
             questionnaireAssessment = assessmentId as QuestionnaireAssessment;
         }
 
-        questionnaireAssessment.questionnaires = questionnaires;
+        const resolvedSequence = await this.questionnaireBundleResolutionService.resolveQuestionnaireSequence(
+            questionnaires || [],
+            questionnaireBundles || [],
+        );
+
+        questionnaireAssessment.questionnaires = resolvedSequence.questionnaireIds;
+        questionnaireAssessment.questionnaireBundles = questionnaireBundles || [];
+        questionnaireAssessment.resolvedQuestionnaires = resolvedSequence.resolvedQuestionnaires;
         return questionnaireAssessment.save();
     }
 }

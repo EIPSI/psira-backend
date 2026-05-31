@@ -10,7 +10,7 @@ import { applyQuery } from '@nestjs-query/core';
 import { User } from 'src/modules/user/models/user.model';
 import { Department } from 'src/modules/department/models/department.model';
 import { In } from 'typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 export class QuestionnaireBundleService {
     constructor(
@@ -22,7 +22,7 @@ export class QuestionnaireBundleService {
         return this.questionnaireBundleModel
             .findById(_id)
             .populate({
-                path: 'questionnaires',
+                path: 'structure.questionnaireId',
                 model: Questionnaire.name,
             })
             .exec();
@@ -30,16 +30,20 @@ export class QuestionnaireBundleService {
 
     async createQuestionnaireBundle(input: CreateQuestionnaireBundleInput, currentUser: User) {
 
-        const departments = await Department.count({ where: { id: In(input.departmentIds) }});
+        const departmentIds = input.departmentIds || [];
+        const departments = await Department.count({ where: { id: In(departmentIds) }});
 
-        if (input.departmentIds.length !== departments) {
+        if (departmentIds.length !== departments) {
             throw new NotFoundException('One of the departments does not exist!')
         }
 
         const newQuestionnaireBundle = new this.questionnaireBundleModel();
+        const structure = this.structureFromInput(input);
         newQuestionnaireBundle.name = input.name;
-        newQuestionnaireBundle.questionnaires = input.questionnaireIds;
-        newQuestionnaireBundle.departmentIds = input.departmentIds;
+        newQuestionnaireBundle.structure = structure;
+        newQuestionnaireBundle.structureJson = JSON.stringify(structure);
+        newQuestionnaireBundle.departmentIds = departmentIds;
+        newQuestionnaireBundle.active = input.active !== false;
         newQuestionnaireBundle.author = currentUser.id
         const questionnaire = await newQuestionnaireBundle.save()
 
@@ -56,7 +60,7 @@ export class QuestionnaireBundleService {
         const questionnaireBundles: QuestionnaireBundle[] = await this.questionnaireBundleModel
             .find(findQuery)
             .populate({
-                path: 'questionnaires',
+                path: 'structure.questionnaireId',
                 model: Questionnaire.name,
             });
 
@@ -84,18 +88,35 @@ export class QuestionnaireBundleService {
             throw new NotFoundException();
         }
 
-        const departments = await Department.count({ where: { id: In(input.departmentIds) }});
+        const departmentIds = input.departmentIds || [];
+        const departments = await Department.count({ where: { id: In(departmentIds) }});
 
-        if (input.departmentIds.length !== departments) {
+        if (departmentIds.length !== departments) {
             throw new NotFoundException('One of the departments does not exist!')
         }
 
+        const structure = this.structureFromInput(restInput);
         questionnaireBundle.name = restInput.name;
-        questionnaireBundle.questionnaires = restInput.questionnaireIds;
-        questionnaireBundle.departmentIds = restInput.departmentIds;
+        questionnaireBundle.structure = structure;
+        questionnaireBundle.structureJson = JSON.stringify(structure);
+        questionnaireBundle.departmentIds = departmentIds;
+        questionnaireBundle.active = restInput.active !== false;
+        questionnaireBundle.markModified('structure');
 
         await questionnaireBundle.save();
 
         return this.getById(id)
+    }
+
+    private structureFromInput(input: Pick<CreateQuestionnaireBundleInput, 'structure' | 'structureJson'>) {
+        if (input.structureJson) {
+            try {
+                return JSON.parse(input.structureJson);
+            } catch {
+                throw new BadRequestException('Invalid questionnaire bundle structure');
+            }
+        }
+
+        return input.structure || [];
     }
 }

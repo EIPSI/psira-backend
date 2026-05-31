@@ -19,6 +19,11 @@ import {
   Questionnaire,
   QuestionnaireSchema,
 } from '../questionnaire/models/questionnaire.schema';
+import {
+  QuestionnaireBundle,
+  QuestionnaireBundleSchema,
+} from '../questionnaire/models/questionnaire-bundle.schema';
+import { QuestionnaireBundleResolutionService } from '../questionnaire/services/questionnaire-bundle-resolution.service';
 import { SettingModule } from '../setting/setting.module';
 
 @Module({
@@ -40,6 +45,10 @@ import { SettingModule } from '../setting/setting.module';
               name: Questionnaire.name,
               schema: QuestionnaireSchema,
           },
+          {
+              name: QuestionnaireBundle.name,
+              schema: QuestionnaireBundleSchema,
+          },
         ]),
       ],
       resolvers: [
@@ -55,7 +64,13 @@ import { SettingModule } from '../setting/setting.module';
       ],
     }),
   ],
-  providers: [MailResolver, MailTemplateService, SendMailService, QuestionnaireAssessmentService],
+  providers: [
+    MailResolver,
+    MailTemplateService,
+    SendMailService,
+    QuestionnaireAssessmentService,
+    QuestionnaireBundleResolutionService,
+  ],
   exports: [SendMailService]
 })
 export class MailModule {}

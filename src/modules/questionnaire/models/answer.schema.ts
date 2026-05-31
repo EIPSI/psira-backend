@@ -17,6 +17,10 @@ export class Answer extends Document {
     })
     question: Types.ObjectId;
 
+    @Field(() => String, { nullable: true })
+    @Prop()
+    occurrenceId?: string;
+
     @Field(() => Boolean, { nullable: true })
     @Prop()
     valid: boolean;

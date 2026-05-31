@@ -17,6 +17,11 @@ import {
     Questionnaire,
     QuestionnaireSchema,
 } from '../questionnaire/models/questionnaire.schema';
+import {
+    QuestionnaireBundle,
+    QuestionnaireBundleSchema,
+} from '../questionnaire/models/questionnaire-bundle.schema';
+import { QuestionnaireBundleResolutionService } from '../questionnaire/services/questionnaire-bundle-resolution.service';
 import { PatientModule } from '../patient/patient.module';
 import { PublicAssessmentResolver } from './resolvers/public.assesment.resolver';
 import { User } from '../user/models/user.model';
@@ -51,6 +56,10 @@ const guards = [GqlAuthGuard, PermissionGuard];
                         name: Questionnaire.name,
                         schema: QuestionnaireSchema,
                     },
+                    {
+                        name: QuestionnaireBundle.name,
+                        schema: QuestionnaireBundleSchema,
+                    },
                 ]),
             ],
             // describe the resolvers you want to expose
@@ -75,7 +84,9 @@ const guards = [GqlAuthGuard, PermissionGuard];
         AssessmentTypeResolver,
         AssessmentResolver,
         QuestionnaireAssessmentService,
+        QuestionnaireBundleResolutionService,
         PublicAssessmentResolver,
     ],
+    exports: [AssessmentService],
 })
 export class AssessmentModule {}

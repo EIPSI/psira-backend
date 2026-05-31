@@ -22,6 +22,9 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { MailModule } from './modules/mail/mail.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { CalendarModule } from './modules/calendar/calendar.module';
+import { ClinicalSessionModule } from './modules/clinical-session/clinical-session.module';
+import { EvaluationSchemeModule } from './modules/evaluation-scheme/evaluation-scheme.module';
 
 @Module({
     imports: [
@@ -74,6 +77,9 @@ import { ScheduleModule } from '@nestjs/schedule';
         ReportModule,
         DisclaimerModule,
         MailModule,
+        CalendarModule,
+        ClinicalSessionModule,
+        EvaluationSchemeModule,
     ],
     controllers: [],
     providers: [],
