@@ -1,6 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Model, Types } from 'mongoose';
 import { In, Repository } from 'typeorm';
+import { applyQuery } from '@nestjs-query/core';
 import { Department } from 'src/modules/department/models/department.model';
 import {
     AddSchemeResourceTemplateInput,
@@ -18,6 +21,19 @@ import { IndependentEvaluationTemplate } from '../models/independent-evaluation-
 import { EvaluationScheme } from '../models/evaluation-scheme.model';
 import { SchemeResourceTemplate } from '../models/scheme-resource-template.model';
 import { SchemeSessionTemplate } from '../models/scheme-session-template.model';
+import { Questionnaire } from 'src/modules/questionnaire/models/questionnaire.schema';
+import { QuestionnaireBundle } from 'src/modules/questionnaire/models/questionnaire-bundle.schema';
+import { RandomizationRule } from 'src/modules/randomization/models/randomization-rule.model';
+import { User } from 'src/modules/user/models/user.model';
+import {
+    DepartmentAccessScope,
+    UserDepartmentAccessService,
+} from 'src/modules/user/services/user-department-access.service';
+import {
+    areDepartmentsCompatible,
+    coversAllSelectedDepartments,
+    uniqueDepartmentIds,
+} from 'src/shared/department-compatibility';
 
 @Injectable()
 export class EvaluationSchemeManagementService {
@@ -30,7 +46,42 @@ export class EvaluationSchemeManagementService {
         private readonly resourceTemplateRepository: Repository<SchemeResourceTemplate>,
         @InjectRepository(IndependentEvaluationTemplate)
         private readonly independentTemplateRepository: Repository<IndependentEvaluationTemplate>,
+        @InjectRepository(RandomizationRule)
+        private readonly randomizationRuleRepository: Repository<RandomizationRule>,
+        @InjectModel(Questionnaire.name)
+        private readonly questionnaireModel: Model<Questionnaire>,
+        @InjectModel(QuestionnaireBundle.name)
+        private readonly questionnaireBundleModel: Model<QuestionnaireBundle>,
+        private readonly userDepartmentAccessService: UserDepartmentAccessService,
     ) {}
+
+    async listSchemes(query: any, departmentIds: number[] = [], currentUser: User): Promise<EvaluationScheme[]> {
+        const access = await this.userDepartmentAccessService.getUserDepartmentAccess(currentUser.id);
+        const explicitDepartmentIds = uniqueDepartmentIds(departmentIds);
+        const accessDepartmentIds = uniqueDepartmentIds(access.departmentIds);
+
+        const schemes = await this.schemeRepository.find({
+            relations: [
+                'departments',
+                'sessionTemplates',
+                'sessionTemplates.resourceTemplates',
+                'independentEvaluationTemplates',
+            ],
+        });
+
+        const filteredSchemes = schemes.filter(scheme => {
+            const schemeDepartmentIds = scheme.departments?.map(department => department.id) || [];
+            const matchesUserScope = access.scope === DepartmentAccessScope.ALL ||
+                !schemeDepartmentIds.length ||
+                schemeDepartmentIds.some(id => accessDepartmentIds.includes(id));
+            const matchesExplicitFilter = !explicitDepartmentIds.length ||
+                areDepartmentsCompatible(explicitDepartmentIds, schemeDepartmentIds);
+
+            return matchesUserScope && matchesExplicitFilter;
+        });
+
+        return applyQuery(filteredSchemes, query);
+    }
 
     async createScheme(input: CreateEvaluationSchemeInput): Promise<EvaluationScheme> {
         this.validateSchemeTemplateShape(input);
@@ -96,6 +147,7 @@ export class EvaluationSchemeManagementService {
 
         await this.schemeRepository.save(scheme);
         if (input.departmentIds !== undefined) {
+            await this.validateExistingSchemeContent(input.id, input.departmentIds);
             await this.setSchemeDepartments(scheme.id, input.departmentIds);
         }
         return this.getSchemeOrFail(scheme.id);
@@ -184,7 +236,8 @@ export class EvaluationSchemeManagementService {
         if (!sessionTemplate) {
             throw new NotFoundException('Session template not found');
         }
-        this.validateResourceTemplateInput(input);
+        const schemeDepartmentIds = await this.getSchemeDepartmentIds(sessionTemplate.schemeId);
+        await this.validateResourceTemplateInput(input, schemeDepartmentIds);
 
         return this.resourceTemplateRepository.save(
             this.resourceTemplateRepository.create({
@@ -201,7 +254,9 @@ export class EvaluationSchemeManagementService {
         if (!resourceTemplate) {
             throw new NotFoundException('Resource template not found');
         }
-        this.validateResourceTemplateInput(input);
+        const existingSessionTemplate = await this.sessionTemplateRepository.findOne(resourceTemplate.sessionTemplateId);
+        const schemeDepartmentIds = await this.getSchemeDepartmentIds(existingSessionTemplate?.schemeId);
+        await this.validateResourceTemplateInput(input, schemeDepartmentIds);
 
         Object.assign(resourceTemplate, this.mapResourceTemplateInput(input));
         await this.resourceTemplateRepository.save(resourceTemplate);
@@ -231,7 +286,8 @@ export class EvaluationSchemeManagementService {
             input.schemeId,
             EvaluationSchemeType.INDEPENDENT_EVALUATION,
         );
-        this.validateIndependentTemplateInput(input);
+        const schemeDepartmentIds = await this.getSchemeDepartmentIds(input.schemeId);
+        await this.validateIndependentTemplateInput(input, schemeDepartmentIds);
 
         return this.independentTemplateRepository.save(
             this.independentTemplateRepository.create({
@@ -248,7 +304,8 @@ export class EvaluationSchemeManagementService {
         if (!template) {
             throw new NotFoundException('Independent evaluation template not found');
         }
-        this.validateIndependentTemplateInput(input);
+        const schemeDepartmentIds = await this.getSchemeDepartmentIds(template.schemeId);
+        await this.validateIndependentTemplateInput(input, schemeDepartmentIds);
 
         Object.assign(template, this.mapIndependentTemplateInput(input));
         await this.independentTemplateRepository.save(template);
@@ -322,6 +379,7 @@ export class EvaluationSchemeManagementService {
             assessmentTypeId: input.assessmentTypeId,
             questionnaireIds: input.questionnaireIds || [],
             questionnaireBundleIds: input.questionnaireBundleIds || [],
+            randomizationRuleIds: input.randomizationRuleIds || [],
             sessionSelector: input.sessionSelector,
             everyNSessions: input.everyNSessions,
             startSessionNumber: input.startSessionNumber,
@@ -349,6 +407,7 @@ export class EvaluationSchemeManagementService {
             assessmentTypeId: input.assessmentTypeId,
             questionnaireIds: input.questionnaireIds || [],
             questionnaireBundleIds: input.questionnaireBundleIds || [],
+            randomizationRuleIds: input.randomizationRuleIds || [],
             relativeDay: input.relativeDay || 0,
             relativeMinuteOfDay: startMinute,
             startMinuteOfDay: startMinute,
@@ -393,49 +452,145 @@ export class EvaluationSchemeManagementService {
             .addAndRemove(idsToAdd, idsToRemove);
     }
 
-    private validateResourceTemplateInput(input: SchemeResourceTemplateInput): void {
+    private async validateResourceTemplateInput(
+        input: SchemeResourceTemplateInput,
+        schemeDepartmentIds: number[] = [],
+    ): Promise<void> {
         const questionnaireCount = input.questionnaireIds?.length || 0;
         const bundleCount = input.questionnaireBundleIds?.length || 0;
+        const randomizationCount = input.randomizationRuleIds?.length || 0;
+        const totalSelectionCount = questionnaireCount + bundleCount + randomizationCount;
 
-        if (questionnaireCount && bundleCount) {
+        if (totalSelectionCount > 1) {
             throw new BadRequestException(
-                'Choose either one questionnaire or one questionnaire bundle, not both',
+                'Choose either one questionnaire, one questionnaire bundle, or one randomization',
             );
         }
 
-        if (questionnaireCount > 1 || bundleCount > 1) {
+        if (!totalSelectionCount) {
             throw new BadRequestException(
-                'Only one questionnaire or one questionnaire bundle can be selected',
+                'A questionnaire, questionnaire bundle, or randomization is required',
             );
         }
 
-        if (!questionnaireCount && !bundleCount) {
+        await this.validateContentDepartments(input, schemeDepartmentIds);
+    }
+
+    private async validateIndependentTemplateInput(
+        input: IndependentEvaluationTemplateInput,
+        schemeDepartmentIds: number[] = [],
+    ): Promise<void> {
+        const questionnaireCount = input.questionnaireIds?.length || 0;
+        const bundleCount = input.questionnaireBundleIds?.length || 0;
+        const randomizationCount = input.randomizationRuleIds?.length || 0;
+        const totalSelectionCount = questionnaireCount + bundleCount + randomizationCount;
+
+        if (totalSelectionCount > 1) {
             throw new BadRequestException(
-                'A questionnaire or questionnaire bundle is required',
+                'Choose either one questionnaire, one questionnaire bundle, or one randomization',
             );
+        }
+
+        if (!totalSelectionCount) {
+            throw new BadRequestException(
+                'A questionnaire, questionnaire bundle, or randomization is required',
+            );
+        }
+
+        await this.validateContentDepartments(input, schemeDepartmentIds);
+    }
+
+    private async getSchemeDepartmentIds(schemeId?: number): Promise<number[]> {
+        if (!schemeId) return [];
+        const scheme = await this.schemeRepository.findOne(schemeId, {
+            relations: ['departments'],
+        });
+        return scheme?.departments?.map(department => department.id) || [];
+    }
+
+    private async validateContentDepartments(
+        input: Pick<SchemeResourceTemplateInput, 'questionnaireIds' | 'questionnaireBundleIds' | 'randomizationRuleIds'>,
+        schemeDepartmentIds: number[],
+    ): Promise<void> {
+        if (input.questionnaireIds?.length) {
+            const questionnaires = await this.questionnaireModel.find({
+                _id: { $in: input.questionnaireIds.map(id => Types.ObjectId(id)) },
+                zombie: { $ne: true },
+            }).select('_id name departmentIds');
+            if (questionnaires.length !== input.questionnaireIds.length) {
+                throw new NotFoundException('One of the questionnaires does not exist');
+            }
+            const incompatibleQuestionnaire = questionnaires.find(questionnaire =>
+                !coversAllSelectedDepartments(schemeDepartmentIds, questionnaire.departmentIds),
+            );
+            if (incompatibleQuestionnaire) {
+                throw new BadRequestException(
+                    `Questionnaire "${incompatibleQuestionnaire.name}" is not compatible with the selected scheme departments`,
+                );
+            }
+        }
+
+        if (input.questionnaireBundleIds?.length) {
+            const bundles = await this.questionnaireBundleModel.find({
+                _id: { $in: input.questionnaireBundleIds.map(id => Types.ObjectId(id)) },
+                deleted: { $ne: true },
+            }).select('_id name departmentIds');
+            if (bundles.length !== input.questionnaireBundleIds.length) {
+                throw new NotFoundException('One of the questionnaire bundles does not exist');
+            }
+            const incompatibleBundle = bundles.find(bundle =>
+                !coversAllSelectedDepartments(schemeDepartmentIds, bundle.departmentIds),
+            );
+            if (incompatibleBundle) {
+                throw new BadRequestException(
+                    `Questionnaire bundle "${incompatibleBundle.name}" is not compatible with the selected scheme departments`,
+                );
+            }
+        }
+
+        if (input.randomizationRuleIds?.length) {
+            const randomizations = await this.randomizationRuleRepository.find({
+                where: { id: In(input.randomizationRuleIds) },
+                relations: ['departments'],
+            });
+            if (randomizations.length !== input.randomizationRuleIds.length) {
+                throw new NotFoundException('One of the randomizations does not exist');
+            }
+            const incompatibleRandomization = randomizations.find(randomization =>
+                !coversAllSelectedDepartments(
+                    schemeDepartmentIds,
+                    randomization.departments?.map(department => department.id) || [],
+                ),
+            );
+            if (incompatibleRandomization) {
+                throw new BadRequestException(
+                    `Randomization "${incompatibleRandomization.name}" is not compatible with the selected scheme departments`,
+                );
+            }
         }
     }
 
-    private validateIndependentTemplateInput(input: IndependentEvaluationTemplateInput): void {
-        const questionnaireCount = input.questionnaireIds?.length || 0;
-        const bundleCount = input.questionnaireBundleIds?.length || 0;
+    private async validateExistingSchemeContent(
+        schemeId: number,
+        schemeDepartmentIds: number[],
+    ): Promise<void> {
+        const scheme = await this.schemeRepository.findOne(schemeId, {
+            relations: [
+                'sessionTemplates',
+                'sessionTemplates.resourceTemplates',
+                'independentEvaluationTemplates',
+            ],
+        });
+        if (!scheme) throw new NotFoundException('Evaluation scheme not found');
 
-        if (questionnaireCount && bundleCount) {
-            throw new BadRequestException(
-                'Choose either one questionnaire or one questionnaire bundle, not both',
-            );
+        for (const sessionTemplate of scheme.sessionTemplates || []) {
+            for (const resourceTemplate of sessionTemplate.resourceTemplates || []) {
+                await this.validateContentDepartments(resourceTemplate, schemeDepartmentIds);
+            }
         }
 
-        if (questionnaireCount > 1 || bundleCount > 1) {
-            throw new BadRequestException(
-                'Only one questionnaire or one questionnaire bundle can be selected',
-            );
-        }
-
-        if (!questionnaireCount && !bundleCount) {
-            throw new BadRequestException(
-                'A questionnaire or questionnaire bundle is required',
-            );
+        for (const independentTemplate of scheme.independentEvaluationTemplates || []) {
+            await this.validateContentDepartments(independentTemplate, schemeDepartmentIds);
         }
     }
 }

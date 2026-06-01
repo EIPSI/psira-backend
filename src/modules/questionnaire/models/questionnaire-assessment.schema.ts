@@ -50,6 +50,10 @@ export class QuestionnaireAssessment extends Document {
     @Prop({ type: [Types.ObjectId], ref: QuestionnaireBundle.name })
     questionnaireBundles: Types.ObjectId[] | QuestionnaireBundle[];
 
+    @Field(() => [Number], { nullable: true })
+    @Prop({ type: [Number], default: [] })
+    randomizationRuleIds: number[];
+
     @Field(() => [ResolvedQuestionnaire], { nullable: true })
     @Prop({ type: [Object], default: [] })
     resolvedQuestionnaires: ResolvedQuestionnaire[];

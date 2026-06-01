@@ -41,13 +41,14 @@ export class QuestionnaireBundleResolver {
         @Args() query: QuestionniareBundleQuery,
         @Args('departmentIds', { type: () => [Number], nullable: true })
         departmentIds: number[],
+        @CurrentUser() currentUser: User,
     ) {
         query.sorting = query.sorting?.length
             ? query.sorting
             : [{ field: '_id', direction: SortDirection.DESC }];
 
         const result = await QuestionnaireBundleConnection.createFromPromise(
-            q => this.questionnaireBundleService.list(q, departmentIds),
+            q => this.questionnaireBundleService.list(q, departmentIds, currentUser),
             query,
         );
         return result;
@@ -73,7 +74,10 @@ export class QuestionnaireBundleResolver {
 
     @Mutation(() => QuestionnaireBundle)
     @UsePermission(PermissionEnum.MANAGE_QUESTIONNAIRES)
-    updateQuestionnaireBundle(@Args('input') input: UpdateQuestionnaireBundleInput) {
-        return this.questionnaireBundleService.updateQuestionnaireBundle(input)
+    updateQuestionnaireBundle(
+        @Args('input') input: UpdateQuestionnaireBundleInput,
+        @CurrentUser() currentUser: User,
+    ) {
+        return this.questionnaireBundleService.updateQuestionnaireBundle(input, currentUser)
     }
 }

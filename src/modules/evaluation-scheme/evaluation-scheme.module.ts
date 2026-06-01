@@ -1,6 +1,7 @@
 import { NestjsQueryGraphQLModule } from '@nestjs-query/query-graphql';
 import { NestjsQueryTypeOrmModule } from '@nestjs-query/query-typeorm';
 import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
 import { AssessmentType } from '../assessment/models/assessment-type.model';
 import { AssessmentModule } from '../assessment/assessment.module';
 import { Assessment } from '../assessment/models/assessment.model';
@@ -21,6 +22,17 @@ import { SchemeResourceTemplate } from './models/scheme-resource-template.model'
 import { SchemeSessionTemplate } from './models/scheme-session-template.model';
 import { EvaluationSchemeManagementService } from './services/evaluation-scheme-management.service';
 import { SchemeGenerationService } from './services/scheme-generation.service';
+import { RandomizationModule } from '../randomization/randomization.module';
+import { UserModule } from '../user/user.module';
+import { RandomizationRule } from '../randomization/models/randomization-rule.model';
+import {
+    Questionnaire,
+    QuestionnaireSchema,
+} from '../questionnaire/models/questionnaire.schema';
+import {
+    QuestionnaireBundle,
+    QuestionnaireBundleSchema,
+} from '../questionnaire/models/questionnaire-bundle.schema';
 
 const guards = [GqlAuthGuard, PermissionGuard];
 
@@ -28,6 +40,8 @@ const guards = [GqlAuthGuard, PermissionGuard];
     imports: [
         AssessmentModule,
         ClinicalSessionModule,
+        RandomizationModule,
+        UserModule,
         NestjsQueryGraphQLModule.forFeature({
             imports: [
                 NestjsQueryTypeOrmModule.forFeature([
@@ -43,6 +57,17 @@ const guards = [GqlAuthGuard, PermissionGuard];
                     ClinicalSessionResource,
                     Patient,
                     User,
+                    RandomizationRule,
+                ]),
+                MongooseModule.forFeature([
+                    {
+                        name: Questionnaire.name,
+                        schema: QuestionnaireSchema,
+                    },
+                    {
+                        name: QuestionnaireBundle.name,
+                        schema: QuestionnaireBundleSchema,
+                    },
                 ]),
             ],
             resolvers: [
@@ -50,7 +75,7 @@ const guards = [GqlAuthGuard, PermissionGuard];
                     DTOClass: EvaluationScheme,
                     EntityClass: EvaluationScheme,
                     guards,
-                    read: { disabled: false },
+                    read: { disabled: true },
                     create: { disabled: true },
                     update: { disabled: true },
                     delete: { disabled: true },

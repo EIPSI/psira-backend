@@ -22,6 +22,9 @@ export class CreateClinicalSessionResourceInput {
     @Field(() => [String], { nullable: true })
     questionnaireBundles?: string[];
 
+    @Field(() => [Int], { nullable: true })
+    randomizationRuleIds?: number[];
+
     @Field(() => Int, { nullable: true })
     responderUserId?: number;
 

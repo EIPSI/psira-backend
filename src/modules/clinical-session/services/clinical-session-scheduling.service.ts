@@ -462,6 +462,7 @@ export class ClinicalSessionSchedulingService {
                 assessmentTypeId: resourceTemplate.assessmentTypeId,
                 questionnaires: resourceTemplate.questionnaireIds || [],
                 questionnaireBundles: resourceTemplate.questionnaireBundleIds || [],
+                randomizationRuleIds: resourceTemplate.randomizationRuleIds || [],
                 responderUserId,
                 clinicianId,
                 informantType: resourceTemplate.informantType,
@@ -649,6 +650,7 @@ export class ClinicalSessionSchedulingService {
                 note: resourceInput.note,
                 questionnaires: resourceInput.questionnaires || [],
                 questionnaireBundles: resourceInput.questionnaireBundles || [],
+                randomizationRuleIds: resourceInput.randomizationRuleIds || [],
                 dates: [
                     {
                         deliveryDate: resource.activationAt,

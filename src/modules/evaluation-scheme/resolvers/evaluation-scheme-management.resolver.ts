@@ -1,5 +1,8 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Int, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, ArgsType, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { QueryArgsType } from '@nestjs-query/query-graphql';
+import { SortDirection } from '@nestjs-query/core';
+import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
 import { UsePermission } from 'src/modules/permission/decorators/permission.decorator';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
@@ -18,6 +21,11 @@ import { EvaluationScheme } from '../models/evaluation-scheme.model';
 import { SchemeResourceTemplate } from '../models/scheme-resource-template.model';
 import { SchemeSessionTemplate } from '../models/scheme-session-template.model';
 import { EvaluationSchemeManagementService } from '../services/evaluation-scheme-management.service';
+import { User } from 'src/modules/user/models/user.model';
+
+@ArgsType()
+export class EvaluationSchemeQuery extends QueryArgsType(EvaluationScheme) {}
+const EvaluationSchemeConnection = EvaluationSchemeQuery.ConnectionType;
 
 @Resolver(() => EvaluationScheme)
 @UseGuards(GqlAuthGuard, PermissionGuard)
@@ -25,6 +33,24 @@ export class EvaluationSchemeManagementResolver {
     constructor(
         private readonly managementService: EvaluationSchemeManagementService,
     ) {}
+
+    @Query(() => EvaluationSchemeConnection)
+    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    async evaluationSchemes(
+        @Args() query: EvaluationSchemeQuery,
+        @Args('departmentIds', { type: () => [Int], nullable: true })
+        departmentIds: number[],
+        @CurrentUser() currentUser: User,
+    ) {
+        query.sorting = query.sorting?.length
+            ? query.sorting
+            : [{ field: 'id', direction: SortDirection.DESC }];
+
+        return EvaluationSchemeConnection.createFromPromise(
+            q => this.managementService.listSchemes(q, departmentIds, currentUser),
+            query,
+        );
+    }
 
     @Mutation(() => EvaluationScheme)
     @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)

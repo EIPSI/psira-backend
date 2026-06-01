@@ -25,15 +25,19 @@ import {
 } from '../questionnaire/models/questionnaire-bundle.schema';
 import { QuestionnaireBundleResolutionService } from '../questionnaire/services/questionnaire-bundle-resolution.service';
 import { SettingModule } from '../setting/setting.module';
+import { User } from '../user/models/user.model';
+import { PermissionModule } from '../permission/permission.module';
 
 @Module({
   imports: [
     SettingModule,
+    PermissionModule,
     NestjsQueryGraphQLModule.forFeature({
       imports: [
         NestjsQueryTypeOrmModule.forFeature([
           MailTemplate,
-          Assessment
+          Assessment,
+          User,
         ]),
         MongooseModule.forFeature([
           {

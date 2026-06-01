@@ -38,6 +38,10 @@ export class IndependentEvaluationTemplate extends BaseEntity {
     @Column({ type: 'simple-json', nullable: true })
     questionnaireBundleIds?: string[];
 
+    @Field(() => [Int], { nullable: true })
+    @Column({ type: 'simple-json', nullable: true })
+    randomizationRuleIds?: number[];
+
     @Field(() => Int, { nullable: true })
     @Column({ nullable: true })
     relativeDay?: number;

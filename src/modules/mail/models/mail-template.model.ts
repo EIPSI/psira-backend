@@ -62,7 +62,7 @@ export class MailTemplate extends BaseEntity {
     isPublic: boolean;
 
     @ManyToMany(() => Department, department => department.mailTemplates)
-    departments: Department;
+    departments: Department[];
 
     @OneToMany(() => Assessment, assessment => assessment.mailTemplate)
     assessments: Assessment[]

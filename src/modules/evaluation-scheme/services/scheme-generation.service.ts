@@ -12,6 +12,7 @@ import { ClinicalSession } from 'src/modules/clinical-session/models/clinical-se
 import { ClinicalSessionSchedulingService } from 'src/modules/clinical-session/services/clinical-session-scheduling.service';
 import { Patient } from 'src/modules/patient/models/patient.model';
 import { AssessmentStatus } from 'src/modules/questionnaire/enums/assessment-status.enum';
+import { RandomizationResolutionService } from 'src/modules/randomization/services/randomization-resolution.service';
 import { User } from 'src/modules/user/models/user.model';
 import { Repository } from 'typeorm';
 import {
@@ -78,18 +79,30 @@ export class SchemeGenerationService {
         private readonly userRepository: Repository<User>,
         private readonly clinicalSessionSchedulingService: ClinicalSessionSchedulingService,
         private readonly assessmentService: AssessmentService,
+        private readonly randomizationResolutionService: RandomizationResolutionService,
     ) {}
 
     async applyScheme(
         input: ApplyEvaluationSchemeInput,
         currentUser?: User,
     ): Promise<EvaluationSchemeAssignment> {
-        const scheme = await this.schemeRepository.findOne(input.schemeId);
+        if (!!input.schemeId === !!input.randomizationRuleId) {
+            throw new BadRequestException(
+                'Apply scheme requires either schemeId or randomizationRuleId',
+            );
+        }
+
+        const scheme = input.randomizationRuleId
+            ? await this.randomizationResolutionService.resolveHighLevelScheme(
+                  input.randomizationRuleId,
+              )
+            : await this.schemeRepository.findOne(input.schemeId);
         if (!scheme) throw new NotFoundException('Evaluation scheme not found');
 
         const assignment = await this.assignmentRepository.save(
             this.assignmentRepository.create({
-                schemeId: input.schemeId,
+                schemeId: scheme.id,
+                randomizationRuleId: input.randomizationRuleId,
                 patientId: input.patientId,
                 targetUserId: input.targetUserId,
                 therapistId: input.therapistId,
@@ -301,6 +314,7 @@ export class SchemeGenerationService {
                 assessmentTypeId: resourceTemplate.assessmentTypeId,
                 questionnaires: resourceTemplate.questionnaireIds || [],
                 questionnaireBundles: resourceTemplate.questionnaireBundleIds || [],
+                randomizationRuleIds: resourceTemplate.randomizationRuleIds || [],
                 responderUserId: context.responderUserId,
                 clinicianId: context.clinicianId,
                 informantType: resourceTemplate.informantType,
@@ -347,6 +361,7 @@ export class SchemeGenerationService {
                 informantType: template.informantType,
                 questionnaires: template.questionnaireIds || [],
                 questionnaireBundles: template.questionnaireBundleIds || [],
+                randomizationRuleIds: template.randomizationRuleIds || [],
                 dates: [
                     {
                         deliveryDate: window.deliveryAt,

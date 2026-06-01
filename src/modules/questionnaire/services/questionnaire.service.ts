@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
@@ -17,6 +17,13 @@ import { FileUpload } from 'graphql-upload';
 import { applyQuery } from '@nestjs-query/core';
 import { QuestionniareQuery } from '../resolvers/questionnaire.resolver';
 import { FileData } from '../dtos/xlsform.dto';
+import { Department } from 'src/modules/department/models/department.model';
+import { In } from 'typeorm';
+import { User } from 'src/modules/user/models/user.model';
+import {
+    DepartmentAccessScope,
+    UserDepartmentAccessService,
+} from 'src/modules/user/services/user-department-access.service';
 
 @Injectable()
 export class QuestionnaireService {
@@ -27,9 +34,11 @@ export class QuestionnaireService {
         private questionGroupModel: Model<QuestionGroup>,
         @InjectModel(Question.name)
         private questionModel: Model<Question>,
+        private userDepartmentAccessService: UserDepartmentAccessService,
     ) {}
 
-    public async create(xlsForm: CreateQuestionnaireInput) {
+    public async create(xlsForm: CreateQuestionnaireInput, currentUser: User) {
+        await this.validateDepartmentAccess(currentUser, xlsForm.departmentIds || []);
         const fileData: FileData[] = await this.readFileUpload(
             await xlsForm.excelFile,
         );
@@ -40,7 +49,9 @@ export class QuestionnaireService {
     public async updateOne(
         _id: Types.ObjectId,
         xlsForm: UpdateQuestionnaireInput,
+        currentUser: User,
     ) {
+        await this.validateDepartmentAccess(currentUser, xlsForm.departmentIds || []);
         const version = await this.questionnaireModel.findById(_id)
 
         Object.entries(xlsForm).forEach(
@@ -59,9 +70,32 @@ export class QuestionnaireService {
         return this.questionnaireModel.findOne({ _id: questionnaireId })
     }
 
-    async list(query: QuestionniareQuery) {
+    async list(query: QuestionniareQuery, currentUser: User, departmentIds: number[] = []) {
+        const access = await this.userDepartmentAccessService.getUserDepartmentAccess(currentUser.id);
+        const scopeMatch = access.scope === DepartmentAccessScope.ALL
+            ? {}
+            : {
+                $or: [
+                    { departmentIds: { $in: access.departmentIds || [] } },
+                    { departmentIds: { $exists: false } },
+                    { departmentIds: { $size: 0 } },
+                ],
+            };
+        const explicitDepartmentIds = [...new Set(departmentIds || [])];
+        const selectedDepartmentsMatch = explicitDepartmentIds.length
+            ? {
+                $or: [
+                    { departmentIds: { $in: explicitDepartmentIds } },
+                    { departmentIds: { $exists: false } },
+                    { departmentIds: { $size: 0 } },
+                ],
+            }
+            : {};
+        const matchConditions = [scopeMatch, selectedDepartmentsMatch]
+            .filter(condition => Object.keys(condition).length);
+        const match = matchConditions.length ? { $and: matchConditions } : {};
         const questionnaires: Questionnaire[] = (
-            await this.questionnaireModel.aggregate().group({
+            await this.questionnaireModel.aggregate().match(match).group({
                 _id: '$_id',
                 createdAt: {
                     $last: '$createdAt',
@@ -98,6 +132,9 @@ export class QuestionnaireService {
                 },
                 abbreviation: {
                     $last: '$abbreviation'
+                },
+                departmentIds: {
+                    $last: '$departmentIds'
                 },
                 zombie: {
                     $last: '$zombie'
@@ -170,6 +207,7 @@ export class QuestionnaireService {
         createdQuestionnaire.language = questionnaireInput.language;
         createdQuestionnaire.abbreviation = settings.form_id;
         createdQuestionnaire.description = questionnaireInput.description;
+        createdQuestionnaire.departmentIds = questionnaireInput.departmentIds || [];
         createdQuestionnaire.zombie = false;
 
         let currentGroup: QuestionGroup = null;
@@ -198,6 +236,29 @@ export class QuestionnaireService {
         }
 
         return createdQuestionnaire.save();
+    }
+
+    private async validateDepartmentAccess(
+        currentUser: User,
+        departmentIds: number[],
+    ): Promise<void> {
+        const uniqueDepartmentIds = [...new Set(departmentIds || [])];
+        if (uniqueDepartmentIds.length) {
+            const departments = await Department.count({
+                where: { id: In(uniqueDepartmentIds) },
+            });
+            if (departments !== uniqueDepartmentIds.length) {
+                throw new NotFoundException('One of the departments does not exist');
+            }
+        }
+
+        const canAccess = await this.userDepartmentAccessService.canAccessDepartments(
+            currentUser.id,
+            uniqueDepartmentIds,
+        );
+        if (!canAccess) {
+            throw new ForbiddenException('Cannot assign questionnaire to these departments');
+        }
     }
 
     private readFileUpload(xlsForm: FileUpload): Promise<FileData[]> {

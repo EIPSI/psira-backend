@@ -30,6 +30,8 @@ import { AssessmentTypeService } from './services/assessment-type.service';
 import { AssessmentTypeResolver } from './resolvers/assessment-type.resolver';
 import { AssessmentType } from './models/assessment-type.model';
 import { Patient } from '../patient/models/patient.model';
+import { RandomizationModule } from '../randomization/randomization.module';
+import { RandomizationRule } from '../randomization/models/randomization-rule.model';
 
 const guards = [GqlAuthGuard, PermissionGuard];
 @Module({
@@ -44,6 +46,7 @@ const guards = [GqlAuthGuard, PermissionGuard];
                     Caregiver,
                     Patient,
                     AssessmentType,
+                    RandomizationRule,
                 ]),
 
                 MongooseModule.forFeature([
@@ -77,6 +80,7 @@ const guards = [GqlAuthGuard, PermissionGuard];
             ],
         }),
         PatientModule,
+        RandomizationModule,
     ],
     providers: [
         AssessmentService,

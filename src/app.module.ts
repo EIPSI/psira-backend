@@ -25,6 +25,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { CalendarModule } from './modules/calendar/calendar.module';
 import { ClinicalSessionModule } from './modules/clinical-session/clinical-session.module';
 import { EvaluationSchemeModule } from './modules/evaluation-scheme/evaluation-scheme.module';
+import { RandomizationModule } from './modules/randomization/randomization.module';
 
 @Module({
     imports: [
@@ -80,6 +81,7 @@ import { EvaluationSchemeModule } from './modules/evaluation-scheme/evaluation-s
         CalendarModule,
         ClinicalSessionModule,
         EvaluationSchemeModule,
+        RandomizationModule,
     ],
     controllers: [],
     providers: [],

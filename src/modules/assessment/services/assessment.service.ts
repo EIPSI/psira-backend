@@ -1,7 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Model } from 'mongoose';
 import { Types } from 'mongoose';
-import { getConnection, Repository } from 'typeorm';
+import { getConnection, In, Repository } from 'typeorm';
 import {
     CreateFullAssessmentInput,
     UpdateFullAssessmentInput,
@@ -31,6 +33,10 @@ import { AssessmentType } from '../models/assessment-type.model';
 import { AssessmentEmailStatus } from '../enums/assessment-emailstatus.enum';
 import { Validator } from 'src/shared';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
+import { Questionnaire } from 'src/modules/questionnaire/models/questionnaire.schema';
+import { QuestionnaireBundle } from 'src/modules/questionnaire/models/questionnaire-bundle.schema';
+import { RandomizationRule } from 'src/modules/randomization/models/randomization-rule.model';
+import { areDepartmentsCompatible } from 'src/shared/department-compatibility';
 
 @Injectable()
 export class AssessmentService {
@@ -47,6 +53,12 @@ export class AssessmentService {
         private readonly assessmentQueryService: QueryService<Assessment>,
         @InjectRepository(AssessmentType)
         private readonly assessmentTypeRepo: Repository<AssessmentType>,
+        @InjectRepository(RandomizationRule)
+        private readonly randomizationRuleRepository: Repository<RandomizationRule>,
+        @InjectModel(Questionnaire.name)
+        private readonly questionnaireModel: Model<Questionnaire>,
+        @InjectModel(QuestionnaireBundle.name)
+        private readonly questionnaireBundleModel: Model<QuestionnaireBundle>,
         private readonly patientQueryService: PatientQueryService,
         private readonly patientPermissionService: PatientPermissionService,
     ) {}
@@ -205,19 +217,14 @@ export class AssessmentService {
             if (!assessmentInput.responderUserId) {
                 throw new BadRequestException('Assessment must be assigned to a responder user');
             }
-            if (
-                !assessmentInput.questionnaires?.length &&
-                !assessmentInput.questionnaireBundles?.length
-            ) {
-                throw new BadRequestException(
-                    'Assessment must include questionnaires or questionnaire bundles',
-                );
-            }
+            this.validateAssessmentContentSelection(assessmentInput);
+            await this.validateAssessmentContentDepartments(assessmentInput);
 
             // Create mongo assessment
             const questionnaireAssessment = await this.questionnaireAssessmentService.createNewAssessment(
                 assessmentInput.questionnaires || [],
-                assessmentInput.questionnaireBundles || []
+                assessmentInput.questionnaireBundles || [],
+                assessmentInput.randomizationRuleIds || [],
             );
 
             const d1 = new Date(assessmentInput?.dates[i].deliveryDate),
@@ -381,6 +388,8 @@ export class AssessmentService {
         if (!assessmentInput.responderUserId) {
             throw new BadRequestException('Assessment must be assigned to a responder user');
         }
+        this.validateAssessmentContentSelection(assessmentInput);
+        await this.validateAssessmentContentDepartments(assessmentInput);
 
         // find & update mongo assessment
         let questionnaireAssessment = await this.questionnaireAssessmentService.getById(
@@ -392,6 +401,9 @@ export class AssessmentService {
         const originalQuestionnaireBundles = [
             ...(questionnaireAssessment.questionnaireBundles || []),
         ] as Types.ObjectId[];
+        const originalRandomizationRuleIds = [
+            ...(questionnaireAssessment.randomizationRuleIds || []),
+        ];
         const originalResolvedQuestionnaires = [
             ...(questionnaireAssessment.resolvedQuestionnaires || []),
         ];
@@ -399,6 +411,7 @@ export class AssessmentService {
             questionnaireAssessment,
             assessmentInput.questionnaires,
             assessmentInput.questionnaireBundles,
+            assessmentInput.randomizationRuleIds || [],
         );
 
         const d1 = new Date(assessmentInput?.deliveryDate),
@@ -475,6 +488,7 @@ export class AssessmentService {
             // undo mongo changes
             questionnaireAssessment.questionnaires = originalQuestionnaires;
             questionnaireAssessment.questionnaireBundles = originalQuestionnaireBundles;
+            questionnaireAssessment.randomizationRuleIds = originalRandomizationRuleIds;
             questionnaireAssessment.resolvedQuestionnaires = originalResolvedQuestionnaires;
             await questionnaireAssessment.save();
             throw err;
@@ -671,5 +685,110 @@ export class AssessmentService {
         if (!hasSharedDepartment && targetUser.id !== currentUser.id) {
             throw new BadRequestException('Assessment can only be assigned to a visible user.');
         }
+    }
+
+    private validateAssessmentContentSelection(
+        assessmentInput: Pick<CreateFullAssessmentInput, 'questionnaires' | 'questionnaireBundles' | 'randomizationRuleIds'>,
+    ): void {
+        const questionnaireCount = assessmentInput.questionnaires?.length || 0;
+        const bundleCount = assessmentInput.questionnaireBundles?.length || 0;
+        const randomizationCount = assessmentInput.randomizationRuleIds?.length || 0;
+        const totalSelectionCount = questionnaireCount + bundleCount + randomizationCount;
+
+        if (!totalSelectionCount) {
+            throw new BadRequestException(
+                'Assessment must include one questionnaire, one questionnaire bundle or one randomization',
+            );
+        }
+
+        if (totalSelectionCount > 1) {
+            throw new BadRequestException(
+                'Choose either one questionnaire, one questionnaire bundle, or one randomization',
+            );
+        }
+    }
+
+    private async validateAssessmentContentDepartments(
+        assessmentInput: Pick<CreateFullAssessmentInput, 'patientId' | 'targetUserId' | 'questionnaires' | 'questionnaireBundles' | 'randomizationRuleIds'>,
+    ): Promise<void> {
+        const targetDepartmentIds = await this.getAssessmentTargetDepartmentIds(
+            assessmentInput.patientId,
+            assessmentInput.targetUserId,
+        );
+
+        if (assessmentInput.questionnaires?.length) {
+            const questionnaires = await this.questionnaireModel.find({
+                _id: { $in: assessmentInput.questionnaires.map(id => Types.ObjectId(String(id))) },
+                zombie: { $ne: true },
+            }).select('_id name departmentIds');
+            if (questionnaires.length !== assessmentInput.questionnaires.length) {
+                throw new NotFoundException('One of the questionnaires does not exist');
+            }
+            const incompatibleQuestionnaire = questionnaires.find(questionnaire =>
+                !areDepartmentsCompatible(targetDepartmentIds, questionnaire.departmentIds),
+            );
+            if (incompatibleQuestionnaire) {
+                throw new BadRequestException(
+                    `Questionnaire "${incompatibleQuestionnaire.name}" is not compatible with the target departments`,
+                );
+            }
+        }
+
+        if (assessmentInput.questionnaireBundles?.length) {
+            const bundles = await this.questionnaireBundleModel.find({
+                _id: { $in: assessmentInput.questionnaireBundles.map(id => Types.ObjectId(String(id))) },
+                deleted: { $ne: true },
+            }).select('_id name departmentIds');
+            if (bundles.length !== assessmentInput.questionnaireBundles.length) {
+                throw new NotFoundException('One of the questionnaire bundles does not exist');
+            }
+            const incompatibleBundle = bundles.find(bundle =>
+                !areDepartmentsCompatible(targetDepartmentIds, bundle.departmentIds),
+            );
+            if (incompatibleBundle) {
+                throw new BadRequestException(
+                    `Questionnaire bundle "${incompatibleBundle.name}" is not compatible with the target departments`,
+                );
+            }
+        }
+
+        if (assessmentInput.randomizationRuleIds?.length) {
+            const randomizations = await this.randomizationRuleRepository.find({
+                where: { id: In(assessmentInput.randomizationRuleIds) },
+                relations: ['departments'],
+            });
+            if (randomizations.length !== assessmentInput.randomizationRuleIds.length) {
+                throw new NotFoundException('One of the randomizations does not exist');
+            }
+            const incompatibleRandomization = randomizations.find(randomization =>
+                !areDepartmentsCompatible(
+                    targetDepartmentIds,
+                    randomization.departments?.map(department => department.id) || [],
+                ),
+            );
+            if (incompatibleRandomization) {
+                throw new BadRequestException(
+                    `Randomization "${incompatibleRandomization.name}" is not compatible with the target departments`,
+                );
+            }
+        }
+    }
+
+    private async getAssessmentTargetDepartmentIds(patientId?: number, targetUserId?: number): Promise<number[]> {
+        if (patientId) {
+            const patient = await this.patientRepository.findOne(patientId, {
+                relations: ['departments'],
+            });
+            return patient?.departments?.map(department => department.id) || [];
+        }
+
+        if (targetUserId) {
+            const targetUser = await this.userRepository.findOne(targetUserId, {
+                relations: ['departments'],
+            });
+            return targetUser?.departments?.map(department => department.id) || [];
+        }
+
+        return [];
     }
 }

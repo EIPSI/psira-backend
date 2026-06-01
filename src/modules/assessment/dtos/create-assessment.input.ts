@@ -73,6 +73,9 @@ export class CreateFullAssessmentInput {
     @Field(() => [String], { nullable: true })
     questionnaireBundles: Types.ObjectId[];
 
+    @Field(() => [Int], { nullable: true })
+    randomizationRuleIds?: number[];
+
     @Field(() => [Dates])
     dates: Dates[]
 

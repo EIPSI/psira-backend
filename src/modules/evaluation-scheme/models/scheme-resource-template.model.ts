@@ -44,6 +44,10 @@ export class SchemeResourceTemplate extends BaseEntity {
     @Column({ type: 'simple-json', nullable: true })
     questionnaireBundleIds?: string[];
 
+    @Field(() => [Int], { nullable: true })
+    @Column({ type: 'simple-json', nullable: true })
+    randomizationRuleIds?: number[];
+
     @Field({ nullable: true })
     @Column({ nullable: true })
     sessionSelector?: string;

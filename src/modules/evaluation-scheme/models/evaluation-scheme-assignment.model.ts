@@ -34,6 +34,10 @@ export class EvaluationSchemeAssignment extends BaseEntity {
 
     @FilterableField(() => Int, { nullable: true })
     @Column({ nullable: true })
+    randomizationRuleId?: number;
+
+    @FilterableField(() => Int, { nullable: true })
+    @Column({ nullable: true })
     patientId?: number;
 
     @FilterableField(() => Int, { nullable: true })

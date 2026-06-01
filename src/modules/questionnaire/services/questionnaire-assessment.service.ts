@@ -7,11 +7,13 @@ import { Questionnaire, QuestionnaireStatus } from '../models/questionnaire.sche
 import { QuestionValidatorFactory } from '../helpers/question-validator.factory';
 import { AssessmentStatus } from '../enums/assessment-status.enum';
 import { UserInputError } from 'apollo-server-express';
+import { BadRequestException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Assessment } from 'src/modules/assessment/models/assessment.model';
 import { Repository } from 'typeorm';
 import { QuestionnaireBundle } from '../models/questionnaire-bundle.schema';
 import { QuestionnaireBundleResolutionService } from './questionnaire-bundle-resolution.service';
+import { RandomizationResolutionService } from 'src/modules/randomization/services/randomization-resolution.service';
 
 export class QuestionnaireAssessmentService {
     constructor(
@@ -24,20 +26,25 @@ export class QuestionnaireAssessmentService {
         @InjectRepository(Assessment)
         private assessmentRepository: Repository<Assessment>,
         private questionnaireBundleResolutionService: QuestionnaireBundleResolutionService,
+        @Optional()
+        private randomizationResolutionService?: RandomizationResolutionService,
     ) {}
 
     async createNewAssessment(
         questionnaires: Types.ObjectId[],
         questionnaireBundles?: Types.ObjectId[],
+        randomizationRuleIds?: number[],
     ) {
-        const resolvedSequence = await this.questionnaireBundleResolutionService.resolveQuestionnaireSequence(
+        const resolvedSequence = await this.resolveQuestionnaires(
             questionnaires || [],
             questionnaireBundles || [],
+            randomizationRuleIds || [],
         );
 
         return this.assessmentModel.create({
             questionnaires: resolvedSequence.questionnaireIds,
-            questionnaireBundles,
+            questionnaireBundles: resolvedSequence.questionnaireBundleIds,
+            randomizationRuleIds: randomizationRuleIds || [],
             resolvedQuestionnaires: resolvedSequence.resolvedQuestionnaires,
         });
     }
@@ -216,6 +223,7 @@ export class QuestionnaireAssessmentService {
         assessmentId: Types.ObjectId | QuestionnaireAssessment,
         questionnaires: Types.ObjectId[],
         questionnaireBundles?: Types.ObjectId[],
+        randomizationRuleIds?: number[],
     ) {
         let questionnaireAssessment: QuestionnaireAssessment;
 
@@ -228,14 +236,63 @@ export class QuestionnaireAssessmentService {
             questionnaireAssessment = assessmentId as QuestionnaireAssessment;
         }
 
-        const resolvedSequence = await this.questionnaireBundleResolutionService.resolveQuestionnaireSequence(
+        const resolvedSequence = await this.resolveQuestionnaires(
+            questionnaires || [],
+            questionnaireBundles || [],
+            randomizationRuleIds || [],
+        );
+
+        questionnaireAssessment.questionnaires = resolvedSequence.questionnaireIds;
+        questionnaireAssessment.questionnaireBundles = resolvedSequence.questionnaireBundleIds;
+        questionnaireAssessment.randomizationRuleIds = randomizationRuleIds || [];
+        questionnaireAssessment.resolvedQuestionnaires = resolvedSequence.resolvedQuestionnaires;
+        return questionnaireAssessment.save();
+    }
+
+    private async resolveQuestionnaires(
+        questionnaires: Types.ObjectId[],
+        questionnaireBundles: Types.ObjectId[],
+        randomizationRuleIds: number[],
+    ) {
+        const baseSequence = await this.questionnaireBundleResolutionService.resolveQuestionnaireSequence(
             questionnaires || [],
             questionnaireBundles || [],
         );
 
-        questionnaireAssessment.questionnaires = resolvedSequence.questionnaireIds;
-        questionnaireAssessment.questionnaireBundles = questionnaireBundles || [];
-        questionnaireAssessment.resolvedQuestionnaires = resolvedSequence.resolvedQuestionnaires;
-        return questionnaireAssessment.save();
+        if (!randomizationRuleIds?.length) {
+            return {
+                questionnaireIds: baseSequence.questionnaireIds,
+                questionnaireBundleIds: questionnaireBundles || [],
+                resolvedQuestionnaires: baseSequence.resolvedQuestionnaires,
+            };
+        }
+
+        if (!this.randomizationResolutionService) {
+            throw new BadRequestException('Randomization resolution is not available');
+        }
+
+        const randomizationSequence = await this.randomizationResolutionService.resolveLowLevelRules(
+            randomizationRuleIds,
+        );
+        const resolvedQuestionnaires = [...baseSequence.resolvedQuestionnaires];
+
+        resolvedQuestionnaires.push(
+            ...randomizationSequence.resolvedQuestionnaires.map(questionnaire => ({
+                ...questionnaire,
+                orderIndex: resolvedQuestionnaires.length + questionnaire.orderIndex,
+            })),
+        );
+
+        return {
+            questionnaireIds: [
+                ...baseSequence.questionnaireIds,
+                ...randomizationSequence.questionnaireIds,
+            ],
+            questionnaireBundleIds: [
+                ...(questionnaireBundles || []),
+                ...randomizationSequence.questionnaireBundleIds,
+            ],
+            resolvedQuestionnaires,
+        };
     }
 }

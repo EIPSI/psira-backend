@@ -2,8 +2,11 @@ import { Field, GraphQLISODateTime, InputType, Int } from '@nestjs/graphql';
 
 @InputType()
 export class ApplyEvaluationSchemeInput {
-    @Field(() => Int)
-    schemeId: number;
+    @Field(() => Int, { nullable: true })
+    schemeId?: number;
+
+    @Field(() => Int, { nullable: true })
+    randomizationRuleId?: number;
 
     @Field(() => Int, { nullable: true })
     patientId?: number;

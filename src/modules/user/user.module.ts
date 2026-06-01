@@ -52,6 +52,6 @@ export class UserAuthorizer implements Authorizer<User> {
         TherapistSupervisionService,
         TherapistSupervisionResolver,
     ],
-    exports: [UserCrudService, UserAccountProvisioningService],
+    exports: [UserCrudService, UserAccountProvisioningService, UserDepartmentAccessService],
 })
 export class UserModule { }

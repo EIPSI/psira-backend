@@ -31,6 +31,9 @@ class SharedQuestionnaireInput {
 
     @Field(() => String, { nullable: true })
     description: string;
+
+    @Field(() => [Number], { nullable: true })
+    departmentIds?: number[];
 }
 
 @InputType()

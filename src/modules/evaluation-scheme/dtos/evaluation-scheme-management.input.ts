@@ -19,6 +19,9 @@ export class SchemeResourceTemplateInput {
     @Field(() => [String], { nullable: true })
     questionnaireBundleIds?: string[];
 
+    @Field(() => [Int], { nullable: true })
+    randomizationRuleIds?: number[];
+
     @Field(() => String, { nullable: true })
     sessionSelector?: string;
 
@@ -99,6 +102,9 @@ export class IndependentEvaluationTemplateInput {
 
     @Field(() => [String], { nullable: true })
     questionnaireBundleIds?: string[];
+
+    @Field(() => [Int], { nullable: true })
+    randomizationRuleIds?: number[];
 
     @Field(() => Int, { nullable: true })
     relativeDay?: number;

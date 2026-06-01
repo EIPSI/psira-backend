@@ -1,5 +1,6 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, ID, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
 import { PermissionGuard } from 'src/modules/permission/guards/permission.guard';
 import {
@@ -16,6 +17,7 @@ import { ConnectionType } from '@nestjs-query/query-graphql';
 import { SendMailService } from '../services/send-mail.service';
 import { UsePermission } from 'src/modules/permission/decorators/permission.decorator';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
+import { User } from 'src/modules/user/models/user.model';
 
 @Resolver(() => MailTemplate)
 @UseGuards(GqlAuthGuard, PermissionGuard)
@@ -29,16 +31,20 @@ export class MailResolver {
     @UsePermission(PermissionEnum.VIEW_TEMPLATES)
     async getEmailTemplate(
         @Args('id', { type: () => ID }) id: number,
+        @CurrentUser() currentUser: User,
     ): Promise<MailTemplate> {
-        return await this.mailService.getEmailTemplate(id);
+        return await this.mailService.getEmailTemplate(id, currentUser);
     }
 
     @Query(() => MailTemplateConnection)
     @UsePermission(PermissionEnum.VIEW_TEMPLATES)
     async getAllEmailTemplates(
         @Args({ type: () => MailTemplateQuery }) query: MailTemplateQuery,
+        @Args('departmentIds', { type: () => [Int], nullable: true })
+        departmentIds: number[],
+        @CurrentUser() currentUser: User,
     ): Promise<ConnectionType<MailTemplate>> {
-        return this.mailService.getAllEmailTemplates(query);
+        return this.mailService.getAllEmailTemplates(query, currentUser, departmentIds);
     }
 
     @Query(() => [MailTemplate])
@@ -60,8 +66,9 @@ export class MailResolver {
     @UsePermission(PermissionEnum.MANAGE_TEMPLATES)
     async createEmailTemplate(
         @Args('input') input: CreateEmailTemplate,
+        @CurrentUser() currentUser: User,
     ): Promise<MailTemplate> {
-        return this.mailService.createEmailTemplate(input);
+        return this.mailService.createEmailTemplate(input, currentUser);
     }
 
     @Mutation(() => Boolean)
@@ -74,7 +81,8 @@ export class MailResolver {
     @UsePermission(PermissionEnum.MANAGE_TEMPLATES)
     async updateEmailTemplate(
         @Args('input') input: UpdateEmailTemplate,
+        @CurrentUser() currentUser: User,
     ): Promise<MailTemplate> {
-        return this.mailService.updateEmailTemplate(input);
+        return this.mailService.updateEmailTemplate(input, currentUser);
     }
 }
