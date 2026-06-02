@@ -121,6 +121,18 @@ export class User extends BaseEntity {
     @Column({default: 0, nullable: true})
     failedLoginAttempts: number;
 
+    @FilterableField(() => GraphQLISODateTime, {nullable: true})
+    @Column({nullable: true})
+    firstLoginAt?: Date;
+
+    @FilterableField(() => GraphQLISODateTime, {nullable: true})
+    @Column({nullable: true})
+    lastLoginAt?: Date;
+
+    @Field(() => [Int], {nullable: true})
+    @Column({type: 'simple-json', nullable: true})
+    skippedAutomationIds?: number[];
+
     @FilterableField(() => GraphQLISODateTime)
     @CreateDateColumn()
     createdAt: Date;

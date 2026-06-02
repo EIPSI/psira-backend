@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { User } from 'src/modules/user/models/user.model';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { LoginRequestDto } from './dto/login-request.dto';
@@ -21,12 +22,17 @@ export class AuthService {
         private readonly settingService: SettingService,
         private readonly tokenService: AccessTokenService,
         private readonly cacheService: CacheService,
+        private readonly moduleRef: ModuleRef,
     ) {}
 
     async login(loginDto: LoginRequestDto): Promise<LoginResponseDto> {
         const user = await this.validateUserCredentials(loginDto);
+        const isFirstLogin = !user.firstLoginAt;
+
+        await this.updateLoginTimestamps(user, isFirstLogin);
 
         const accessToken: string = await this.tokenService.generateToken(user);
+        await this.dispatchFirstLoginAutomation(user, isFirstLogin);
 
         return {
             accessToken: accessToken,
@@ -82,6 +88,41 @@ export class AuthService {
         await this.cacheService.manager().del(`login-attempts:${user.id}`);
 
         return user;
+    }
+
+    private async updateLoginTimestamps(
+        user: User,
+        isFirstLogin: boolean,
+    ): Promise<void> {
+        const now = new Date();
+        if (isFirstLogin) {
+            user.firstLoginAt = now;
+        }
+        user.lastLoginAt = now;
+        await user.save();
+    }
+
+    private async dispatchFirstLoginAutomation(
+        user: User,
+        isFirstLogin: boolean,
+    ): Promise<void> {
+        if (!isFirstLogin) return;
+
+        try {
+            const automationEngine = this.moduleRef.get(
+                'EVALUATION_AUTOMATION_ENGINE',
+                { strict: false },
+            ) as any;
+            await automationEngine.handleTrigger({
+                triggerPoint: 'first_login',
+                userId: user.id,
+                excludedAutomationIds: user.skippedAutomationIds || [],
+            });
+        } catch (error) {
+            this.logger.error(
+                `Unable to dispatch first_login automation for user ${user.id}: ${error?.message}`,
+            );
+        }
     }
 
     async validateAccessToken(tokenId: string): Promise<User> {

@@ -75,4 +75,8 @@ export class CreatePatientInput {
     @Field(() => [Int], { nullable: true, description: 'IDs of case managers to assign to this patient' })
     @IsOptional()
     caseManagerIds?: number[];
+
+    @Field(() => [Int], { nullable: true })
+    @IsOptional()
+    skippedAutomationIds?: number[];
 }

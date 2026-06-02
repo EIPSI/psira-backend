@@ -5,7 +5,8 @@ import { Repository, In, IsNull } from 'typeorm';
 import { User } from '../models/user.model';
 import * as moment from 'moment';
 import { CreateUserInput } from '../dto/create-user.input';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { Role } from 'src/modules/permission/models/role.model';
 import { RoleCode } from 'src/modules/permission/enums/role-code.enum';
 import { UpdateUserInput } from '../dto/update-user.input';
@@ -18,6 +19,8 @@ import { Caregiver } from 'src/modules/caregiver/models/caregiver.model';
 
 @QueryService(User)
 export class UserCrudService extends TypeOrmQueryService<User> {
+    private readonly logger = new Logger('UserCrudService');
+
     constructor(
         @InjectRepository(User) repo: Repository<User>,
         @InjectRepository(Patient)
@@ -25,6 +28,7 @@ export class UserCrudService extends TypeOrmQueryService<User> {
         @InjectRepository(Caregiver)
         private readonly caregiverRepository: Repository<Caregiver>,
         private readonly sendMailService: SendMailService,
+        private readonly moduleRef: ModuleRef,
     ) {
         // pass the use soft delete option to the service.
         super(repo);
@@ -46,7 +50,7 @@ export class UserCrudService extends TypeOrmQueryService<User> {
             throw new BadRequestException('Username already exists');
         }
 
-        const { roleCodes, ...userInput } = input as any;
+        const { roleCodes, skippedAutomationIds, ...userInput } = input as any;
         const { departmentIds: inputDepartmentIds, ...rest } = userInput;
         let departmentIds = inputDepartmentIds;
         const plainPassword = rest.password;
@@ -54,15 +58,11 @@ export class UserCrudService extends TypeOrmQueryService<User> {
 
         user.passwordExpiresAt = moment().toDate();
         user.password = await Hash.make(user.password);
+        user.skippedAutomationIds = skippedAutomationIds || [];
 
         if (roleCodes && roleCodes.length > 0) {
             const roles = await Role.find({ where: { code: In(roleCodes) } });
             user.roles = roles;
-        } else {
-            const defaultRole = await Role.findOne({ code: RoleCode.NO_ROLE });
-            if (defaultRole) {
-                user.roles = [defaultRole];
-            }
         }
 
         departmentIds = await this.applyDefaultDepartmentsForRoles(roleCodes, departmentIds);
@@ -79,6 +79,7 @@ export class UserCrudService extends TypeOrmQueryService<User> {
         }
 
         await this.syncPersonProfilesForRoles(user);
+        await this.dispatchUserCreatedAutomation(user, skippedAutomationIds);
 
         return user;
     }
@@ -197,6 +198,27 @@ export class UserCrudService extends TypeOrmQueryService<User> {
 
         if (roleCodes.includes(RoleCode.CAREGIVER)) {
             await this.ensureCaregiverForUser(user);
+        }
+    }
+
+    private async dispatchUserCreatedAutomation(
+        user: User,
+        excludedAutomationIds?: number[],
+    ): Promise<void> {
+        try {
+            const automationEngine = this.moduleRef.get(
+                'EVALUATION_AUTOMATION_ENGINE',
+                { strict: false },
+            ) as any;
+            await automationEngine.handleTrigger({
+                triggerPoint: 'user_created',
+                userId: user.id,
+                excludedAutomationIds,
+            });
+        } catch (error) {
+            this.logger.error(
+                `Unable to dispatch user_created automation for user ${user.id}: ${error?.message}`,
+            );
         }
     }
 

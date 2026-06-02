@@ -8,6 +8,8 @@ export const defaultConfig: SettingDto = {
     dateTimeFormat: 'YYYY-MM-DD LT',
     passwordLifeTimeInDays: 365,
     passwordReUseCutoffInDays: 365,
+    evaluationAutomationRunRetentionDays: 365,
+    patientCaseManagerAssignableHierarchyRank: 500,
     maxLoginAttempts: 5,
     sendWelcomeEmails: true,
     welcomeEmailTemplateId: null,

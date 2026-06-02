@@ -43,6 +43,7 @@ export class CaregiverService extends TypeOrmQueryService<Caregiver> {
                 lastName: input.lastName,
                 roleCode: RoleCode.CAREGIVER,
                 fallbackUsername: `caregiver-${caregiver.id}`,
+                skippedAutomationIds: input.skippedAutomationIds,
             });
 
             if (!account) {

@@ -108,6 +108,7 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
                 roleCode: RoleCode.PATIENT,
                 departmentIds: input.departmentIds,
                 fallbackUsername: `patient-${patient.id}`,
+                skippedAutomationIds: input.skippedAutomationIds,
             });
 
             if (!account) {

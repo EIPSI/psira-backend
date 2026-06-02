@@ -44,6 +44,17 @@ export class SettingDto {
     passwordReUseCutoffInDays?: number;
 
     @IsOptional()
+    @Max(365 * 10)
+    @Min(1)
+    @Field(() => Int, { nullable: true })
+    evaluationAutomationRunRetentionDays?: number;
+
+    @IsOptional()
+    @Min(0)
+    @Field(() => Int, { nullable: true })
+    patientCaseManagerAssignableHierarchyRank?: number;
+
+    @IsOptional()
     @Field({ nullable: true, defaultValue: true })
     sendWelcomeEmails?: boolean;
 

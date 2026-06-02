@@ -59,4 +59,7 @@ export class CreateUserInput {
 
   @Field(() => [String], { nullable: true })
   roleCodes?: string[];
+
+  @Field(() => [Int], { nullable: true })
+  skippedAutomationIds?: number[];
 }

@@ -24,6 +24,7 @@ import { UsePermission } from 'src/modules/permission/decorators/permission.deco
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { PermissionGuard } from 'src/modules/permission/guards/permission.guard';
 import { PermissionService } from 'src/modules/permission/providers/permission.service';
+import { SettingService } from 'src/modules/setting/providers/setting.service';
 import { User } from 'src/modules/user/models/user.model';
 import { PatientAuthorizer } from '../authorizers/patient.authorizer';
 import { CreatePatientInput } from '../dto/create-patient.input';
@@ -68,6 +69,7 @@ export class PatientResolver {
     constructor(
         protected service: PatientQueryService,
         private readonly patientPermissionService: PatientPermissionService,
+        private readonly settingService: SettingService,
     ) {}
 
     @Query(() => PatientConnection)
@@ -154,6 +156,11 @@ export class PatientResolver {
             // Force auto-assignment to creator, ignore input
             patientInput.caseManagerIds = [currentUser.id];
         }
+
+        await this.validateCaseManagersAssignable(
+            currentUser.id,
+            patientInput.caseManagerIds || [],
+        );
 
         // Department validation
         const canViewAllPatients = await PermissionService.userCan(
@@ -311,6 +318,11 @@ export class PatientResolver {
                     break;
             }
 
+            await this.validateCaseManagersAssignable(
+                currentUser.id,
+                update.caseManagerIds || [],
+            );
+
             // Update case managers in database
             await this.service.updateCaseManagers(
                 Number(id),
@@ -440,5 +452,55 @@ export class PatientResolver {
         input: CreateOnePatientStatusInput,
     ): Promise<PatientStatus> {
         return await this.patientStatusService.create(input);
+    }
+
+    private async validateCaseManagersAssignable(
+        assigningUserId: number,
+        caseManagerIds: number[],
+    ): Promise<void> {
+        if (!caseManagerIds.length) return;
+
+        const assigner = await User.findOne(assigningUserId, {
+            relations: ['roles'],
+        });
+        const assignerHierarchy = this.strongestHierarchy(assigner);
+        const assignableHierarchyRank = await this.getAssignableCaseManagerHierarchyRank();
+
+        const eligibleCaseManagers = await User.createQueryBuilder('user')
+            .distinct(true)
+            .innerJoinAndSelect('user.roles', 'role')
+            .where('user.id IN (:...caseManagerIds)', { caseManagerIds })
+            .getMany();
+
+        const eligibleIds = eligibleCaseManagers
+            .filter(user => {
+                const hierarchy = this.strongestHierarchy(user);
+                return hierarchy >= assignerHierarchy && hierarchy <= assignableHierarchyRank;
+            })
+            .map(user => user.id);
+        const invalidIds = caseManagerIds.filter(id => !eligibleIds.includes(id));
+
+        if (invalidIds.length) {
+            throw new BadRequestException(
+                `Only configured roles with the same or lower hierarchy can be assigned as case managers. Invalid user IDs: ${invalidIds.join(
+                    ', ',
+                )}`,
+            );
+        }
+    }
+
+    private async getAssignableCaseManagerHierarchyRank(): Promise<number> {
+        const value = await this.settingService.getKey(
+            'patientCaseManagerAssignableHierarchyRank',
+        );
+        const rank = Number(value);
+        return Number.isFinite(rank) ? rank : 0;
+    }
+
+    private strongestHierarchy(user?: User): number {
+        const hierarchies = (user?.roles || [])
+            .map(role => Number(role.hierarchy))
+            .filter(hierarchy => Number.isFinite(hierarchy));
+        return hierarchies.length ? Math.min(...hierarchies) : Number.MAX_SAFE_INTEGER;
     }
 }

@@ -26,6 +26,7 @@ import { CalendarModule } from './modules/calendar/calendar.module';
 import { ClinicalSessionModule } from './modules/clinical-session/clinical-session.module';
 import { EvaluationSchemeModule } from './modules/evaluation-scheme/evaluation-scheme.module';
 import { RandomizationModule } from './modules/randomization/randomization.module';
+import { EvaluationAutomationModule } from './modules/evaluation-automation/evaluation-automation.module';
 
 @Module({
     imports: [
@@ -82,6 +83,7 @@ import { RandomizationModule } from './modules/randomization/randomization.modul
         ClinicalSessionModule,
         EvaluationSchemeModule,
         RandomizationModule,
+        EvaluationAutomationModule,
     ],
     controllers: [],
     providers: [],

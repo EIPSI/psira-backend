@@ -41,12 +41,14 @@ import { Assessment } from '../assessment/models/assessment.model';
 import { PermissionModule } from '../permission/permission.module';
 import { PatientPermissionService } from './services/patient-permission.service';
 import { UserModule } from '../user/user.module';
+import { SettingModule } from '../setting/setting.module';
 
 const guards = [GqlAuthGuard, PermissionGuard];
 @Module({
     imports: [
         UserModule,
         PermissionModule,
+        SettingModule,
         QuestionnaireModule,
         MailModule,
         NestjsQueryGraphQLModule.forFeature({

@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { User } from 'src/modules/user/models/user.model';
 import { Hash } from 'src/shared';
 import { Any } from 'typeorm';
-import { MAX_ROLE_HIERARCHY, MIN_ROLE_HIERARCHY } from '../constants';
+import { MAX_ROLE_HIERARCHY } from '../constants';
 import { PermissionEnum, systemPermissions as PermissionsMaster } from '../enums/permission.enum';
 import { RoleCode } from '../enums/role-code.enum';
 import { Permission } from '../models/permission.model';
@@ -75,18 +75,6 @@ export class PermissionService implements OnModuleInit {
             superAdminRole.code = RoleCode.SUPER_ADMIN;
             superAdminRole.hierarchy = MAX_ROLE_HIERARCHY;
             await superAdminRole.save();
-        }
-
-        // Auto Create No-Role role if not exists
-        let noRole = await Role.findOne({ code: RoleCode.NO_ROLE });
-        if (!noRole) {
-            this.logger.log('Role No-Role not found in DB. System seeding it');
-
-            noRole = new Role();
-            noRole.name = 'Default';
-            noRole.code = RoleCode.NO_ROLE;
-            noRole.hierarchy = MIN_ROLE_HIERARCHY;
-            await noRole.save();
         }
 
         // Assign all permissions to Super Admin

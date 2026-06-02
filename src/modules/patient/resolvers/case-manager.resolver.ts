@@ -4,6 +4,8 @@ import { GqlAuthGuard } from "src/modules/auth/auth.guard";
 import { UsePermission } from "src/modules/permission/decorators/permission.decorator";
 import { PermissionEnum } from "src/modules/permission/enums/permission.enum";
 import { PermissionGuard } from "src/modules/permission/guards/permission.guard";
+import { CurrentUser } from "src/modules/auth/auth-user.decorator";
+import { User } from "src/modules/user/models/user.model";
 import { UserConnectionDto } from "src/modules/user/dto/user-connection.model";
 import { CaseManagerFilter } from "../dto/case-manager.filter";
 import { Patient } from "../models/patient.model";
@@ -22,9 +24,10 @@ export class CaseManagerResolver {
     assignPatientCaseManager(
         @Args({ name: 'patientId', type: () => Int }) patientId: number,
         @Args({ name: 'userId', type: () => Int }) clinicianId: number,
+        @CurrentUser() currentUser: User,
     ): Promise<boolean> {
 
-        return this.caseManagerService.assignPatientCaseManager(patientId, clinicianId);
+        return this.caseManagerService.assignPatientCaseManager(patientId, clinicianId, currentUser.id);
     }
 
     @Mutation(() => Boolean)

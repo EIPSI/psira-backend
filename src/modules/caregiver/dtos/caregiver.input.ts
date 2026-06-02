@@ -1,4 +1,4 @@
-import { Field, InputType } from "@nestjs/graphql";
+import { Field, InputType, Int } from "@nestjs/graphql";
 import { IsEmail, IsOptional } from "class-validator";
 
 
@@ -44,4 +44,8 @@ export class CaregiverInput {
     @IsOptional()
     @Field({ nullable: true })
     postalCode?: string;
+
+    @IsOptional()
+    @Field(() => [Int], { nullable: true })
+    skippedAutomationIds?: number[];
 }
