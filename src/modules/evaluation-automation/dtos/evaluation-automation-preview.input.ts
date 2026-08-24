@@ -1,5 +1,6 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
 import { IsArray, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
+import { CaseEventReasonContext } from 'src/modules/treatment-cycle/enums/case-event-reason-context.enum';
 import { EvaluationAutomationTriggerPoint } from '../enums/evaluation-automation-trigger-point.enum';
 
 @InputType()
@@ -26,4 +27,16 @@ export class EvaluationAutomationPreviewInput {
     @IsOptional()
     @IsEnum(EvaluationAutomationTriggerPoint)
     triggerPoint?: EvaluationAutomationTriggerPoint;
+
+    @Field(() => [Int], { nullable: true })
+    @IsOptional()
+    @IsArray()
+    @IsInt({ each: true })
+    reasonIds?: number[];
+
+    @Field(() => [CaseEventReasonContext], { nullable: true })
+    @IsOptional()
+    @IsArray()
+    @IsEnum(CaseEventReasonContext, { each: true })
+    reasonContexts?: CaseEventReasonContext[];
 }

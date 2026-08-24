@@ -128,7 +128,8 @@ export class EvaluationAutomationManagementService {
         const matchingAutomations = automations
             .filter(automation => triggerPoints.includes(automation.triggerPoint))
             .filter(automation => roleIds.includes(automation.roleId))
-            .filter(automation => this.previewDepartmentMatches(automation, departmentIds));
+            .filter(automation => this.previewDepartmentMatches(automation, departmentIds))
+            .filter(automation => this.previewReasonMatches(automation, input));
 
         return Promise.all(
             matchingAutomations.map(automation => this.mapPreviewAutomation(automation)),
@@ -207,6 +208,7 @@ export class EvaluationAutomationManagementService {
             automationType: automation.automationType,
             triggerSessionNumber: automation.triggerSessionNumber,
             triggerReasonIds: automation.triggerReasonIds || [],
+            triggerReasonContexts: automation.triggerReasonContexts || [],
             lastLoginInactiveDays: automation.lastLoginInactiveDays,
             delayAmount: automation.delayAmount,
             delayUnit: automation.delayUnit,
@@ -666,6 +668,34 @@ export class EvaluationAutomationManagementService {
             !automationDepartmentIds.length ||
             automationDepartmentIds.some(id => departmentIds.includes(id))
         );
+    }
+
+    private previewReasonMatches(
+        automation: EvaluationAutomation,
+        input: EvaluationAutomationPreviewInput,
+    ): boolean {
+        const configuredIds = (automation.triggerReasonIds || [])
+            .map(id => Number(id))
+            .filter(id => Number.isFinite(id));
+        const configuredContexts = (automation.triggerReasonContexts || [])
+            .filter(Boolean);
+
+        if (!configuredIds.length && !configuredContexts.length) return true;
+
+        const inputContexts = (input.reasonContexts || []).filter(Boolean);
+        if (
+            configuredContexts.length &&
+            !inputContexts.some(context => configuredContexts.includes(context))
+        ) {
+            return false;
+        }
+
+        if (!configuredIds.length) return true;
+
+        const inputIds = (input.reasonIds || [])
+            .map(id => Number(id))
+            .filter(id => Number.isFinite(id));
+        return inputIds.some(id => configuredIds.includes(id));
     }
 
     private async mapPreviewAutomation(
