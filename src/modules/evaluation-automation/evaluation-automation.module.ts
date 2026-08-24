@@ -19,6 +19,7 @@ import {
 } from '../questionnaire/models/questionnaire.schema';
 import { RandomizationRule } from '../randomization/models/randomization-rule.model';
 import { SettingModule } from '../setting/setting.module';
+import { CaseEventReason } from '../treatment-cycle/models/case-event-reason.model';
 import { User } from '../user/models/user.model';
 import { EvaluationAutomationRun } from './models/evaluation-automation-run.model';
 import { EvaluationAutomation } from './models/evaluation-automation.model';
@@ -44,6 +45,7 @@ import { EvaluationAutomationRetentionService } from './services/evaluation-auto
             User,
             Patient,
             RandomizationRule,
+            CaseEventReason,
         ]),
         MongooseModule.forFeature([
             {

@@ -6,6 +6,7 @@ import { AssessmentService } from 'src/modules/assessment/services/assessment.se
 import { ApplyEvaluationSchemeInput } from 'src/modules/evaluation-scheme/dtos/evaluation-scheme-generation.input';
 import { SchemeGenerationService } from 'src/modules/evaluation-scheme/services/scheme-generation.service';
 import { Patient } from 'src/modules/patient/models/patient.model';
+import { CaseEventReasonContext } from 'src/modules/treatment-cycle/enums/case-event-reason-context.enum';
 import { User } from 'src/modules/user/models/user.model';
 import { Repository } from 'typeorm';
 import { EvaluationAutomationConditionDto } from '../dtos/evaluation-automation-condition.dto';
@@ -22,6 +23,17 @@ import { EvaluationAutomation } from '../models/evaluation-automation.model';
 export interface EvaluationAutomationTriggerInput {
     triggerPoint: EvaluationAutomationTriggerPoint;
     userId: number;
+    patientId?: number;
+    therapistId?: number;
+    treatmentCycleId?: number;
+    clinicalSessionId?: number;
+    sessionNumber?: number;
+    reasonId?: number;
+    reasonIds?: number[];
+    reasonContext?: CaseEventReasonContext;
+    reasonContexts?: CaseEventReasonContext[];
+    triggerOccurredAt?: Date;
+    metadata?: Record<string, any>;
     triggerEventId?: string;
     excludedAutomationIds?: number[];
 }
@@ -45,6 +57,7 @@ interface UserAutomationContext {
     departmentIds: number[];
     roleIds: number[];
     patient?: Patient;
+    trigger: EvaluationAutomationTriggerInput;
 }
 
 interface EvaluationResult {
@@ -84,7 +97,7 @@ export class EvaluationAutomationEngineService {
     async handleTrigger(
         input: EvaluationAutomationTriggerInput,
     ): Promise<EvaluationAutomationRun[]> {
-        const context = await this.buildUserContext(input.userId);
+        const context = await this.buildUserContext(input);
         const triggerEventId = this.resolveTriggerEventId(input);
         const automations = await this.findActiveAutomations(input.triggerPoint);
         const excludedAutomationIds = input.excludedAutomationIds || [];
@@ -98,7 +111,6 @@ export class EvaluationAutomationEngineService {
             const evaluation = await this.evaluateAutomation(
                 automation,
                 context,
-                input.triggerPoint,
                 triggerEventId,
             );
 
@@ -120,6 +132,9 @@ export class EvaluationAutomationEngineService {
                         triggerEventId,
                         EvaluationAutomationRunStatus.EXECUTED,
                         execution,
+                        undefined,
+                        undefined,
+                        input.metadata,
                     ),
                 );
             } catch (error) {
@@ -133,6 +148,7 @@ export class EvaluationAutomationEngineService {
                         null,
                         EvaluationAutomationRunReason.EXECUTION_ERROR,
                         error?.message || 'Automation execution failed',
+                        input.metadata,
                     ),
                 );
             }
@@ -150,12 +166,11 @@ export class EvaluationAutomationEngineService {
         });
         if (!automation) throw new NotFoundException('Automation not found');
 
-        const context = await this.buildUserContext(input.userId);
+        const context = await this.buildUserContext(input);
         const triggerEventId = this.resolveTriggerEventId(input);
         const evaluation = await this.evaluateAutomation(
             automation,
             context,
-            input.triggerPoint,
             triggerEventId,
         );
 
@@ -180,36 +195,54 @@ export class EvaluationAutomationEngineService {
         });
     }
 
-    private async buildUserContext(userId: number): Promise<UserAutomationContext> {
-        const user = await this.userRepository.findOne(userId, {
+    private async buildUserContext(input: EvaluationAutomationTriggerInput): Promise<UserAutomationContext> {
+        const user = await this.userRepository.findOne(input.userId, {
             relations: ['roles', 'departments'],
         });
         if (!user) throw new NotFoundException('User not found');
 
-        const patient = await this.patientRepository.findOne({
-            where: { userId: user.id },
-            relations: ['departments', 'status', 'caseManagers'],
-        });
+        const patient = input.patientId
+            ? await this.patientRepository.findOne(input.patientId, {
+                relations: ['departments', 'status', 'caseManagers'],
+            })
+            : await this.patientRepository.findOne({
+                where: { userId: user.id },
+                relations: ['departments', 'status', 'caseManagers'],
+            });
 
         return {
             user,
-            departmentIds: (user.departments || []).map(department => department.id),
+            departmentIds: patient?.departments?.length
+                ? patient.departments.map(department => department.id)
+                : (user.departments || []).map(department => department.id),
             roleIds: (user.roles || []).map(role => role.id),
             patient,
+            trigger: input,
         };
     }
 
     private async evaluateAutomation(
         automation: EvaluationAutomation,
         context: UserAutomationContext,
-        triggerPoint: EvaluationAutomationTriggerPoint,
         triggerEventId: string,
     ): Promise<EvaluationResult> {
         const unmetReasons: string[] = [];
 
         if (!automation.active) unmetReasons.push('automation_inactive');
-        if (automation.triggerPoint !== triggerPoint) unmetReasons.push('invalid_trigger_point');
+        if (automation.triggerPoint !== context.trigger.triggerPoint) unmetReasons.push('invalid_trigger_point');
         if (!context.roleIds.includes(automation.roleId)) unmetReasons.push('invalid_role');
+        if (
+            automation.triggerPoint === EvaluationAutomationTriggerPoint.SESSION_NUMBER &&
+            Number(automation.triggerSessionNumber) !== Number(context.trigger.sessionNumber)
+        ) {
+            unmetReasons.push('invalid_session_number');
+        }
+        if (!this.reasonFilterMatches(automation, context.trigger)) {
+            unmetReasons.push('invalid_reason');
+        }
+        if (!this.lastLoginInactiveDaysMatches(automation, context.trigger)) {
+            unmetReasons.push('invalid_last_login_inactivity');
+        }
 
         const automationDepartmentIds = (automation.departments || []).map(
             department => department.id,
@@ -236,14 +269,14 @@ export class EvaluationAutomationEngineService {
         const duplicateDetected = await this.hasDuplicateRun(
             automation.id,
             context.user.id,
-            triggerPoint,
+            context.trigger.triggerPoint,
             triggerEventId,
         );
 
         return {
             applies: !unmetReasons.length && !duplicateDetected,
             duplicateDetected,
-            scheduledAt: this.calculateScheduledAt(automation),
+            scheduledAt: this.calculateScheduledAt(automation, context.trigger.triggerOccurredAt),
             unmetReasons,
             conditionResults,
         };
@@ -353,7 +386,7 @@ export class EvaluationAutomationEngineService {
         if (
             automation.automationType === EvaluationAutomationType.FIXED_SCHEME &&
             (!automation.schemeId ||
-                automation.delayUnit !== EvaluationAutomationDelayUnit.DAYS)
+                !this.isSupportedDelayUnit(automation.delayUnit))
         ) {
             throw new BadRequestException('Fixed scheme automation is invalid');
         }
@@ -364,7 +397,7 @@ export class EvaluationAutomationEngineService {
         ) {
             if (
                 !automation.assessmentTypeId ||
-                automation.delayUnit !== EvaluationAutomationDelayUnit.MINUTES ||
+                !this.isSupportedDelayUnit(automation.delayUnit) ||
                 !this.hasEvaluationContent(automation)
             ) {
                 throw new BadRequestException('Individual evaluation automation is invalid');
@@ -423,6 +456,7 @@ export class EvaluationAutomationEngineService {
         execution?: ExecutionResult,
         reason?: EvaluationAutomationRunReason,
         message?: string,
+        triggerMetadata?: Record<string, any>,
     ): Promise<EvaluationAutomationRun> {
         return this.runRepository.save(
             this.runRepository.create({
@@ -437,6 +471,7 @@ export class EvaluationAutomationEngineService {
                 resourceType: execution?.resourceType,
                 resourceId: execution?.resourceId,
                 metadata: {
+                    ...(triggerMetadata || {}),
                     ...(execution?.metadata || {}),
                     scheduledAt: execution?.scheduledAt?.toISOString(),
                 },
@@ -446,17 +481,55 @@ export class EvaluationAutomationEngineService {
 
     private resolveTriggerEventId(input: EvaluationAutomationTriggerInput): string {
         if (input.triggerEventId) return input.triggerEventId;
-        return `${input.triggerPoint}:user:${input.userId}`;
+        const parts = [
+            input.triggerPoint,
+            `user:${input.userId}`,
+            input.patientId ? `patient:${input.patientId}` : null,
+            input.therapistId ? `therapist:${input.therapistId}` : null,
+            input.treatmentCycleId ? `cycle:${input.treatmentCycleId}` : null,
+            input.clinicalSessionId ? `session:${input.clinicalSessionId}` : null,
+            input.sessionNumber ? `number:${input.sessionNumber}` : null,
+            input.reasonId ? `reason:${input.reasonId}` : null,
+        ].filter(Boolean);
+        if (input.triggerPoint === EvaluationAutomationTriggerPoint.LAST_LOGIN) {
+            parts.push(input.triggerOccurredAt ? input.triggerOccurredAt.toISOString() : new Date().toISOString());
+        }
+        return parts.join(':');
     }
 
-    private calculateScheduledAt(automation: EvaluationAutomation): Date {
-        const now = new Date();
-        if (automation.delayUnit === EvaluationAutomationDelayUnit.DAYS) {
-            const result = new Date(now);
-            result.setDate(result.getDate() + automation.delayAmount);
-            return result;
+    private calculateScheduledAt(
+        automation: EvaluationAutomation,
+        triggerOccurredAt?: Date,
+    ): Date {
+        const base = triggerOccurredAt ? new Date(triggerOccurredAt) : new Date();
+        switch (automation.delayUnit) {
+            case EvaluationAutomationDelayUnit.MINUTES:
+                return this.addMinutes(base, automation.delayAmount);
+            case EvaluationAutomationDelayUnit.HOURS:
+                return this.addMinutes(base, automation.delayAmount * 60);
+            case EvaluationAutomationDelayUnit.DAYS: {
+                const result = new Date(base);
+                result.setDate(result.getDate() + automation.delayAmount);
+                return result;
+            }
+            case EvaluationAutomationDelayUnit.WEEKS: {
+                const result = new Date(base);
+                result.setDate(result.getDate() + automation.delayAmount * 7);
+                return result;
+            }
+            case EvaluationAutomationDelayUnit.MONTHS: {
+                const result = new Date(base);
+                result.setMonth(result.getMonth() + automation.delayAmount);
+                return result;
+            }
+            case EvaluationAutomationDelayUnit.YEARS: {
+                const result = new Date(base);
+                result.setFullYear(result.getFullYear() + automation.delayAmount);
+                return result;
+            }
+            default:
+                return base;
         }
-        return this.addMinutes(now, automation.delayAmount);
     }
 
     private addMinutes(date: Date, minutes: number): Date {
@@ -489,9 +562,64 @@ export class EvaluationAutomationEngineService {
                 patient: context.patient,
                 departments: context.departmentIds,
                 roles: context.roleIds,
+                trigger: context.trigger,
             },
             normalized.includes('.') ? normalized : `user.${normalized}`,
         );
+    }
+
+    private reasonFilterMatches(
+        automation: EvaluationAutomation,
+        trigger: EvaluationAutomationTriggerInput,
+    ): boolean {
+        const configuredIds = (automation.triggerReasonIds || [])
+            .map(id => Number(id))
+            .filter(id => Number.isFinite(id));
+        const configuredContexts = (automation.triggerReasonContexts || [])
+            .filter(Boolean);
+        if (!configuredIds.length && !configuredContexts.length) return true;
+
+        const triggerContexts = [
+            trigger.reasonContext,
+            ...(trigger.reasonContexts || []),
+        ].filter(Boolean);
+        if (
+            configuredContexts.length &&
+            !triggerContexts.some(context => configuredContexts.includes(context))
+        ) {
+            return false;
+        }
+        if (!configuredIds.length) return true;
+
+        const triggerIds = [
+            trigger.reasonId,
+            ...(trigger.reasonIds || []),
+        ]
+            .map(id => Number(id))
+            .filter(id => Number.isFinite(id));
+        return triggerIds.some(id => configuredIds.includes(id));
+    }
+
+    private lastLoginInactiveDaysMatches(
+        automation: EvaluationAutomation,
+        trigger: EvaluationAutomationTriggerInput,
+    ): boolean {
+        if (automation.triggerPoint !== EvaluationAutomationTriggerPoint.LAST_LOGIN) return true;
+        const minDays = Number(automation.lastLoginInactiveDays || 0);
+        if (!minDays) return true;
+
+        const previousValue = trigger.metadata?.previousLastLoginAt;
+        if (!previousValue) return false;
+        const previous = new Date(previousValue);
+        if (Number.isNaN(previous.getTime())) return false;
+
+        const occurredAt = trigger.triggerOccurredAt ? new Date(trigger.triggerOccurredAt) : new Date();
+        const inactiveDays = (occurredAt.getTime() - previous.getTime()) / (24 * 60 * 60 * 1000);
+        return inactiveDays >= minDays;
+    }
+
+    private isSupportedDelayUnit(unit: EvaluationAutomationDelayUnit): boolean {
+        return Object.values(EvaluationAutomationDelayUnit).includes(unit);
     }
 
     private evaluateCondition(

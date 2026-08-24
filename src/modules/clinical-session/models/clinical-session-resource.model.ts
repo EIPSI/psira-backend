@@ -16,6 +16,7 @@ import {
 } from 'typeorm';
 import { ClinicalSessionResourceKind } from '../enums/clinical-session-resource-kind.enum';
 import { ClinicalSessionResourceStatus } from '../enums/clinical-session-resource-status.enum';
+import { ClinicalSessionSchemeApplication } from './clinical-session-scheme-application.model';
 import { ClinicalSession } from './clinical-session.model';
 
 @ObjectType()
@@ -39,6 +40,14 @@ export class ClinicalSessionResource extends BaseEntity {
     @FilterableField(() => Int, { nullable: true })
     @Column({ nullable: true })
     assessmentId?: number;
+
+    @FilterableField(() => Int, { nullable: true })
+    @Column({ nullable: true })
+    schemeApplicationId?: number;
+
+    @FilterableField(() => Int, { nullable: true })
+    @Column({ nullable: true })
+    schemeRelativeSessionNumber?: number;
 
     @FilterableField(() => ClinicalSessionResourceKind)
     @Column({ type: 'enum', enum: ClinicalSessionResourceKind })
@@ -109,4 +118,7 @@ export class ClinicalSessionResource extends BaseEntity {
     @OneToOne(() => Assessment, { nullable: true })
     @JoinColumn({ name: 'assessmentId' })
     assessment?: Assessment;
+
+    @ManyToOne(() => ClinicalSessionSchemeApplication, { nullable: true })
+    schemeApplication?: ClinicalSessionSchemeApplication;
 }

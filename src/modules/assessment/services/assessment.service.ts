@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Model } from 'mongoose';
 import { Types } from 'mongoose';
-import { getConnection, In, Repository } from 'typeorm';
+import { getConnection, getManager, In, Repository } from 'typeorm';
 import {
     CreateFullAssessmentInput,
     UpdateFullAssessmentInput,
@@ -31,12 +31,17 @@ import { Caregiver } from 'src/modules/caregiver/models/caregiver.model';
 import { AssessmentStatus } from 'src/modules/questionnaire/enums/assessment-status.enum';
 import { AssessmentType } from '../models/assessment-type.model';
 import { AssessmentEmailStatus } from '../enums/assessment-emailstatus.enum';
+import { AssessmentOrigin } from '../enums/assessment-origin.enum';
 import { Validator } from 'src/shared';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { Questionnaire } from 'src/modules/questionnaire/models/questionnaire.schema';
 import { QuestionnaireBundle } from 'src/modules/questionnaire/models/questionnaire-bundle.schema';
 import { RandomizationRule } from 'src/modules/randomization/models/randomization-rule.model';
 import { areDepartmentsCompatible } from 'src/shared/department-compatibility';
+import { CalendarOccurrence } from 'src/modules/calendar/models/calendar-occurrence.model';
+import { TreatmentCycleKind } from 'src/modules/treatment-cycle/enums/treatment-cycle-kind.enum';
+import { TreatmentCycleStatus } from 'src/modules/treatment-cycle/enums/treatment-cycle-status.enum';
+import { TreatmentCycle } from 'src/modules/treatment-cycle/models/treatment-cycle.model';
 
 @Injectable()
 export class AssessmentService {
@@ -55,6 +60,10 @@ export class AssessmentService {
         private readonly assessmentTypeRepo: Repository<AssessmentType>,
         @InjectRepository(RandomizationRule)
         private readonly randomizationRuleRepository: Repository<RandomizationRule>,
+        @InjectRepository(CalendarOccurrence)
+        private readonly occurrenceRepository: Repository<CalendarOccurrence>,
+        @InjectRepository(TreatmentCycle)
+        private readonly treatmentCycleRepository: Repository<TreatmentCycle>,
         @InjectModel(Questionnaire.name)
         private readonly questionnaireModel: Model<Questionnaire>,
         @InjectModel(QuestionnaireBundle.name)
@@ -62,6 +71,21 @@ export class AssessmentService {
         private readonly patientQueryService: PatientQueryService,
         private readonly patientPermissionService: PatientPermissionService,
     ) {}
+
+    private async resolveActiveClinicalTreatmentCycleId(
+        patientId: number,
+    ): Promise<number | undefined> {
+        const cycle = await this.treatmentCycleRepository
+            .createQueryBuilder('cycle')
+            .where('cycle."cycleKind" = :kind', { kind: TreatmentCycleKind.CLINICAL })
+            .andWhere('cycle.status = :status', { status: TreatmentCycleStatus.ACTIVE })
+            .andWhere('cycle."patientId" = :patientId', { patientId })
+            .orderBy('cycle."cycleNumber"', 'DESC')
+            .addOrderBy('cycle."startedAt"', 'DESC')
+            .getOne();
+
+        return cycle?.id;
+    }
 
     getQuestionnaireAssessment(id: string) {
         return this.questionnaireAssessmentService.getById(id);
@@ -124,6 +148,60 @@ export class AssessmentService {
 
         return result;
     }
+
+    async getPatientAssessments(
+        patientId: number,
+        currentUser: User,
+        includeArchived = false,
+    ): Promise<Assessment[]> {
+        await this.assertCanAccessPatientAssessments(patientId, currentUser);
+
+        const query = this.assessmentRepository
+            .createQueryBuilder('assessment')
+            .leftJoinAndSelect('assessment.patient', 'patient')
+            .leftJoinAndSelect('assessment.targetUser', 'targetUser')
+            .leftJoinAndSelect('assessment.responderUser', 'responderUser')
+            .leftJoinAndSelect('assessment.clinician', 'clinician')
+            .leftJoinAndSelect('assessment.responsibleUsers', 'responsibleUser')
+            .leftJoinAndSelect('assessment.informantClinician', 'informantClinician')
+            .leftJoinAndSelect('assessment.assessmentType', 'assessmentType')
+            .leftJoinAndSelect('assessment.clinicalSession', 'clinicalSession')
+            .leftJoinAndSelect('clinicalSession.calendarOccurrence', 'clinicalSessionOccurrence')
+            .where('assessment."patientId" = :patientId', { patientId });
+
+        if (!includeArchived) {
+            query.andWhere('(assessment."deleted" IS NULL OR assessment."deleted" = false)');
+        }
+
+        const assessments = await query
+            .orderBy('COALESCE(assessment."deliveryDate", assessment."createdAt")', 'DESC')
+            .addOrderBy('assessment.id', 'DESC')
+            .getMany();
+
+        for (const assessment of assessments) {
+            await this.changeQuestionnaireAssessmentStatus(assessment);
+        }
+
+        return assessments;
+    }
+
+    private async assertCanAccessPatientAssessments(
+        patientId: number,
+        currentUser: User,
+    ): Promise<void> {
+        const access = await this.patientPermissionService.getUserAccessScope(currentUser.id);
+        if (access.type === PatientAccessScope.ALL) return;
+
+        const patientAuthorizeFilter = await PatientAuthorizer.authorizePatient(currentUser.id);
+        const currentUsersPatients = await this.patientQueryService.query({
+            filter: patientAuthorizeFilter,
+        });
+        const canAccessPatient = currentUsersPatients.some(patient => patient.id === patientId);
+        if (!canAccessPatient) {
+            throw new NotFoundException('Patient assessments not found');
+        }
+    }
+
     /**
      * Get assessment if authorized. Throws exception if Not Found
      *
@@ -191,6 +269,18 @@ export class AssessmentService {
     async createNewAssessment(assessmentInput: CreateFullAssessmentInput, currentUser?: User) {
         const assessmentLength = assessmentInput.dates.length || 1;
         const assessmentArray = [];
+        const responsibleUserIds = this.resolveAssessmentResponsibleUserIds(assessmentInput);
+        if (!responsibleUserIds.length) {
+            throw new BadRequestException('At least one responsible user is required');
+        }
+        this.syncLegacyAssessmentResponsibleField(assessmentInput, responsibleUserIds);
+        await this.assertCanManageAssessmentResponsibles(
+            assessmentInput.patientId,
+            assessmentInput.targetUserId,
+            responsibleUserIds,
+            currentUser,
+            'create',
+        );
         await this.validateResponderUserAccess(
             assessmentInput.responderUserId,
             currentUser,
@@ -256,6 +346,11 @@ export class AssessmentService {
                 // Set patientId if provided
                 if (assessmentInput.patientId) {
                     assessment.patientId = assessmentInput.patientId;
+                    assessment.treatmentCycleId =
+                        assessmentInput.treatmentCycleId ||
+                        await this.resolveActiveClinicalTreatmentCycleId(
+                            assessmentInput.patientId,
+                        );
                 }
 
                 if (!assessmentInput.dates[i].deliveryDate || d1 < d2) {
@@ -316,6 +411,10 @@ export class AssessmentService {
                 }
 
                 await assessment.save();
+                await this.setAssessmentResponsibleUsers(
+                    assessment,
+                    responsibleUserIds,
+                );
                 assessmentArray.push(assessment);
             } catch (err) {
                 await questionnaireAssessment.remove();
@@ -348,6 +447,7 @@ export class AssessmentService {
                     'targetUser',
                     'responderUser',
                     'informantClinician',
+                    'responsibleUsers',
                     'assessmentType',
                 ],
             },
@@ -361,6 +461,18 @@ export class AssessmentService {
     }
 
     async updateAssessment(assessmentInput: UpdateFullAssessmentInput, currentUser?: User) {
+        const responsibleUserIds = this.resolveAssessmentResponsibleUserIds(assessmentInput);
+        if (!responsibleUserIds.length) {
+            throw new BadRequestException('At least one responsible user is required');
+        }
+        this.syncLegacyAssessmentResponsibleField(assessmentInput, responsibleUserIds);
+        await this.assertCanManageAssessmentResponsibles(
+            assessmentInput.patientId,
+            assessmentInput.targetUserId,
+            responsibleUserIds,
+            currentUser,
+            'edit',
+        );
         await this.validateResponderUserAccess(
             assessmentInput.responderUserId,
             currentUser,
@@ -484,6 +596,11 @@ export class AssessmentService {
                 assessment.receiverEmail = assessmentInput.receiverEmail;
             }
             await assessment.save();
+            await this.setAssessmentResponsibleUsers(
+                assessment,
+                responsibleUserIds,
+            );
+            await this.syncCalendarOccurrenceForUpdatedAssessment(assessment);
         } catch (err) {
             // undo mongo changes
             questionnaireAssessment.questionnaires = originalQuestionnaires;
@@ -497,13 +614,40 @@ export class AssessmentService {
         return assessment;
     }
 
-    public async deleteAssessment(id: number, statusCancel = true) {
+    private async syncCalendarOccurrenceForUpdatedAssessment(
+        assessment: Assessment,
+    ): Promise<void> {
+        if (!assessment.calendarOccurrenceId) return;
+        if (!assessment.deliveryDate || !assessment.expirationDate) return;
+
+        await this.occurrenceRepository.update(
+            assessment.calendarOccurrenceId,
+            {
+                startAt: assessment.deliveryDate,
+                endAt: assessment.expirationDate,
+                isDetachedFromTemplate: true,
+            },
+        );
+    }
+
+    public async deleteAssessment(id: number, statusCancel = true, currentUser?: User) {
         const assessment = await this.assessmentRepository.findOneOrFail(id);
+        if (currentUser) {
+            await this.assertCanManageAssessmentEntity(assessment, currentUser);
+            if (assessment.origin === AssessmentOrigin.SESSION_BASED) {
+                throw new BadRequestException('Session based assessments must be managed from the session');
+            }
+        }
         const queryRunner = getConnection().createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
-        if (!statusCancel) await queryRunner.manager.delete(Assessment, id);
+        if (statusCancel) {
+            assessment.status = AssessmentStatus.CANCELLED;
+            await queryRunner.manager.save(assessment);
+        } else {
+            await queryRunner.manager.delete(Assessment, id);
+        }
 
         try {
             await this.questionnaireAssessmentService.deleteAssessment(
@@ -519,8 +663,11 @@ export class AssessmentService {
         }
     }
 
-    async archiveOneAssessment(id: number) {
+    async archiveOneAssessment(id: number, currentUser?: User) {
         const assessment = await this.assessmentRepository.findOneOrFail(id);
+        if (currentUser) {
+            await this.assertCanManageAssessmentEntity(assessment, currentUser);
+        }
 
         if (assessment.deleted) {
             throw Error('This assessment is already archived!');
@@ -531,12 +678,15 @@ export class AssessmentService {
         return assessment;
     }
 
-    async restoreOneAssessment(id: number) {
+    async restoreOneAssessment(id: number, currentUser?: User) {
         const assessment = await this.assessmentRepository
             .createQueryBuilder('assessment')
             .leftJoinAndSelect('assessment.patient', 'patient')
             .where('assessment.id = :id', { id })
             .getOneOrFail();
+        if (currentUser) {
+            await this.assertCanManageAssessmentEntity(assessment, currentUser);
+        }
 
         if (assessment.patient.deleted) {
             throw Error('The patient assigned to this assessment is archived!');
@@ -626,6 +776,186 @@ export class AssessmentService {
 
         return user.permissions?.some(p => p.name === permission) ||
                user.roles?.some(r => r.permissions?.some(p => p.name === permission));
+    }
+
+    private resolveAssessmentResponsibleUserIds(
+        input: Pick<CreateFullAssessmentInput, 'responsibleUserIds' | 'clinicianId'>,
+    ): number[] {
+        return this.uniqueIds([...(input.responsibleUserIds || []), input.clinicianId]);
+    }
+
+    private syncLegacyAssessmentResponsibleField(
+        input: CreateFullAssessmentInput,
+        responsibleUserIds: number[],
+    ): void {
+        const primaryResponsibleUserId = responsibleUserIds[0];
+        if (primaryResponsibleUserId) {
+            input.clinicianId = primaryResponsibleUserId;
+        }
+    }
+
+    private async setAssessmentResponsibleUsers(
+        assessment: Assessment,
+        responsibleUserIds: number[],
+    ): Promise<void> {
+        const users = responsibleUserIds.length
+            ? await this.userRepository.find({ where: { id: In(responsibleUserIds) } })
+            : [];
+        if (users.length !== responsibleUserIds.length) {
+            throw new BadRequestException('One or more responsible users were not found');
+        }
+        assessment.responsibleUsers = users;
+        await this.assessmentRepository.save(assessment);
+
+        if (assessment.calendarOccurrenceId) {
+            const occurrence = await this.occurrenceRepository.findOne(
+                assessment.calendarOccurrenceId,
+            );
+            if (occurrence) {
+                occurrence.therapistId = assessment.clinicianId;
+                occurrence.responsibleUsers = users;
+                await this.occurrenceRepository.save(occurrence);
+            }
+        }
+    }
+
+    private async assertCanManageAssessmentResponsibles(
+        patientId: number | undefined,
+        targetUserId: number | undefined,
+        responsibleUserIds: number[],
+        currentUser: User | undefined,
+        action: 'create' | 'edit',
+    ): Promise<void> {
+        if (!currentUser) return;
+
+        if (
+            await this.canManageAssessmentTargetByScope(
+                currentUser,
+                patientId,
+                targetUserId,
+            )
+        ) {
+            return;
+        }
+
+        if (patientId) {
+            const caseManagerIds = await this.caseManagerIdsForPatient(patientId);
+            if (!caseManagerIds.includes(currentUser.id)) {
+                throw new BadRequestException(`Only case administrators can ${action} assessments for this patient`);
+            }
+            const invalidResponsibleIds = responsibleUserIds.filter(id => !caseManagerIds.includes(id));
+            if (invalidResponsibleIds.length) {
+                throw new BadRequestException(
+                    `Assessment responsible users must be case administrators. Invalid user IDs: ${invalidResponsibleIds.join(', ')}`,
+                );
+            }
+            return;
+        }
+
+        if (!targetUserId) return;
+        if (targetUserId === currentUser.id) {
+            const invalidResponsibleIds = responsibleUserIds.filter(id => id !== currentUser.id);
+            if (invalidResponsibleIds.length) {
+                throw new BadRequestException('Self assessments can only be assigned to the current user');
+            }
+            return;
+        }
+
+        const supervisorIds = await this.supervisorIdsForTherapist(targetUserId);
+        if (!supervisorIds.includes(currentUser.id)) {
+            throw new BadRequestException(`Only supervisors can ${action} assessments for this therapist`);
+        }
+        const invalidResponsibleIds = responsibleUserIds.filter(id => !supervisorIds.includes(id));
+        if (invalidResponsibleIds.length) {
+            throw new BadRequestException(
+                `Assessment responsible users must be supervisors of the therapist. Invalid user IDs: ${invalidResponsibleIds.join(', ')}`,
+            );
+        }
+    }
+
+    private async assertCanManageAssessmentEntity(
+        assessment: Assessment,
+        currentUser: User,
+    ): Promise<void> {
+        if (
+            await this.canManageAssessmentTargetByScope(
+                currentUser,
+                assessment.patientId,
+                assessment.targetUserId,
+            )
+        ) {
+            return;
+        }
+        const responsibleUserIds = this.uniqueIds([
+            ...(assessment.responsibleUsers || []).map(user => user.id),
+            assessment.clinicianId,
+        ]);
+        await this.assertCanManageAssessmentResponsibles(
+            assessment.patientId,
+            assessment.targetUserId,
+            responsibleUserIds,
+            currentUser,
+            'edit',
+        );
+    }
+
+    private async canManageAssessmentTargetByScope(
+        currentUser: User,
+        patientId?: number,
+        targetUserId?: number,
+    ): Promise<boolean> {
+        if (await this.checkPermission(currentUser.id, PermissionEnum.MANAGE_ALL_ASSESSMENTS)) {
+            return true;
+        }
+        if (!(await this.checkPermission(currentUser.id, PermissionEnum.MANAGE_DEPARTMENT_ASSESSMENTS))) {
+            return false;
+        }
+
+        const [manager, patient, targetUser] = await Promise.all([
+            this.userRepository.findOne({
+                where: { id: currentUser.id },
+                relations: ['departments'],
+            }),
+            patientId
+                ? this.patientRepository.findOne(patientId, { relations: ['departments'] })
+                : Promise.resolve(undefined),
+            targetUserId
+                ? this.userRepository.findOne({
+                    where: { id: targetUserId },
+                    relations: ['departments'],
+                })
+                : Promise.resolve(undefined),
+        ]);
+        const managerDepartmentIds = manager?.departments?.map(department => department.id) || [];
+        const targetDepartmentIds = patient?.departments?.map(department => department.id) ||
+            targetUser?.departments?.map(department => department.id) ||
+            [];
+        return targetDepartmentIds.some(id => managerDepartmentIds.includes(id));
+    }
+
+    private async caseManagerIdsForPatient(patientId: number): Promise<number[]> {
+        const patient = await this.patientRepository.findOne(patientId, {
+            relations: ['caseManagers'],
+        });
+        return patient?.caseManagers?.map(user => user.id) || [];
+    }
+
+    private async supervisorIdsForTherapist(therapistId: number): Promise<number[]> {
+        const rows = await getManager()
+            .createQueryBuilder()
+            .select('"supervisorId"', 'supervisorId')
+            .from('therapist_supervisor', 'therapistSupervisor')
+            .where('"therapistId" = :therapistId', { therapistId })
+            .getRawMany();
+        return rows.map(row => Number(row.supervisorId)).filter(id => Number.isFinite(id));
+    }
+
+    private uniqueIds(ids: Array<number | undefined | null>): number[] {
+        return [...new Set(
+            ids
+                .map(id => Number(id))
+                .filter(id => Number.isFinite(id) && id > 0),
+        )];
     }
 
     private async validateResponderUserAccess(

@@ -10,7 +10,9 @@ import { BadRequestException, Inject, UseGuards } from '@nestjs/common';
 import {
     Args,
     ArgsType,
+    Field,
     ID,
+    Int,
     InputType,
     Mutation,
     ObjectType,
@@ -57,6 +59,15 @@ class UpdateOnePatientInput extends UpdateOneInputType(
 
 @InputType()
 class DeleteOnePatientInput extends DeleteOneInputType(Patient) {}
+
+@InputType()
+class ChangePatientStatusInput {
+    @Field(() => Int)
+    patientId: number;
+
+    @Field(() => Int, { nullable: true })
+    statusId?: number;
+}
 
 @ObjectType()
 class PatientDeleteResponse extends PartialType(Patient) {}
@@ -352,6 +363,37 @@ export class PatientResolver {
         }
 
         return this.service.updateOne(input.id, input.update);
+    }
+
+    @Mutation(() => Patient)
+    @UsePermission(PermissionEnum.MANAGE_PATIENTS)
+    async changePatientStatus(
+        @Args('input', { type: () => ChangePatientStatusInput })
+        input: ChangePatientStatusInput,
+        @CurrentUser() currentUser: User,
+    ): Promise<Patient> {
+        await this.service.getOnePatient(currentUser, Number(input.patientId));
+
+        if (input.statusId) {
+            const status = await PatientStatus.findOne(input.statusId);
+            if (!status) {
+                throw new BadRequestException('Patient status does not exist');
+            }
+        }
+
+        await this.service.updateOne(input.patientId, {
+            statusId: input.statusId || null,
+        } as UpdatePatientInput);
+
+        return Patient.findOneOrFail(input.patientId, {
+            relations: [
+                'emergencyContacts',
+                'informants',
+                'caseManagers',
+                'departments',
+                'status',
+            ],
+        });
     }
 
     @Mutation(() => PatientDeleteResponse)

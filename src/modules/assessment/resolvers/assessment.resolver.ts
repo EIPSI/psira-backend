@@ -42,6 +42,21 @@ export class AssessmentResolver {
         return this.assessmentService.getAssessments(query, currentUser);
     }
 
+    @Query(() => [Assessment])
+    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    async patientAssessments(
+        @Args('patientId', { type: () => Int }) patientId: number,
+        @CurrentUser() currentUser: User,
+        @Args('includeArchived', { nullable: true, defaultValue: false })
+        includeArchived: boolean,
+    ): Promise<Assessment[]> {
+        return this.assessmentService.getPatientAssessments(
+            patientId,
+            currentUser,
+            includeArchived,
+        );
+    }
+
     @Query(() => Assessment)
     @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
     async assessment(
@@ -91,25 +106,28 @@ export class AssessmentResolver {
         @Args('id', { type: () => Int }) id: number,
         @Args('statusCancel', { nullable: true, defaultValue: true })
         statusCancel: boolean,
+        @CurrentUser() currentUser: User,
     ) {
-        await this.assessmentService.deleteAssessment(id, statusCancel);
+        await this.assessmentService.deleteAssessment(id, statusCancel, currentUser);
         return statusCancel;
     }
 
     @Mutation(() => Assessment)
     @UsePermission(PermissionEnum.DELETE_ASSESSMENTS)
     async archiveOneAssessment(
-        @Args('id', { type: () => Int }) id: number
+        @Args('id', { type: () => Int }) id: number,
+        @CurrentUser() currentUser: User,
     ): Promise<Assessment> {
-        return await this.assessmentService.archiveOneAssessment(id);
+        return await this.assessmentService.archiveOneAssessment(id, currentUser);
     }
 
     @Mutation(() => Assessment)
     @UsePermission(PermissionEnum.DELETE_ASSESSMENTS)
     async restoreOneAssessment(
         @Args('id', { type: () => Int }) id: number,
+        @CurrentUser() currentUser: User,
     ): Promise<Assessment> {
-        return await this.assessmentService.restoreOneAssessment(id);
+        return await this.assessmentService.restoreOneAssessment(id, currentUser);
     }
 
 }

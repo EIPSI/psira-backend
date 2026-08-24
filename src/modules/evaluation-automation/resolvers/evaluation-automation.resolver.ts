@@ -2,10 +2,12 @@ import { SortDirection } from '@nestjs-query/core';
 import { QueryArgsType } from '@nestjs-query/query-graphql';
 import { UseGuards } from '@nestjs/common';
 import { Args, ArgsType, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
-import { UsePermission } from 'src/modules/permission/decorators/permission.decorator';
+import { UseOrPermissions } from 'src/modules/permission/decorators/permission.decorator';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { PermissionGuard } from 'src/modules/permission/guards/permission.guard';
+import { User } from 'src/modules/user/models/user.model';
 import {
     CreateEvaluationAutomationInput,
     UpdateEvaluationAutomationInput,
@@ -34,99 +36,139 @@ export class EvaluationAutomationResolver {
     ) {}
 
     @Query(() => EvaluationAutomation)
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.VIEW_EVALUATION_AUTOMATIONS,
+        PermissionEnum.VIEW_ALL_EVALUATION_AUTOMATIONS,
+    ])
     evaluationAutomation(
         @Args('id', { type: () => Int }) id: number,
+        @CurrentUser() currentUser: User,
     ): Promise<EvaluationAutomation> {
-        return this.managementService.getAutomationOrFail(id);
+        return this.managementService.getAutomationOrFail(id, currentUser);
     }
 
     @Query(() => EvaluationAutomationConnection)
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.VIEW_EVALUATION_AUTOMATIONS,
+        PermissionEnum.VIEW_ALL_EVALUATION_AUTOMATIONS,
+    ])
     async evaluationAutomations(
         @Args() query: EvaluationAutomationQuery,
+        @CurrentUser() currentUser: User,
     ) {
         query.sorting = query.sorting?.length
             ? query.sorting
             : [{ field: 'id', direction: SortDirection.DESC }];
 
         return EvaluationAutomationConnection.createFromPromise(
-            q => this.managementService.listAutomations(q),
+            q => this.managementService.listAutomations(q, currentUser),
             query,
         );
     }
 
     @Query(() => EvaluationAutomationRunConnection)
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.VIEW_EVALUATION_AUTOMATIONS,
+        PermissionEnum.VIEW_ALL_EVALUATION_AUTOMATIONS,
+    ])
     async evaluationAutomationRuns(
         @Args() query: EvaluationAutomationRunQuery,
         @Args('automationId', { type: () => Int, nullable: true })
         automationId?: number,
+        @CurrentUser() currentUser?: User,
     ) {
         query.sorting = query.sorting?.length
             ? query.sorting
             : [{ field: 'createdAt', direction: SortDirection.DESC }];
 
         return EvaluationAutomationRunConnection.createFromPromise(
-            q => this.managementService.listRuns(q, automationId),
+            q => this.managementService.listRuns(q, automationId, currentUser),
             query,
         );
     }
 
     @Query(() => [EvaluationAutomationPreviewResultDto])
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.VIEW_EVALUATION_AUTOMATIONS,
+        PermissionEnum.VIEW_ALL_EVALUATION_AUTOMATIONS,
+    ])
     evaluationAutomationPreview(
         @Args('input') input: EvaluationAutomationPreviewInput,
+        @CurrentUser() currentUser: User,
     ): Promise<EvaluationAutomationPreviewResultDto[]> {
-        return this.managementService.previewAutomations(input);
+        return this.managementService.previewAutomations(input, currentUser);
     }
 
     @Mutation(() => EvaluationAutomation)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.MANAGE_EVALUATION_AUTOMATIONS,
+        PermissionEnum.MANAGE_ALL_EVALUATION_AUTOMATIONS,
+    ])
     createEvaluationAutomation(
         @Args('automation') input: CreateEvaluationAutomationInput,
+        @CurrentUser() currentUser: User,
     ): Promise<EvaluationAutomation> {
-        return this.managementService.createAutomation(input);
+        return this.managementService.createAutomation(input, currentUser);
     }
 
     @Mutation(() => EvaluationAutomation)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.MANAGE_EVALUATION_AUTOMATIONS,
+        PermissionEnum.MANAGE_ALL_EVALUATION_AUTOMATIONS,
+    ])
     updateEvaluationAutomation(
         @Args('automation') input: UpdateEvaluationAutomationInput,
+        @CurrentUser() currentUser: User,
     ): Promise<EvaluationAutomation> {
-        return this.managementService.updateAutomation(input);
+        return this.managementService.updateAutomation(input, currentUser);
     }
 
     @Mutation(() => EvaluationAutomation)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.MANAGE_EVALUATION_AUTOMATIONS,
+        PermissionEnum.MANAGE_ALL_EVALUATION_AUTOMATIONS,
+    ])
     duplicateEvaluationAutomation(
         @Args('id', { type: () => Int }) id: number,
+        @CurrentUser() currentUser: User,
     ): Promise<EvaluationAutomation> {
-        return this.managementService.duplicateAutomation(id);
+        return this.managementService.duplicateAutomation(id, currentUser);
     }
 
     @Mutation(() => EvaluationAutomation)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.MANAGE_EVALUATION_AUTOMATIONS,
+        PermissionEnum.MANAGE_ALL_EVALUATION_AUTOMATIONS,
+    ])
     setEvaluationAutomationActive(
         @Args('id', { type: () => Int }) id: number,
         @Args('active', { type: () => Boolean }) active: boolean,
+        @CurrentUser() currentUser: User,
     ): Promise<EvaluationAutomation> {
-        return this.managementService.setActive(id, active);
+        return this.managementService.setActive(id, active, currentUser);
     }
 
     @Mutation(() => Boolean)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.MANAGE_EVALUATION_AUTOMATIONS,
+        PermissionEnum.MANAGE_ALL_EVALUATION_AUTOMATIONS,
+    ])
     deleteEvaluationAutomation(
         @Args('id', { type: () => Int }) id: number,
+        @CurrentUser() currentUser: User,
     ): Promise<boolean> {
-        return this.managementService.deleteAutomation(id);
+        return this.managementService.deleteAutomation(id, currentUser);
     }
 
     @Mutation(() => EvaluationAutomationTestResultDto)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.MANAGE_EVALUATION_AUTOMATIONS,
+        PermissionEnum.MANAGE_ALL_EVALUATION_AUTOMATIONS,
+    ])
     testEvaluationAutomation(
         @Args('input') input: TestEvaluationAutomationInput,
+        @CurrentUser() currentUser: User,
     ): Promise<EvaluationAutomationTestResultDto> {
-        return this.managementService.testAutomation(input);
+        return this.managementService.testAutomation(input, currentUser);
     }
 }

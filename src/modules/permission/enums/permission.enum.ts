@@ -84,6 +84,16 @@ export const systemPermissions = [
         group: 'Assessments',
     },
     {
+        key: 'MANAGE_DEPARTMENT_ASSESSMENTS',
+        name: 'manage department assessments',
+        group: 'Assessments',
+    },
+    {
+        key: 'MANAGE_ALL_ASSESSMENTS',
+        name: 'manage all assessments',
+        group: 'Assessments',
+    },
+    {
         key: 'ASSIGN_ANY_ASSESSMENT_USER',
         name: 'assign any assessment user',
         group: 'Assessments',
@@ -92,6 +102,26 @@ export const systemPermissions = [
         key: 'DELETE_ASSESSMENTS',
         name: 'delete assessments',
         group: 'Assessments',
+    },
+    {
+        key: 'VIEW_EVALUATION_AUTOMATIONS',
+        name: 'view evaluation automations',
+        group: 'Evaluation Automations',
+    },
+    {
+        key: 'VIEW_ALL_EVALUATION_AUTOMATIONS',
+        name: 'view all evaluation automations',
+        group: 'Evaluation Automations',
+    },
+    {
+        key: 'MANAGE_EVALUATION_AUTOMATIONS',
+        name: 'manage evaluation automations',
+        group: 'Evaluation Automations',
+    },
+    {
+        key: 'MANAGE_ALL_EVALUATION_AUTOMATIONS',
+        name: 'manage all evaluation automations',
+        group: 'Evaluation Automations',
     },
 
     { key: 'VIEW_REPORTS', name: 'view reports', group: 'Reports' },

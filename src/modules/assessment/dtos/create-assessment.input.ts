@@ -47,10 +47,16 @@ export class CreateFullAssessmentInput {
     targetUserId?: number;
 
     @Field(() => Int, { nullable: true })
+    treatmentCycleId?: number;
+
+    @Field(() => Int, { nullable: true })
     responderUserId?: number;
 
     @Field(() => Int)
     clinicianId: number;
+
+    @Field(() => [Int], { nullable: true })
+    responsibleUserIds?: number[];
 
     @Field(() => Int, { nullable: true })
     mailTemplateId: number;

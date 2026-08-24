@@ -32,6 +32,8 @@ import { AssessmentType } from './models/assessment-type.model';
 import { Patient } from '../patient/models/patient.model';
 import { RandomizationModule } from '../randomization/randomization.module';
 import { RandomizationRule } from '../randomization/models/randomization-rule.model';
+import { CalendarOccurrence } from '../calendar/models/calendar-occurrence.model';
+import { TreatmentCycle } from '../treatment-cycle/models/treatment-cycle.model';
 
 const guards = [GqlAuthGuard, PermissionGuard];
 @Module({
@@ -47,6 +49,8 @@ const guards = [GqlAuthGuard, PermissionGuard];
                     Patient,
                     AssessmentType,
                     RandomizationRule,
+                    CalendarOccurrence,
+                    TreatmentCycle,
                 ]),
 
                 MongooseModule.forFeature([

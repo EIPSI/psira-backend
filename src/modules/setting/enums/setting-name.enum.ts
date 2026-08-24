@@ -8,6 +8,7 @@ export enum SettingKey {
     PASSWORD_LIFETIME_IN_DAYS = 'passwordLifeTimeInDays',
     PASSWORD_REUSE_CUTOFF_IN_DAYS = 'passwordReUseCutoffInDays',
     EVALUATION_AUTOMATION_RUN_RETENTION_DAYS = 'evaluationAutomationRunRetentionDays',
+    TREATMENT_FINALIZATION_UNDO_WINDOW_DAYS = 'treatmentFinalizationUndoWindowDays',
     PATIENT_CASE_MANAGER_ASSIGNABLE_HIERARCHY_RANK = 'patientCaseManagerAssignableHierarchyRank',
     SEND_WELCOME_EMAILS = 'sendWelcomeEmails',
     WELCOME_EMAIL_TEMPLATE_ID = 'welcomeEmailTemplateId',

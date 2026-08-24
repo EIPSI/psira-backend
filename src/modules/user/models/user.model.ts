@@ -129,6 +129,10 @@ export class User extends BaseEntity {
     @Column({nullable: true})
     lastLoginAt?: Date;
 
+    @FilterableField(() => GraphQLISODateTime, {nullable: true})
+    @Column({nullable: true})
+    previousLastLoginAt?: Date;
+
     @Field(() => [Int], {nullable: true})
     @Column({type: 'simple-json', nullable: true})
     skippedAutomationIds?: number[];

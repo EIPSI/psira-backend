@@ -10,9 +10,17 @@ import { CalendarOccurrence } from '../calendar/models/calendar-occurrence.model
 import { SchemeResourceTemplate } from '../evaluation-scheme/models/scheme-resource-template.model';
 import { SchemeSessionTemplate } from '../evaluation-scheme/models/scheme-session-template.model';
 import { Patient } from '../patient/models/patient.model';
+import { TreatmentCycle } from '../treatment-cycle/models/treatment-cycle.model';
+import { User } from '../user/models/user.model';
 import { ClinicalSessionResolver } from './resolvers/clinical-session.resolver';
+import { ClinicalSessionCancellationReasonResolver } from './resolvers/clinical-session-cancellation-reason.resolver';
+import { ClinicalSessionCancellationReason } from './models/clinical-session-cancellation-reason.model';
+import { ClinicalSessionFollowUpSetting } from './models/clinical-session-follow-up-setting.model';
+import { ClinicalSessionFollowUpVersion } from './models/clinical-session-follow-up-version.model';
+import { ClinicalSessionSchemeApplication } from './models/clinical-session-scheme-application.model';
 import { ClinicalSessionResource } from './models/clinical-session-resource.model';
 import { ClinicalSession } from './models/clinical-session.model';
+import { ClinicalSessionCancellationReasonService } from './services/clinical-session-cancellation-reason.service';
 import { ClinicalSessionSchedulingService } from './services/clinical-session-scheduling.service';
 import { ClinicalSessionTimingService } from './services/clinical-session-timing.service';
 
@@ -26,12 +34,18 @@ const guards = [GqlAuthGuard, PermissionGuard];
             imports: [
                 NestjsQueryTypeOrmModule.forFeature([
                     ClinicalSession,
+                    ClinicalSessionCancellationReason,
+                    ClinicalSessionFollowUpSetting,
+                    ClinicalSessionFollowUpVersion,
+                    ClinicalSessionSchemeApplication,
                     ClinicalSessionResource,
                     CalendarOccurrence,
                     Assessment,
                     SchemeSessionTemplate,
                     SchemeResourceTemplate,
                     Patient,
+                    TreatmentCycle,
+                    User,
                 ]),
             ],
             resolvers: [
@@ -58,9 +72,15 @@ const guards = [GqlAuthGuard, PermissionGuard];
     ],
     providers: [
         ClinicalSessionTimingService,
+        ClinicalSessionCancellationReasonService,
         ClinicalSessionSchedulingService,
         ClinicalSessionResolver,
+        ClinicalSessionCancellationReasonResolver,
     ],
-    exports: [ClinicalSessionTimingService, ClinicalSessionSchedulingService],
+    exports: [
+        ClinicalSessionTimingService,
+        ClinicalSessionCancellationReasonService,
+        ClinicalSessionSchedulingService,
+    ],
 })
 export class ClinicalSessionModule {}

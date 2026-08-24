@@ -14,6 +14,7 @@ import { EvaluationAutomationConditionDto } from './evaluation-automation-condit
 import { EvaluationAutomationDelayUnit } from '../enums/evaluation-automation-delay-unit.enum';
 import { EvaluationAutomationTriggerPoint } from '../enums/evaluation-automation-trigger-point.enum';
 import { EvaluationAutomationType } from '../enums/evaluation-automation-type.enum';
+import { CaseEventReasonContext } from 'src/modules/treatment-cycle/enums/case-event-reason-context.enum';
 
 @InputType()
 export class CreateEvaluationAutomationInput {
@@ -53,6 +54,30 @@ export class CreateEvaluationAutomationInput {
     @Field(() => EvaluationAutomationType)
     @IsEnum(EvaluationAutomationType)
     automationType: EvaluationAutomationType;
+
+    @Field(() => Int, { nullable: true })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    triggerSessionNumber?: number;
+
+    @Field(() => [Int], { nullable: true })
+    @IsOptional()
+    @IsArray()
+    @IsInt({ each: true })
+    triggerReasonIds?: number[];
+
+    @Field(() => [CaseEventReasonContext], { nullable: true })
+    @IsOptional()
+    @IsArray()
+    @IsEnum(CaseEventReasonContext, { each: true })
+    triggerReasonContexts?: CaseEventReasonContext[];
+
+    @Field(() => Int, { nullable: true })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    lastLoginInactiveDays?: number;
 
     @Field(() => Int)
     @IsInt()

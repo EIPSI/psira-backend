@@ -13,6 +13,7 @@ import { SettingKey } from '../setting/enums/setting-name.enum';
 import { AccessTokenService } from './providers/access-token.service';
 import { CacheService } from 'src/shared';
 import * as moment from 'moment';
+import { EvaluationAutomationTriggerPoint } from '../evaluation-automation/enums/evaluation-automation-trigger-point.enum';
 
 @Injectable()
 export class AuthService {
@@ -33,6 +34,7 @@ export class AuthService {
 
         const accessToken: string = await this.tokenService.generateToken(user);
         await this.dispatchFirstLoginAutomation(user, isFirstLogin);
+        await this.dispatchLastLoginAutomation(user);
 
         return {
             accessToken: accessToken,
@@ -98,6 +100,7 @@ export class AuthService {
         if (isFirstLogin) {
             user.firstLoginAt = now;
         }
+        user.previousLastLoginAt = user.lastLoginAt;
         user.lastLoginAt = now;
         await user.save();
     }
@@ -114,13 +117,36 @@ export class AuthService {
                 { strict: false },
             ) as any;
             await automationEngine.handleTrigger({
-                triggerPoint: 'first_login',
+                triggerPoint: EvaluationAutomationTriggerPoint.FIRST_LOGIN,
                 userId: user.id,
                 excludedAutomationIds: user.skippedAutomationIds || [],
             });
         } catch (error) {
             this.logger.error(
                 `Unable to dispatch first_login automation for user ${user.id}: ${error?.message}`,
+            );
+        }
+    }
+
+    private async dispatchLastLoginAutomation(user: User): Promise<void> {
+        try {
+            const automationEngine = this.moduleRef.get(
+                'EVALUATION_AUTOMATION_ENGINE',
+                { strict: false },
+            ) as any;
+            await automationEngine.handleTrigger({
+                triggerPoint: EvaluationAutomationTriggerPoint.LAST_LOGIN,
+                userId: user.id,
+                triggerOccurredAt: user.lastLoginAt || new Date(),
+                excludedAutomationIds: user.skippedAutomationIds || [],
+                metadata: {
+                    previousLastLoginAt: user.previousLastLoginAt?.toISOString?.() || null,
+                    lastLoginAt: user.lastLoginAt?.toISOString?.() || null,
+                },
+            });
+        } catch (error) {
+            this.logger.error(
+                `Unable to dispatch last_login automation for user ${user.id}: ${error?.message}`,
             );
         }
     }

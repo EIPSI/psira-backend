@@ -9,6 +9,7 @@ export const defaultConfig: SettingDto = {
     passwordLifeTimeInDays: 365,
     passwordReUseCutoffInDays: 365,
     evaluationAutomationRunRetentionDays: 365,
+    treatmentFinalizationUndoWindowDays: 30,
     patientCaseManagerAssignableHierarchyRank: 500,
     maxLoginAttempts: 5,
     sendWelcomeEmails: true,

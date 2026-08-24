@@ -9,6 +9,7 @@ import { Department } from 'src/modules/department/models/department.model';
 import { EvaluationScheme } from 'src/modules/evaluation-scheme/models/evaluation-scheme.model';
 import { MailTemplate } from 'src/modules/mail/models/mail-template.model';
 import { Role } from 'src/modules/permission/models/role.model';
+import { CaseEventReasonContext } from 'src/modules/treatment-cycle/enums/case-event-reason-context.enum';
 import {
     BaseEntity,
     Column,
@@ -67,6 +68,22 @@ export class EvaluationAutomation extends BaseEntity {
     @FilterableField(() => EvaluationAutomationType)
     @Column({ type: 'enum', enum: EvaluationAutomationType })
     automationType: EvaluationAutomationType;
+
+    @FilterableField(() => Int, { nullable: true })
+    @Column({ nullable: true })
+    triggerSessionNumber?: number;
+
+    @Field(() => [Int], { nullable: true })
+    @Column({ type: 'simple-json', nullable: true })
+    triggerReasonIds?: number[];
+
+    @Field(() => [CaseEventReasonContext], { nullable: true })
+    @Column({ type: 'simple-json', nullable: true })
+    triggerReasonContexts?: CaseEventReasonContext[];
+
+    @FilterableField(() => Int, { nullable: true })
+    @Column({ nullable: true })
+    lastLoginInactiveDays?: number;
 
     @FilterableField(() => Int)
     @Column()

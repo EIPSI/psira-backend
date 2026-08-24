@@ -35,6 +35,7 @@ interface GenerationContext {
     responderUserId: number;
     responderEmail?: string;
     clinicianId: number;
+    responsibleUserIds: number[];
     maxOccurrences: number;
     generationEndsAt: Date;
     generationStartsAt: Date;
@@ -149,6 +150,7 @@ export class SchemeGenerationService {
         const scheme = assignment.scheme;
         const responderUser = await this.resolveResponderUser(assignment);
         const clinicianId = this.resolveClinicianId(assignment, currentUser);
+        const responsibleUserIds = this.resolveResponsibleUserIds(assignment, clinicianId);
         const context: GenerationContext = {
             assignment,
             scheme,
@@ -156,6 +158,7 @@ export class SchemeGenerationService {
             responderUserId: responderUser.id,
             responderEmail: responderUser.email,
             clinicianId,
+            responsibleUserIds,
             maxOccurrences: assignment.maxFutureOccurrences || 12,
             generationStartsAt: options.from
                 ? new Date(options.from)
@@ -308,6 +311,7 @@ export class SchemeGenerationService {
             targetUserId: context.assignment.targetUserId,
             therapistId: context.assignment.therapistId,
             supervisorId: context.assignment.supervisorId,
+            responsibleUserIds: context.responsibleUserIds,
             resources: resourceTemplates.map(resourceTemplate => ({
                 resourceTemplateId: resourceTemplate.id,
                 resourceKind: resourceTemplate.resourceKind,
@@ -350,6 +354,8 @@ export class SchemeGenerationService {
                 supervisorId: context.assignment.supervisorId,
             }),
         );
+        occurrence.responsibleUsers = await this.responsibleUsers(context.responsibleUserIds);
+        await this.occurrenceRepository.save(occurrence);
 
         const assessment = await this.assessmentService.createNewAssessment(
             ({
@@ -358,6 +364,7 @@ export class SchemeGenerationService {
                 targetUserId: context.assignment.targetUserId,
                 responderUserId: context.responderUserId,
                 clinicianId: context.clinicianId,
+                responsibleUserIds: context.responsibleUserIds,
                 informantType: template.informantType,
                 questionnaires: template.questionnaireIds || [],
                 questionnaireBundles: template.questionnaireBundleIds || [],
@@ -674,6 +681,22 @@ export class SchemeGenerationService {
             throw new BadRequestException('Unable to resolve clinician for scheme assignment');
         }
         return clinicianId;
+    }
+
+    private resolveResponsibleUserIds(
+        assignment: EvaluationSchemeAssignment,
+        clinicianId: number,
+    ): number[] {
+        return [...new Set(
+            [assignment.therapistId, assignment.supervisorId, assignment.clinicianId, clinicianId]
+                .map(id => Number(id))
+                .filter(id => Number.isFinite(id) && id > 0),
+        )];
+    }
+
+    private responsibleUsers(responsibleUserIds: number[]): Promise<User[]> {
+        if (!responsibleUserIds.length) return Promise.resolve([]);
+        return this.userRepository.findByIds(responsibleUserIds);
     }
 
     private addDays(date: Date, days: number): Date {

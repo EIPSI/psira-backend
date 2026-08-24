@@ -27,6 +27,7 @@ import { ClinicalSessionModule } from './modules/clinical-session/clinical-sessi
 import { EvaluationSchemeModule } from './modules/evaluation-scheme/evaluation-scheme.module';
 import { RandomizationModule } from './modules/randomization/randomization.module';
 import { EvaluationAutomationModule } from './modules/evaluation-automation/evaluation-automation.module';
+import { TreatmentCycleModule } from './modules/treatment-cycle/treatment-cycle.module';
 
 @Module({
     imports: [
@@ -84,6 +85,7 @@ import { EvaluationAutomationModule } from './modules/evaluation-automation/eval
         EvaluationSchemeModule,
         RandomizationModule,
         EvaluationAutomationModule,
+        TreatmentCycleModule,
     ],
     controllers: [],
     providers: [],

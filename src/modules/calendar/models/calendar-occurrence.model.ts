@@ -15,6 +15,8 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    JoinTable,
+    ManyToMany,
     ManyToOne,
     OneToMany,
     OneToOne,
@@ -30,6 +32,7 @@ import { CalendarOccurrenceType } from '../enums/calendar-occurrence-type.enum';
 @FilterableRelation('patient', () => Patient, { nullable: true })
 @FilterableRelation('therapist', () => User, { nullable: true })
 @FilterableRelation('supervisor', () => User, { nullable: true })
+@FilterableUnPagedRelation('responsibleUsers', () => User, { nullable: true })
 @FilterableRelation('clinicalSession', () => ClinicalSession, { nullable: true })
 @FilterableUnPagedRelation('assessments', () => Assessment, { nullable: true })
 @Entity()
@@ -132,6 +135,10 @@ export class CalendarOccurrence extends BaseEntity {
 
     @ManyToOne(() => User, { nullable: true })
     supervisor?: User;
+
+    @ManyToMany(() => User)
+    @JoinTable({ name: 'calendar_occurrence_responsible_user' })
+    responsibleUsers?: User[];
 
     @OneToOne(() => ClinicalSession, session => session.calendarOccurrence)
     clinicalSession?: ClinicalSession;

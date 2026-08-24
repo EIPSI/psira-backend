@@ -1,0 +1,14 @@
+import { registerEnumType } from '@nestjs/graphql';
+
+export enum CaseEventReasonContext {
+    SESSION_CANCELLATION = 'SESSION_CANCELLATION',
+    SUPERVISION_SESSION_CANCELLATION = 'SUPERVISION_SESSION_CANCELLATION',
+    TREATMENT_FINALIZATION = 'TREATMENT_FINALIZATION',
+    SUPERVISION_FINALIZATION = 'SUPERVISION_FINALIZATION',
+    NEW_TREATMENT = 'NEW_TREATMENT',
+    NEW_SUPERVISION = 'NEW_SUPERVISION',
+}
+
+registerEnumType(CaseEventReasonContext, {
+    name: 'CaseEventReasonContext',
+});

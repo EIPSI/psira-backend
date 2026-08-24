@@ -1,6 +1,7 @@
 import {
     FilterableField,
     FilterableRelation,
+    FilterableUnPagedRelation,
 } from '@nestjs-query/query-graphql';
 import { Field, GraphQLISODateTime, Int, ObjectType } from '@nestjs/graphql';
 import { Patient } from 'src/modules/patient/models/patient.model';
@@ -13,6 +14,9 @@ import {
     CreateDateColumn,
     DeleteDateColumn,
     Entity,
+    JoinColumn,
+    JoinTable,
+    ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
@@ -25,6 +29,8 @@ import { MailTemplate } from 'src/modules/mail/models/mail-template.model';
 import { CalendarOccurrence } from 'src/modules/calendar/models/calendar-occurrence.model';
 import { ClinicalSession } from 'src/modules/clinical-session/models/clinical-session.model';
 import { ClinicalSessionResource } from 'src/modules/clinical-session/models/clinical-session-resource.model';
+import { TreatmentCycle } from 'src/modules/treatment-cycle/models/treatment-cycle.model';
+import { ClinicalSessionSchemeApplication } from 'src/modules/clinical-session/models/clinical-session-scheme-application.model';
 import { EvaluationSchemeAssignment } from 'src/modules/evaluation-scheme/models/evaluation-scheme-assignment.model';
 import { EvaluationScheme } from 'src/modules/evaluation-scheme/models/evaluation-scheme.model';
 import { SchemeResourceTemplate } from 'src/modules/evaluation-scheme/models/scheme-resource-template.model';
@@ -34,11 +40,13 @@ import { SchemeResourceTemplate } from 'src/modules/evaluation-scheme/models/sch
 @FilterableRelation('targetUser', () => User, { nullable: true })
 @FilterableRelation('responderUser', () => User, { nullable: true })
 @FilterableRelation('clinician', () => User, { nullable: true })
+@FilterableUnPagedRelation('responsibleUsers', () => User, { nullable: true })
 @FilterableRelation('informantClinician', () => User, { nullable: true })
 @FilterableRelation('assessmentType', () => AssessmentType, { nullable: true })
 @FilterableRelation('calendarOccurrence', () => CalendarOccurrence, { nullable: true })
 @FilterableRelation('clinicalSession', () => ClinicalSession, { nullable: true })
 @FilterableRelation('clinicalSessionResource', () => ClinicalSessionResource, { nullable: true })
+@FilterableRelation('treatmentCycle', () => TreatmentCycle, { nullable: true })
 @FilterableRelation('scheme', () => EvaluationScheme, { nullable: true })
 @FilterableRelation('schemeAssignment', () => EvaluationSchemeAssignment, { nullable: true })
 @FilterableRelation('schemeResourceTemplate', () => SchemeResourceTemplate, { nullable: true })
@@ -170,6 +178,10 @@ export class Assessment extends BaseEntity {
 
     @FilterableField(() => Int, { nullable: true })
     @Column({ nullable: true })
+    treatmentCycleId?: number;
+
+    @FilterableField(() => Int, { nullable: true })
+    @Column({ nullable: true })
     schemeId?: number;
 
     @FilterableField(() => Int, { nullable: true })
@@ -179,6 +191,14 @@ export class Assessment extends BaseEntity {
     @FilterableField(() => Int, { nullable: true })
     @Column({ nullable: true })
     schemeResourceTemplateId?: number;
+
+    @FilterableField(() => Int, { nullable: true })
+    @Column({ nullable: true })
+    schemeApplicationId?: number;
+
+    @FilterableField(() => Int, { nullable: true })
+    @Column({ nullable: true })
+    schemeRelativeSessionNumber?: number;
 
     @Field(() => GraphQLISODateTime, { nullable: true })
     @Column({ nullable: true })
@@ -225,6 +245,10 @@ export class Assessment extends BaseEntity {
     @ManyToOne(() => User)
     clinician: User;
 
+    @ManyToMany(() => User)
+    @JoinTable({ name: 'assessment_responsible_user' })
+    responsibleUsers?: User[];
+
     @ManyToOne(() => User)
     informantClinician: User;
 
@@ -249,6 +273,10 @@ export class Assessment extends BaseEntity {
     @ManyToOne(() => ClinicalSessionResource, { nullable: true })
     clinicalSessionResource?: ClinicalSessionResource;
 
+    @ManyToOne(() => TreatmentCycle, cycle => cycle.assessments, { nullable: true })
+    @JoinColumn({ name: 'treatmentCycleId' })
+    treatmentCycle?: TreatmentCycle;
+
     @ManyToOne(() => EvaluationScheme, { nullable: true })
     scheme?: EvaluationScheme;
 
@@ -257,6 +285,9 @@ export class Assessment extends BaseEntity {
 
     @ManyToOne(() => SchemeResourceTemplate, { nullable: true })
     schemeResourceTemplate?: SchemeResourceTemplate;
+
+    @ManyToOne(() => ClinicalSessionSchemeApplication, { nullable: true })
+    schemeApplication?: ClinicalSessionSchemeApplication;
 }
 
 @ObjectType()

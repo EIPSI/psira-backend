@@ -7,7 +7,7 @@ export class CreatePatientInput {
     @Field({ defaultValue: true })
     active: boolean;
 
-    @Field({ nullable: true })
+    @Field(() => Int, { nullable: true })
     statusId: number;
 
     @Field({ nullable: true })

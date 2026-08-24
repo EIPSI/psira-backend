@@ -1,6 +1,9 @@
 import { Field, GraphQLISODateTime, Int, ObjectType } from '@nestjs/graphql';
 import { AssessmentOrigin } from 'src/modules/assessment/enums/assessment-origin.enum';
+import { ClinicalSessionCancellationLabel } from 'src/modules/clinical-session/enums/clinical-session-cancellation-label.enum';
+import { ClinicalSessionCancellationType } from 'src/modules/clinical-session/enums/clinical-session-cancellation-type.enum';
 import { ClinicalSessionKind } from 'src/modules/clinical-session/enums/clinical-session-kind.enum';
+import { ClinicalSessionModality } from 'src/modules/clinical-session/enums/clinical-session-modality.enum';
 import { CalendarOccurrenceStatus } from '../enums/calendar-occurrence-status.enum';
 import { CalendarOccurrenceType } from '../enums/calendar-occurrence-type.enum';
 import { CalendarEventType } from '../enums/calendar-event-type.enum';
@@ -52,6 +55,9 @@ export class CalendarEvent {
     @Field(() => Int, { nullable: true })
     supervisorId?: number;
 
+    @Field(() => [Int], { nullable: true })
+    responsibleUserIds?: number[];
+
     @Field(() => Int, { nullable: true })
     clinicalSessionId?: number;
 
@@ -61,8 +67,26 @@ export class CalendarEvent {
     @Field(() => Int, { nullable: true })
     sessionNumber?: number;
 
+    @Field(() => ClinicalSessionModality, { nullable: true })
+    modality?: ClinicalSessionModality;
+
+    @Field(() => ClinicalSessionCancellationType, { nullable: true })
+    cancellationType?: ClinicalSessionCancellationType;
+
+    @Field(() => ClinicalSessionCancellationLabel, { nullable: true })
+    cancellationLabel?: ClinicalSessionCancellationLabel;
+
+    @Field({ nullable: true })
+    cancellationReasonSnapshot?: string;
+
+    @Field({ nullable: true })
+    cancellationComment?: string;
+
     @Field(() => Int, { nullable: true })
     assessmentId?: number;
+
+    @Field(() => Int, { nullable: true })
+    clinicalSessionResourceId?: number;
 
     @Field(() => AssessmentOrigin, { nullable: true })
     assessmentOrigin?: AssessmentOrigin;

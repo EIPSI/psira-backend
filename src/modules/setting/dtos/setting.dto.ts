@@ -50,6 +50,12 @@ export class SettingDto {
     evaluationAutomationRunRetentionDays?: number;
 
     @IsOptional()
+    @Max(365 * 5)
+    @Min(1)
+    @Field(() => Int, { nullable: true })
+    treatmentFinalizationUndoWindowDays?: number;
+
+    @IsOptional()
     @Min(0)
     @Field(() => Int, { nullable: true })
     patientCaseManagerAssignableHierarchyRank?: number;
