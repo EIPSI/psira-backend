@@ -13,6 +13,7 @@ import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { PermissionService } from 'src/modules/permission/providers/permission.service';
 import { QuestionnaireBundle } from 'src/modules/questionnaire/models/questionnaire-bundle.schema';
 import { Questionnaire } from 'src/modules/questionnaire/models/questionnaire.schema';
+import { RandomizationRuleType } from 'src/modules/randomization/enums/randomization-rule-type.enum';
 import { RandomizationRule } from 'src/modules/randomization/models/randomization-rule.model';
 import { CaseEventReasonContext } from 'src/modules/treatment-cycle/enums/case-event-reason-context.enum';
 import { CaseEventReason } from 'src/modules/treatment-cycle/models/case-event-reason.model';
@@ -41,7 +42,6 @@ export class EvaluationAutomationManagementService {
         'role',
         'scheme',
         'assessmentType',
-        'mailTemplate',
     ];
 
     constructor(
@@ -221,8 +221,6 @@ export class EvaluationAutomationManagementService {
             evaluationName: automation.evaluationName,
             expirationMinutes: automation.expirationMinutes,
             reminderMinutes: automation.reminderMinutes || [],
-            emailNotificationsEnabled: automation.emailNotificationsEnabled,
-            mailTemplateId: automation.mailTemplateId,
         }, currentUser);
     }
 
@@ -291,19 +289,22 @@ export class EvaluationAutomationManagementService {
             'triggerReasonIds',
             'triggerReasonContexts',
             'lastLoginInactiveDays',
+            'lastLoginConditionLogic',
+            'lastLoginConditions',
             'delayAmount',
             'delayUnit',
             'priority',
             'schemeId',
+            'schemeRandomizationRuleId',
             'assessmentTypeId',
             'questionnaireIds',
             'questionnaireBundleIds',
             'randomizationRuleIds',
             'evaluationName',
             'expirationMinutes',
+            'expirationUnit',
             'reminderMinutes',
-            'emailNotificationsEnabled',
-            'mailTemplateId',
+            'reminderUnit',
         ].forEach((key: string) => {
             const value = (input as any)[key];
             if (value !== undefined) {
@@ -335,6 +336,18 @@ export class EvaluationAutomationManagementService {
             input.triggerPoint !== EvaluationAutomationTriggerPoint.LAST_LOGIN
         ) {
             throw new BadRequestException('Last login inactivity condition can only be used with last login trigger');
+        }
+        if (
+            input.lastLoginConditions?.length &&
+            input.triggerPoint !== EvaluationAutomationTriggerPoint.LAST_LOGIN
+        ) {
+            throw new BadRequestException('Last login conditions can only be used with last login trigger');
+        }
+        if (
+            input.lastLoginConditionLogic &&
+            !['AND', 'OR'].includes(input.lastLoginConditionLogic)
+        ) {
+            throw new BadRequestException('Last login condition logic must be AND or OR');
         }
         if (
             input.triggerPoint === EvaluationAutomationTriggerPoint.LAST_LOGIN &&
@@ -369,20 +382,39 @@ export class EvaluationAutomationManagementService {
         input: Partial<AutomationInput>,
         departmentIds: number[],
     ): Promise<void> {
-        if (!input.schemeId) throw new BadRequestException('Fixed scheme is required');
+        if (!!input.schemeId === !!input.schemeRandomizationRuleId) {
+            throw new BadRequestException('Choose either a fixed scheme or a high-level randomization');
+        }
 
-        const scheme = await this.schemeRepository.findOne(input.schemeId, {
+        if (input.schemeId) {
+            const scheme = await this.schemeRepository.findOne(input.schemeId, {
+                relations: ['departments'],
+            });
+            if (!scheme) throw new NotFoundException('Evaluation scheme not found');
+            if (scheme.schemeType !== EvaluationSchemeType.INDEPENDENT_EVALUATION) {
+                throw new BadRequestException('Selected scheme must be a fixed scheme');
+            }
+            if (!coversAllSelectedDepartments(
+                departmentIds,
+                scheme.departments?.map(department => department.id) || [],
+            )) {
+                throw new BadRequestException('Scheme is not available for all selected departments');
+            }
+            return;
+        }
+
+        const randomization = await this.randomizationRuleRepository.findOne(input.schemeRandomizationRuleId, {
             relations: ['departments'],
         });
-        if (!scheme) throw new NotFoundException('Evaluation scheme not found');
-        if (scheme.schemeType !== EvaluationSchemeType.INDEPENDENT_EVALUATION) {
-            throw new BadRequestException('Selected scheme must be a fixed scheme');
+        if (!randomization) throw new NotFoundException('Randomization not found');
+        if (randomization.type !== RandomizationRuleType.HIGH_LEVEL) {
+            throw new BadRequestException('Selected randomization must be high level');
         }
         if (!coversAllSelectedDepartments(
             departmentIds,
-            scheme.departments?.map(department => department.id) || [],
+            randomization.departments?.map(department => department.id) || [],
         )) {
-            throw new BadRequestException('Scheme is not available for all selected departments');
+            throw new BadRequestException('Randomization is not available for all selected departments');
         }
     }
 

@@ -36,6 +36,10 @@ export class SchemeResourceTemplate extends BaseEntity {
     @Column({ nullable: true })
     assessmentTypeId?: number;
 
+    @Field({ nullable: true })
+    @Column({ nullable: true })
+    name?: string;
+
     @Field(() => [String], { nullable: true })
     @Column({ type: 'simple-json', nullable: true })
     questionnaireIds?: string[];
@@ -84,9 +88,17 @@ export class SchemeResourceTemplate extends BaseEntity {
     @Column({ nullable: true })
     availabilityDurationMinutes?: number;
 
+    @Field({ nullable: true })
+    @Column({ nullable: true, default: 'MINUTES' })
+    availabilityDurationUnit?: string;
+
     @Field(() => [Int], { nullable: true })
     @Column({ type: 'simple-json', nullable: true })
     reminderMinutes?: number[];
+
+    @Field({ nullable: true })
+    @Column({ nullable: true, default: 'MINUTES' })
+    reminderUnit?: string;
 
     @FilterableField(() => GraphQLISODateTime)
     @CreateDateColumn()

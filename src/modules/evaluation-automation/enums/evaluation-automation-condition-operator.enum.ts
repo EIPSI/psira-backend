@@ -9,6 +9,8 @@ export enum EvaluationAutomationConditionOperator {
     LTE = 'LTE',
     CONTAINS = 'CONTAINS',
     NOT_CONTAINS = 'NOT_CONTAINS',
+    IN = 'IN',
+    NOT_IN = 'NOT_IN',
     IS_EMPTY = 'IS_EMPTY',
     IS_NOT_EMPTY = 'IS_NOT_EMPTY',
     BOOLEAN = 'BOOLEAN',

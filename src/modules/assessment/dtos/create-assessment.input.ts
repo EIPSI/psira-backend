@@ -33,10 +33,16 @@ export class Dates {
 
     @Field(() => [Int], { nullable: true })
     reminderMinutes?: number[];
+
+    @Field(() => String, { nullable: true })
+    reminderUnit?: string;
 }
 
 @InputType()
 export class CreateFullAssessmentInput {
+    @Field(() => String, { nullable: true })
+    name?: string;
+
     @Field(() => Int)
     assessmentTypeId: number;
 
@@ -93,6 +99,9 @@ export class CreateFullAssessmentInput {
 
     @Field(() => [Int], { nullable: true })
     reminderMinutes?: number[];
+
+    @Field(() => String, { nullable: true })
+    reminderUnit?: string;
 }
 
 @InputType()

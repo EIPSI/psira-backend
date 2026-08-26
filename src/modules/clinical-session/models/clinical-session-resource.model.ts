@@ -53,6 +53,10 @@ export class ClinicalSessionResource extends BaseEntity {
     @Column({ type: 'enum', enum: ClinicalSessionResourceKind })
     resourceKind: ClinicalSessionResourceKind;
 
+    @Field({ nullable: true })
+    @Column({ nullable: true })
+    name?: string;
+
     @FilterableField(() => ClinicalSessionResourceStatus)
     @Column({
         type: 'enum',

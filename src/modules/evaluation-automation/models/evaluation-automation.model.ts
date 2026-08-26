@@ -85,6 +85,14 @@ export class EvaluationAutomation extends BaseEntity {
     @Column({ nullable: true })
     lastLoginInactiveDays?: number;
 
+    @Field({ nullable: true })
+    @Column({ nullable: true, default: 'AND' })
+    lastLoginConditionLogic?: string;
+
+    @Field(() => [EvaluationAutomationConditionDto], { nullable: true })
+    @Column({ type: 'simple-json', nullable: true })
+    lastLoginConditions?: EvaluationAutomationConditionDto[];
+
     @FilterableField(() => Int)
     @Column()
     delayAmount: number;
@@ -100,6 +108,10 @@ export class EvaluationAutomation extends BaseEntity {
     @FilterableField(() => Int, { nullable: true })
     @Column({ nullable: true })
     schemeId?: number;
+
+    @FilterableField(() => Int, { nullable: true })
+    @Column({ nullable: true })
+    schemeRandomizationRuleId?: number;
 
     @FilterableField(() => Int, { nullable: true })
     @Column({ nullable: true })
@@ -125,9 +137,17 @@ export class EvaluationAutomation extends BaseEntity {
     @Column({ nullable: true })
     expirationMinutes?: number;
 
+    @Field({ nullable: true })
+    @Column({ nullable: true, default: 'MINUTES' })
+    expirationUnit?: string;
+
     @Field(() => [Int], { nullable: true })
     @Column({ type: 'simple-json', nullable: true })
     reminderMinutes?: number[];
+
+    @Field({ nullable: true })
+    @Column({ nullable: true, default: 'MINUTES' })
+    reminderUnit?: string;
 
     @FilterableField()
     @Column({ default: true })

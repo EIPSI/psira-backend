@@ -30,6 +30,9 @@ export class CreateClinicalSessionResourceInput {
     @Field(() => Int, { nullable: true })
     assessmentTypeId?: number;
 
+    @Field(() => String, { nullable: true })
+    name?: string;
+
     @Field(() => [String], { nullable: true })
     questionnaires?: string[];
 

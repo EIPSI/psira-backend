@@ -64,9 +64,9 @@ export class Assessment extends BaseEntity {
     @Column({ nullable: true })
     date?: Date;
 
-    // @FilterableField({ nullable: true })
-    // @Column({ nullable: true })
-    // name: string;
+    @FilterableField({ nullable: true })
+    @Column({ nullable: true })
+    name?: string;
 
     @FilterableField(() => Int, { nullable: true })
     @Column({ nullable: true })
@@ -159,6 +159,10 @@ export class Assessment extends BaseEntity {
     @Field(() => [Int], { nullable: true })
     @Column({ type: 'simple-json', nullable: true })
     reminderMinutes?: number[];
+
+    @Field(() => String, { nullable: true })
+    @Column({ nullable: true, default: 'MINUTES' })
+    reminderUnit?: string;
 
     @Field(() => [Int], { nullable: true })
     @Column({ type: 'simple-json', nullable: true })

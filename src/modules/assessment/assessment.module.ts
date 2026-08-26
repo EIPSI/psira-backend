@@ -34,6 +34,7 @@ import { RandomizationModule } from '../randomization/randomization.module';
 import { RandomizationRule } from '../randomization/models/randomization-rule.model';
 import { CalendarOccurrence } from '../calendar/models/calendar-occurrence.model';
 import { TreatmentCycle } from '../treatment-cycle/models/treatment-cycle.model';
+import { CaseHistoryEntry } from '../treatment-cycle/models/case-history-entry.model';
 import { NotificationModule } from '../notification/notification.module';
 
 const guards = [GqlAuthGuard, PermissionGuard];
@@ -52,6 +53,7 @@ const guards = [GqlAuthGuard, PermissionGuard];
                     RandomizationRule,
                     CalendarOccurrence,
                     TreatmentCycle,
+                    CaseHistoryEntry,
                 ]),
 
                 MongooseModule.forFeature([

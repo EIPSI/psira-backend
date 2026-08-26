@@ -298,7 +298,10 @@ export class EvaluationAutomationEngineService {
                     EvaluationAutomationResourceType.EVALUATION_SCHEME_ASSIGNMENT,
                 resourceId: assignment.id,
                 scheduledAt,
-                metadata: { schemeId: automation.schemeId },
+                metadata: {
+                    schemeId: automation.schemeId,
+                    randomizationRuleId: automation.schemeRandomizationRuleId,
+                },
             };
         }
 
@@ -325,6 +328,7 @@ export class EvaluationAutomationEngineService {
     ): ApplyEvaluationSchemeInput {
         return {
             schemeId: automation.schemeId,
+            randomizationRuleId: automation.schemeRandomizationRuleId,
             patientId: context.patient?.id,
             targetUserId: context.user.id,
             responderUserId: context.user.id,
@@ -348,7 +352,8 @@ export class EvaluationAutomationEngineService {
             responderUserId: context.user.id,
             clinicianId: this.resolveClinicianId(context),
             informantType: AssessmentInformant.PATIENT,
-            note: automation.evaluationName,
+            name: automation.evaluationName,
+            note: null,
             questionnaires: automation.questionnaireIds || [],
             questionnaireBundles: automation.questionnaireBundleIds || [],
             randomizationRuleIds: automation.randomizationRuleIds || [],
@@ -357,9 +362,11 @@ export class EvaluationAutomationEngineService {
                     deliveryDate: scheduledAt,
                     expirationDate,
                     reminderMinutes: automation.reminderMinutes || [],
+                    reminderUnit: automation.reminderUnit || 'MINUTES',
                 },
             ],
-            emailReminder: automation.emailNotificationsEnabled,
+            reminderUnit: automation.reminderUnit || 'MINUTES',
+            emailReminder: true,
             mailTemplateId: null,
             receiverEmail: context.user.email,
         } as unknown) as CreateFullAssessmentInput;
@@ -383,7 +390,7 @@ export class EvaluationAutomationEngineService {
 
         if (
             automation.automationType === EvaluationAutomationType.FIXED_SCHEME &&
-            (!automation.schemeId ||
+            ((!automation.schemeId && !automation.schemeRandomizationRuleId) ||
                 !this.isSupportedDelayUnit(automation.delayUnit))
         ) {
             throw new BadRequestException('Fixed scheme automation is invalid');
@@ -599,17 +606,24 @@ export class EvaluationAutomationEngineService {
         trigger: EvaluationAutomationTriggerInput,
     ): boolean {
         if (automation.triggerPoint !== EvaluationAutomationTriggerPoint.LAST_LOGIN) return true;
-        const minDays = Number(automation.lastLoginInactiveDays || 0);
-        if (!minDays) return true;
-
         const previousValue = trigger.metadata?.previousLastLoginAt;
+        const legacyMinDays = Number(automation.lastLoginInactiveDays || 0);
+        const configuredConditions = automation.lastLoginConditions || [];
+        if (!legacyMinDays && !configuredConditions.length) return true;
         if (!previousValue) return false;
         const previous = new Date(previousValue);
         if (Number.isNaN(previous.getTime())) return false;
 
         const occurredAt = trigger.triggerOccurredAt ? new Date(trigger.triggerOccurredAt) : new Date();
         const inactiveDays = (occurredAt.getTime() - previous.getTime()) / (24 * 60 * 60 * 1000);
-        return inactiveDays >= minDays;
+        if (!configuredConditions.length) return inactiveDays >= legacyMinDays;
+
+        const results = configuredConditions.map(condition =>
+            this.evaluateCondition(condition, inactiveDays),
+        );
+        return (automation.lastLoginConditionLogic || 'AND') === 'OR'
+            ? results.some(Boolean)
+            : results.every(Boolean);
     }
 
     private isSupportedDelayUnit(unit: EvaluationAutomationDelayUnit): boolean {
@@ -639,6 +653,10 @@ export class EvaluationAutomationEngineService {
                 return this.valueContains(actualValue, expectedValue);
             case EvaluationAutomationConditionOperator.NOT_CONTAINS:
                 return !this.valueContains(actualValue, expectedValue);
+            case EvaluationAutomationConditionOperator.IN:
+                return this.valueIn(actualValue, expectedValue);
+            case EvaluationAutomationConditionOperator.NOT_IN:
+                return !this.valueIn(actualValue, expectedValue);
             case EvaluationAutomationConditionOperator.IS_EMPTY:
                 return this.isEmpty(actualValue);
             case EvaluationAutomationConditionOperator.IS_NOT_EMPTY:
@@ -655,6 +673,11 @@ export class EvaluationAutomationEngineService {
         const trimmed = `${value}`.trim();
         if (trimmed === 'true') return true;
         if (trimmed === 'false') return false;
+        if (trimmed.includes(',')) {
+            return trimmed
+                .split(',')
+                .map(part => this.parseExpectedValue(part));
+        }
         if (trimmed !== '' && !Number.isNaN(Number(trimmed))) return Number(trimmed);
         return trimmed;
     }
@@ -671,6 +694,14 @@ export class EvaluationAutomationEngineService {
             return actualValue.some(value => this.valueEquals(value, expectedValue));
         }
         return `${actualValue || ''}`.includes(`${expectedValue}`);
+    }
+
+    private valueIn(actualValue: any, expectedValue: any): boolean {
+        const expectedValues = Array.isArray(expectedValue) ? expectedValue : [expectedValue];
+        if (Array.isArray(actualValue)) {
+            return actualValue.some(value => this.valueIn(value, expectedValues));
+        }
+        return expectedValues.some(value => this.valueEquals(actualValue, value));
     }
 
     private isEmpty(value: any): boolean {

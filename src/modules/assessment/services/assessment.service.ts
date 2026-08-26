@@ -42,6 +42,8 @@ import { CalendarOccurrence } from 'src/modules/calendar/models/calendar-occurre
 import { TreatmentCycleKind } from 'src/modules/treatment-cycle/enums/treatment-cycle-kind.enum';
 import { TreatmentCycleStatus } from 'src/modules/treatment-cycle/enums/treatment-cycle-status.enum';
 import { TreatmentCycle } from 'src/modules/treatment-cycle/models/treatment-cycle.model';
+import { CaseHistoryEntryKind } from 'src/modules/treatment-cycle/enums/case-history-entry-kind.enum';
+import { CaseHistoryEntry } from 'src/modules/treatment-cycle/models/case-history-entry.model';
 import { NotificationConfigurationService } from 'src/modules/notification/services/notification-configuration.service';
 import { NotificationDispatchService } from 'src/modules/notification/services/notification-dispatch.service';
 import { NotificationChannel } from 'src/modules/notification/enums/notification-channel.enum';
@@ -69,6 +71,8 @@ export class AssessmentService {
         private readonly occurrenceRepository: Repository<CalendarOccurrence>,
         @InjectRepository(TreatmentCycle)
         private readonly treatmentCycleRepository: Repository<TreatmentCycle>,
+        @InjectRepository(CaseHistoryEntry)
+        private readonly caseHistoryEntryRepository: Repository<CaseHistoryEntry>,
         @InjectModel(Questionnaire.name)
         private readonly questionnaireModel: Model<Questionnaire>,
         @InjectModel(QuestionnaireBundle.name)
@@ -87,6 +91,21 @@ export class AssessmentService {
             .where('cycle."cycleKind" = :kind', { kind: TreatmentCycleKind.CLINICAL })
             .andWhere('cycle.status = :status', { status: TreatmentCycleStatus.ACTIVE })
             .andWhere('cycle."patientId" = :patientId', { patientId })
+            .orderBy('cycle."cycleNumber"', 'DESC')
+            .addOrderBy('cycle."startedAt"', 'DESC')
+            .getOne();
+
+        return cycle?.id;
+    }
+
+    private async resolveActiveSupervisionTreatmentCycleId(
+        therapistId: number,
+    ): Promise<number | undefined> {
+        const cycle = await this.treatmentCycleRepository
+            .createQueryBuilder('cycle')
+            .where('cycle."cycleKind" = :kind', { kind: TreatmentCycleKind.SUPERVISION })
+            .andWhere('cycle.status = :status', { status: TreatmentCycleStatus.ACTIVE })
+            .andWhere('cycle."therapistId" = :therapistId', { therapistId })
             .orderBy('cycle."cycleNumber"', 'DESC')
             .addOrderBy('cycle."startedAt"', 'DESC')
             .getOne();
@@ -368,6 +387,7 @@ export class AssessmentService {
                 }
 
                 assessment.status = AssessmentStatus.OPEN_FOR_COMPLETION;
+                assessment.name = assessmentInput.name?.trim() || null;
                 assessment.assessmentType = assessmentType;
                 assessment.clinicianId = assessmentInput.clinicianId;
                 assessment.informantType = assessmentInput.informantType;
@@ -375,6 +395,7 @@ export class AssessmentService {
                 assessment.note = assessmentInput.note;
                 assessment.deliveryDate = assessmentInput.dates[i].deliveryDate;
                 assessment.reminderMinutes = assessmentInput.dates[i].reminderMinutes || [];
+                assessment.reminderUnit = assessmentInput.dates[i].reminderUnit || assessmentInput.reminderUnit || 'MINUTES';
                 assessment.sentReminderMinutes = [];
                 assessment.questionnaireAssessmentId = questionnaireAssessment.id;
 
@@ -406,6 +427,7 @@ export class AssessmentService {
                     assessment,
                     responsibleUserIds,
                 );
+                await this.recordAssessmentNoteHistory(assessment, currentUser);
                 assessmentArray.push(assessment);
             } catch (err) {
                 await questionnaireAssessment.remove();
@@ -475,6 +497,7 @@ export class AssessmentService {
         const assessment = await this.assessmentRepository.findOneOrFail(
             assessmentInput.assessmentId,
         );
+        const previousAssessmentNote = assessment.note;
 
         const assessmentType = await this.assessmentTypeRepo.findOne(
             assessmentInput.assessmentTypeId,
@@ -543,9 +566,11 @@ export class AssessmentService {
             assessment.clinicianId = assessmentInput.clinicianId;
             assessment.informantType = assessmentInput.informantType;
             assessment.questionnaireAssessmentId = questionnaireAssessment.id;
+            assessment.name = assessmentInput.name?.trim() || null;
             assessment.expirationDate = assessmentInput.expirationDate;
             assessment.deliveryDate = assessmentInput.deliveryDate;
             assessment.reminderMinutes = assessmentInput.reminderMinutes || [];
+            assessment.reminderUnit = assessmentInput.reminderUnit || 'MINUTES';
             assessment.sentReminderMinutes = assessment.sentReminderMinutes || [];
             assessment.note = assessmentInput.note;
             assessment.informantCaregiverRelation = null;
@@ -578,6 +603,7 @@ export class AssessmentService {
                 responsibleUserIds,
             );
             await this.syncCalendarOccurrenceForUpdatedAssessment(assessment);
+            await this.recordAssessmentNoteHistory(assessment, currentUser, previousAssessmentNote);
         } catch (err) {
             // undo mongo changes
             questionnaireAssessment.questionnaires = originalQuestionnaires;
@@ -682,6 +708,47 @@ export class AssessmentService {
 
         assessment.mailTemplateId = mailTemplate.id;
         assessment.emailStatus = AssessmentEmailStatus.SCHEDULED;
+    }
+
+    private async recordAssessmentNoteHistory(
+        assessment: Assessment,
+        currentUser?: User,
+        previousNote?: string,
+    ): Promise<void> {
+        const note = (assessment.note || '').trim();
+        if (!note) return;
+        if (previousNote !== undefined && (previousNote || '').trim() === note) return;
+
+        const cycleKind = assessment.patientId
+            ? TreatmentCycleKind.CLINICAL
+            : TreatmentCycleKind.SUPERVISION;
+        const treatmentCycleId = assessment.treatmentCycleId ||
+            (assessment.patientId
+                ? await this.resolveActiveClinicalTreatmentCycleId(assessment.patientId)
+                : assessment.targetUserId
+                    ? await this.resolveActiveSupervisionTreatmentCycleId(assessment.targetUserId)
+                    : undefined);
+        if (!treatmentCycleId) return;
+
+        await this.caseHistoryEntryRepository.save(
+            this.caseHistoryEntryRepository.create({
+                entryKind: CaseHistoryEntryKind.NOTE,
+                cycleKind,
+                patientId: assessment.patientId || null,
+                therapistId: assessment.patientId ? null : assessment.targetUserId || null,
+                treatmentCycleId,
+                occurredAt: assessment.deliveryDate || new Date(),
+                title: assessment.patientId
+                    ? 'Nota clínica de evaluación'
+                    : 'Nota de supervisión de evaluación',
+                content: note,
+                metadata: {
+                    assessmentId: assessment.id,
+                    assessmentTypeId: assessment.assessmentTypeId,
+                    createdByUserId: currentUser?.id,
+                },
+            }),
+        );
     }
 
     async archiveOneAssessment(id: number, currentUser?: User) {

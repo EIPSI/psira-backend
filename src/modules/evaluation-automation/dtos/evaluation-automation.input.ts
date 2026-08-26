@@ -79,6 +79,17 @@ export class CreateEvaluationAutomationInput {
     @Min(1)
     lastLoginInactiveDays?: number;
 
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsString()
+    lastLoginConditionLogic?: string;
+
+    @Field(() => [EvaluationAutomationConditionDto], { nullable: true })
+    @IsOptional()
+    @ValidateNested({ each: true })
+    @Type(() => EvaluationAutomationConditionDto)
+    lastLoginConditions?: EvaluationAutomationConditionDto[];
+
     @Field(() => Int)
     @IsInt()
     @Min(0)
@@ -98,6 +109,11 @@ export class CreateEvaluationAutomationInput {
     @IsOptional()
     @IsInt()
     schemeId?: number;
+
+    @Field(() => Int, { nullable: true })
+    @IsOptional()
+    @IsInt()
+    schemeRandomizationRuleId?: number;
 
     @Field(() => Int, { nullable: true })
     @IsOptional()
@@ -131,11 +147,21 @@ export class CreateEvaluationAutomationInput {
     @Min(1)
     expirationMinutes?: number;
 
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsString()
+    expirationUnit?: string;
+
     @Field(() => [Int], { nullable: true })
     @IsOptional()
     @IsArray()
     @IsInt({ each: true })
     reminderMinutes?: number[];
+
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsString()
+    reminderUnit?: string;
 
     @Field({ nullable: true, defaultValue: true })
     @IsOptional()

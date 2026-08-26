@@ -316,6 +316,7 @@ export class SchemeGenerationService {
                 resourceTemplateId: resourceTemplate.id,
                 resourceKind: resourceTemplate.resourceKind,
                 assessmentTypeId: resourceTemplate.assessmentTypeId,
+                name: resourceTemplate.name,
                 questionnaires: resourceTemplate.questionnaireIds || [],
                 questionnaireBundles: resourceTemplate.questionnaireBundleIds || [],
                 randomizationRuleIds: resourceTemplate.randomizationRuleIds || [],
@@ -342,7 +343,7 @@ export class SchemeGenerationService {
         const occurrence = await this.occurrenceRepository.save(
             this.occurrenceRepository.create({
                 occurrenceType: CalendarOccurrenceType.INDEPENDENT_ASSESSMENT,
-                title: context.scheme.name,
+                title: template.name || context.scheme.name,
                 startAt: window.deliveryAt,
                 endAt: window.expirationAt,
                 timezone: context.assignment.timezone,
@@ -360,6 +361,7 @@ export class SchemeGenerationService {
         const assessment = await this.assessmentService.createNewAssessment(
             ({
                 assessmentTypeId: template.assessmentTypeId,
+                name: template.name,
                 patientId: context.assignment.patientId,
                 targetUserId: context.assignment.targetUserId,
                 responderUserId: context.responderUserId,
@@ -374,8 +376,10 @@ export class SchemeGenerationService {
                         deliveryDate: window.deliveryAt,
                         expirationDate: window.expirationAt,
                         reminderMinutes: template.reminderMinutes || [],
+                        reminderUnit: template.reminderUnit || 'MINUTES',
                     },
                 ],
+                reminderUnit: template.reminderUnit || 'MINUTES',
                 emailReminder: this.shouldSendSchemeEmails(context),
                 mailTemplateId: this.schemeMailTemplateId(context),
                 receiverEmail: context.responderEmail,

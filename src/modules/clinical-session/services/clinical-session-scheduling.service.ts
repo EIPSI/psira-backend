@@ -1174,6 +1174,7 @@ export class ClinicalSessionSchedulingService {
                 schemeApplicationId: resourceInput.schemeApplicationId,
                 schemeRelativeSessionNumber: resourceInput.schemeRelativeSessionNumber,
                 resourceKind: resourceInput.resourceKind,
+                name: resourceInput.name?.trim() || null,
                 status: ClinicalSessionResourceStatus.PENDING,
                 activationAnchor: resourceInput.activationAnchor,
                 activationOffsetMinutes: resourceInput.activationOffsetMinutes,
@@ -2310,6 +2311,7 @@ export class ClinicalSessionSchedulingService {
                 schemeRelativeSessionNumber: schemeSessionNumber,
                 resourceKind: resourceTemplate.resourceKind,
                 assessmentTypeId: resourceTemplate.assessmentTypeId,
+                name: resourceTemplate.name,
                 questionnaires: resourceTemplate.questionnaireIds || [],
                 questionnaireBundles: resourceTemplate.questionnaireBundleIds || [],
                 randomizationRuleIds: resourceTemplate.randomizationRuleIds || [],
@@ -2497,6 +2499,7 @@ export class ClinicalSessionSchedulingService {
         const assessment = await this.assessmentService.createNewAssessment(
             ({
                 assessmentTypeId: resourceInput.assessmentTypeId,
+                name: resourceInput.name,
                 patientId: sessionInput.patientId,
                 targetUserId: sessionInput.targetUserId,
                 responderUserId: resourceInput.responderUserId,
@@ -2576,6 +2579,7 @@ export class ClinicalSessionSchedulingService {
 
         return {
             resourceKind: resource.resourceKind,
+            name: assessment.name || resource.name,
             resourceTemplateId: resource.resourceTemplateId,
             schemeApplicationId: resource.schemeApplicationId,
             schemeRelativeSessionNumber: resource.schemeRelativeSessionNumber,

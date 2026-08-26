@@ -377,6 +377,7 @@ export class EvaluationSchemeManagementService {
         return {
             resourceKind: input.resourceKind,
             assessmentTypeId: input.assessmentTypeId,
+            name: input.name?.trim() || null,
             questionnaireIds: input.questionnaireIds || [],
             questionnaireBundleIds: input.questionnaireBundleIds || [],
             randomizationRuleIds: input.randomizationRuleIds || [],
@@ -389,7 +390,9 @@ export class EvaluationSchemeManagementService {
             activationAnchor: input.activationAnchor,
             activationOffsetMinutes: input.activationOffsetMinutes,
             availabilityDurationMinutes: input.availabilityDurationMinutes,
+            availabilityDurationUnit: input.availabilityDurationUnit || 'MINUTES',
             reminderMinutes: input.reminderMinutes || [],
+            reminderUnit: input.reminderUnit || 'MINUTES',
         };
     }
 
@@ -405,6 +408,7 @@ export class EvaluationSchemeManagementService {
 
         return {
             assessmentTypeId: input.assessmentTypeId,
+            name: input.name?.trim() || null,
             questionnaireIds: input.questionnaireIds || [],
             questionnaireBundleIds: input.questionnaireBundleIds || [],
             randomizationRuleIds: input.randomizationRuleIds || [],
@@ -415,7 +419,9 @@ export class EvaluationSchemeManagementService {
             endMinuteOfDay: endMinute,
             triggerMode: input.triggerMode || 'BLOCK_START',
             availabilityDurationMinutes: input.availabilityDurationMinutes || duration,
+            availabilityDurationUnit: input.availabilityDurationUnit || 'MINUTES',
             reminderMinutes: input.reminderMinutes || [],
+            reminderUnit: input.reminderUnit || 'MINUTES',
             required: input.required === undefined ? false : input.required,
             singleResponse: input.singleResponse === undefined ? true : input.singleResponse,
             seedOrder: input.seedOrder || 0,

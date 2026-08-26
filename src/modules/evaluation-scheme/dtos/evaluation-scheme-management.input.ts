@@ -13,6 +13,9 @@ export class SchemeResourceTemplateInput {
     @Field(() => Int, { nullable: true })
     assessmentTypeId?: number;
 
+    @Field(() => String, { nullable: true })
+    name?: string;
+
     @Field(() => [String], { nullable: true })
     questionnaireIds?: string[];
 
@@ -49,8 +52,14 @@ export class SchemeResourceTemplateInput {
     @Field(() => Int, { nullable: true })
     availabilityDurationMinutes?: number;
 
+    @Field(() => String, { nullable: true })
+    availabilityDurationUnit?: string;
+
     @Field(() => [Int], { nullable: true })
     reminderMinutes?: number[];
+
+    @Field(() => String, { nullable: true })
+    reminderUnit?: string;
 }
 
 @InputType()
@@ -97,6 +106,9 @@ export class IndependentEvaluationTemplateInput {
     @Field(() => Int)
     assessmentTypeId: number;
 
+    @Field(() => String, { nullable: true })
+    name?: string;
+
     @Field(() => [String], { nullable: true })
     questionnaireIds?: string[];
 
@@ -127,8 +139,14 @@ export class IndependentEvaluationTemplateInput {
     @Field(() => Int, { nullable: true })
     availabilityDurationMinutes?: number;
 
+    @Field(() => String, { nullable: true })
+    availabilityDurationUnit?: string;
+
     @Field(() => [Int], { nullable: true })
     reminderMinutes?: number[];
+
+    @Field(() => String, { nullable: true })
+    reminderUnit?: string;
 
     @Field(() => Boolean, { nullable: true })
     required?: boolean;

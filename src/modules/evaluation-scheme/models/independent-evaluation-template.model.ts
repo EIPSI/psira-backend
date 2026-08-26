@@ -30,6 +30,10 @@ export class IndependentEvaluationTemplate extends BaseEntity {
     @Column()
     assessmentTypeId: number;
 
+    @Field({ nullable: true })
+    @Column({ nullable: true })
+    name?: string;
+
     @Field(() => [String], { nullable: true })
     @Column({ type: 'simple-json', nullable: true })
     questionnaireIds?: string[];
@@ -70,9 +74,17 @@ export class IndependentEvaluationTemplate extends BaseEntity {
     @Column({ nullable: true })
     availabilityDurationMinutes?: number;
 
+    @Field({ nullable: true })
+    @Column({ nullable: true, default: 'MINUTES' })
+    availabilityDurationUnit?: string;
+
     @Field(() => [Int], { nullable: true })
     @Column({ type: 'simple-json', nullable: true })
     reminderMinutes?: number[];
+
+    @Field({ nullable: true })
+    @Column({ nullable: true, default: 'MINUTES' })
+    reminderUnit?: string;
 
     @Field({ nullable: true })
     @Column({ default: false })

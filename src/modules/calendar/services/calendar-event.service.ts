@@ -178,7 +178,7 @@ export class CalendarEventService {
             return {
             id: `assessment:${assessment.id}`,
             type: CalendarEventType.ASSESSMENT,
-            title: assessment.assessmentType?.name || 'Evaluación',
+            title: assessment.name || assessment.assessmentType?.name || 'Evaluación',
             description: assessment.note,
             startAt: assessment.deliveryDate || assessment.date || assessment.createdAt,
             endAt: assessment.expirationDate || assessment.deliveryDate || assessment.createdAt,
