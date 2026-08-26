@@ -10,8 +10,6 @@ export enum SettingKey {
     EVALUATION_AUTOMATION_RUN_RETENTION_DAYS = 'evaluationAutomationRunRetentionDays',
     TREATMENT_FINALIZATION_UNDO_WINDOW_DAYS = 'treatmentFinalizationUndoWindowDays',
     PATIENT_CASE_MANAGER_ASSIGNABLE_HIERARCHY_RANK = 'patientCaseManagerAssignableHierarchyRank',
-    SEND_WELCOME_EMAILS = 'sendWelcomeEmails',
-    WELCOME_EMAIL_TEMPLATE_ID = 'welcomeEmailTemplateId',
     GOOGLE_CALENDAR_ENABLED = 'googleCalendarEnabled',
     GOOGLE_CALENDAR_CLIENT_ID = 'googleCalendarClientId',
     GOOGLE_CALENDAR_CLIENT_SECRET = 'googleCalendarClientSecret',

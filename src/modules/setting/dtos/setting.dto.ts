@@ -61,14 +61,6 @@ export class SettingDto {
     patientCaseManagerAssignableHierarchyRank?: number;
 
     @IsOptional()
-    @Field({ nullable: true, defaultValue: true })
-    sendWelcomeEmails?: boolean;
-
-    @IsOptional()
-    @Field(() => Int, { nullable: true })
-    welcomeEmailTemplateId?: number;
-
-    @IsOptional()
     @Field({ nullable: true, defaultValue: false })
     googleCalendarEnabled?: boolean;
 

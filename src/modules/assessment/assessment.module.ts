@@ -34,6 +34,7 @@ import { RandomizationModule } from '../randomization/randomization.module';
 import { RandomizationRule } from '../randomization/models/randomization-rule.model';
 import { CalendarOccurrence } from '../calendar/models/calendar-occurrence.model';
 import { TreatmentCycle } from '../treatment-cycle/models/treatment-cycle.model';
+import { NotificationModule } from '../notification/notification.module';
 
 const guards = [GqlAuthGuard, PermissionGuard];
 @Module({
@@ -85,6 +86,7 @@ const guards = [GqlAuthGuard, PermissionGuard];
         }),
         PatientModule,
         RandomizationModule,
+        NotificationModule,
     ],
     providers: [
         AssessmentService,

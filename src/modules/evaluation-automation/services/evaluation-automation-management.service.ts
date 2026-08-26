@@ -410,14 +410,6 @@ export class EvaluationAutomationManagementService {
         if (input.reminderMinutes?.some(minute => minute < 0)) {
             throw new BadRequestException('Reminder minutes must be greater than or equal to zero');
         }
-        if (input.emailNotificationsEnabled !== false && !input.mailTemplateId) {
-            throw new BadRequestException('Mail template is required when email notifications are enabled');
-        }
-        if (input.mailTemplateId) {
-            const mailTemplate = await this.mailTemplateRepository.findOne(input.mailTemplateId);
-            if (!mailTemplate) throw new NotFoundException('Mail template not found');
-        }
-
         await this.validateContentDepartments(input, departmentIds);
     }
 

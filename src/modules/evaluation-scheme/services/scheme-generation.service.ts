@@ -658,17 +658,11 @@ export class SchemeGenerationService {
     }
 
     private shouldSendSchemeEmails(context: GenerationContext): boolean {
-        return (
-            !!context.scheme.emailNotificationsEnabled &&
-            !!context.scheme.mailTemplateId &&
-            !!context.responderEmail
-        );
+        return !!context.responderEmail;
     }
 
     private schemeMailTemplateId(context: GenerationContext): number | undefined {
-        return this.shouldSendSchemeEmails(context)
-            ? context.scheme.mailTemplateId
-            : undefined;
+        return undefined;
     }
 
     private resolveClinicianId(

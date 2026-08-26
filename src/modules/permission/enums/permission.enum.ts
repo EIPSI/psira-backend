@@ -123,6 +123,21 @@ export const systemPermissions = [
         name: 'manage all evaluation automations',
         group: 'Evaluation Automations',
     },
+    {
+        key: 'VIEW_NOTIFICATIONS',
+        name: 'view notifications',
+        group: 'Notifications',
+    },
+    {
+        key: 'MANAGE_NOTIFICATIONS',
+        name: 'manage notifications',
+        group: 'Notifications',
+    },
+    {
+        key: 'VIEW_NOTIFICATION_LOGS',
+        name: 'view notification logs',
+        group: 'Notifications',
+    },
 
     { key: 'VIEW_REPORTS', name: 'view reports', group: 'Reports' },
     { key: 'MANAGE_REPORTS', name: 'manage reports', group: 'Reports' },

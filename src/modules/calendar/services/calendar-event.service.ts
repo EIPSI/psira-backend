@@ -149,13 +149,10 @@ export class CalendarEventService {
             .andWhere('assessment."expirationDate" IS NOT NULL')
             .andWhere('assessment."deliveryDate" < :to', { to: filter.to })
             .andWhere('assessment."expirationDate" > :from', { from: filter.from })
-            .andWhere('(assessment."deleted" IS NULL OR assessment."deleted" = false)');
-
-        if (!filter.includeCancelled) {
-            query.andWhere('assessment."status" != :cancelledStatus', {
-                cancelledStatus: 'CANCELLED',
+            .andWhere('(assessment."deleted" IS NULL OR assessment."deleted" = false)')
+            .andWhere('assessment."status" != :cancelledStatus', {
+                cancelledStatus: AssessmentStatus.CANCELLED,
             });
-        }
 
         if (filter.patientId) {
             query.andWhere('assessment."patientId" = :patientId', {
@@ -186,7 +183,7 @@ export class CalendarEventService {
             startAt: assessment.deliveryDate || assessment.date || assessment.createdAt,
             endAt: assessment.expirationDate || assessment.deliveryDate || assessment.createdAt,
             status: assessment.calendarOccurrence?.status,
-            color: assessment.editableFromAssessmentList ? '#2f80ed' : '#722ed1',
+            color: this.assessmentEventColor(assessment, answered),
             editable: assessment.editableFromAssessmentList,
             deletable: !cancelled && (assessment.editableFromAssessmentList || (sessionBased && !answered)),
             occurrenceId: assessment.calendarOccurrenceId,
@@ -200,5 +197,11 @@ export class CalendarEventService {
             assessmentOrigin: assessment.origin,
         };
         });
+    }
+
+    private assessmentEventColor(assessment: Assessment, answered: boolean): string {
+        if (answered) return '#95de64';
+        if (assessment.status === AssessmentStatus.EXPIRED) return '#ffa39e';
+        return assessment.editableFromAssessmentList ? '#2f80ed' : '#1d4ed8';
     }
 }

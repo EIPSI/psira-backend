@@ -28,6 +28,7 @@ import { EvaluationSchemeModule } from './modules/evaluation-scheme/evaluation-s
 import { RandomizationModule } from './modules/randomization/randomization.module';
 import { EvaluationAutomationModule } from './modules/evaluation-automation/evaluation-automation.module';
 import { TreatmentCycleModule } from './modules/treatment-cycle/treatment-cycle.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
     imports: [
@@ -86,6 +87,7 @@ import { TreatmentCycleModule } from './modules/treatment-cycle/treatment-cycle.
         RandomizationModule,
         EvaluationAutomationModule,
         TreatmentCycleModule,
+        NotificationModule,
     ],
     controllers: [],
     providers: [],

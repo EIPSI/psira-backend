@@ -14,6 +14,8 @@ import { Repository } from 'typeorm';
 import { QuestionnaireBundle } from '../models/questionnaire-bundle.schema';
 import { QuestionnaireBundleResolutionService } from './questionnaire-bundle-resolution.service';
 import { RandomizationResolutionService } from 'src/modules/randomization/services/randomization-resolution.service';
+import { NotificationDispatchService } from 'src/modules/notification/services/notification-dispatch.service';
+import { NotificationEvent } from 'src/modules/notification/enums/notification-event.enum';
 
 export class QuestionnaireAssessmentService {
     constructor(
@@ -26,6 +28,8 @@ export class QuestionnaireAssessmentService {
         @InjectRepository(Assessment)
         private assessmentRepository: Repository<Assessment>,
         private questionnaireBundleResolutionService: QuestionnaireBundleResolutionService,
+        @Optional()
+        private notificationDispatchService: NotificationDispatchService,
         @Optional()
         private randomizationResolutionService?: RandomizationResolutionService,
     ) {}
@@ -166,10 +170,11 @@ export class QuestionnaireAssessmentService {
             where: { questionnaireAssessmentId: assessmentId },
         });
 
-        if (
+        const completedNow =
             assessmentModel.status !== AssessmentStatus.COMPLETED &&
-            status === AssessmentStatus.COMPLETED
-        ) {
+            status === AssessmentStatus.COMPLETED;
+
+        if (completedNow && assessment) {
             assessment.submissionDate = new Date();
         }
 
@@ -179,7 +184,16 @@ export class QuestionnaireAssessmentService {
         }
 
         assessmentModel.status = status;
-        return assessmentModel.save();
+        const savedAssessmentModel = await assessmentModel.save();
+
+        if (completedNow && assessment && this.notificationDispatchService) {
+            await this.notificationDispatchService.dispatchAssessmentEvent(
+                NotificationEvent.ASSESSMENT_ANSWERED,
+                assessment.id,
+            );
+        }
+
+        return savedAssessmentModel;
     }
 
     async deleteAssessment(_id: Types.ObjectId, archive = true) {

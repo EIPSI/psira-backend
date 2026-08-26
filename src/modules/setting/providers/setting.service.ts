@@ -84,7 +84,7 @@ export class SettingService {
             return (value === 'true') as SettingDto[K];
         }
 
-        if (typeof defaultValue === 'number' || key === 'welcomeEmailTemplateId') {
+        if (typeof defaultValue === 'number') {
             const parsed = parseInt(value, 10);
             return (Number.isNaN(parsed) ? null : parsed) as SettingDto[K];
         }

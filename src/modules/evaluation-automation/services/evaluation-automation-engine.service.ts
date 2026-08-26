@@ -360,9 +360,7 @@ export class EvaluationAutomationEngineService {
                 },
             ],
             emailReminder: automation.emailNotificationsEnabled,
-            mailTemplateId: automation.emailNotificationsEnabled
-                ? automation.mailTemplateId
-                : null,
+            mailTemplateId: null,
             receiverEmail: context.user.email,
         } as unknown) as CreateFullAssessmentInput;
     }
@@ -401,10 +399,6 @@ export class EvaluationAutomationEngineService {
                 !this.hasEvaluationContent(automation)
             ) {
                 throw new BadRequestException('Individual evaluation automation is invalid');
-            }
-
-            if (automation.emailNotificationsEnabled && !automation.mailTemplateId) {
-                throw new BadRequestException('Mail template is required');
             }
         }
     }

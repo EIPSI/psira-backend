@@ -42,6 +42,11 @@ import { CalendarOccurrence } from 'src/modules/calendar/models/calendar-occurre
 import { TreatmentCycleKind } from 'src/modules/treatment-cycle/enums/treatment-cycle-kind.enum';
 import { TreatmentCycleStatus } from 'src/modules/treatment-cycle/enums/treatment-cycle-status.enum';
 import { TreatmentCycle } from 'src/modules/treatment-cycle/models/treatment-cycle.model';
+import { NotificationConfigurationService } from 'src/modules/notification/services/notification-configuration.service';
+import { NotificationDispatchService } from 'src/modules/notification/services/notification-dispatch.service';
+import { NotificationChannel } from 'src/modules/notification/enums/notification-channel.enum';
+import { NotificationEvent } from 'src/modules/notification/enums/notification-event.enum';
+import { NotificationLogStatus } from 'src/modules/notification/enums/notification-log-status.enum';
 
 @Injectable()
 export class AssessmentService {
@@ -70,6 +75,8 @@ export class AssessmentService {
         private readonly questionnaireBundleModel: Model<QuestionnaireBundle>,
         private readonly patientQueryService: PatientQueryService,
         private readonly patientPermissionService: PatientPermissionService,
+        private readonly notificationConfigurationService: NotificationConfigurationService,
+        private readonly notificationDispatchService: NotificationDispatchService,
     ) {}
 
     private async resolveActiveClinicalTreatmentCycleId(
@@ -387,28 +394,12 @@ export class AssessmentService {
                     assessment.informantCaregiverRelation =
                         assessmentInput.informantCaregiverRelation;
                 }
-                // If emailReminder is not checked then all the other email values will be edited
-                assessment.emailReminder =
-                    assessmentInput.emailReminder || false;
-                if (!assessmentInput.emailReminder) {
-                    assessment.emailStatus =
-                        AssessmentEmailStatus.NOT_SCHEDULED;
-                    assessment.receiverEmail = assessment.receiverEmail || assessmentInput.receiverEmail || null;
-                } else if (Validator.isEmail(assessmentInput.receiverEmail)) {
-                    if (!assessmentInput.mailTemplateId) {
-                        throw new Error('Mail template not found!');
-                    }
-                    assessment.mailTemplateId = assessmentInput.mailTemplateId;
-
-                    if (!assessmentInput.dates[i].deliveryDate) {
-                        assessment.emailStatus =
-                            AssessmentEmailStatus.NOT_SCHEDULED;
-                    } else {
-                        assessment.emailStatus =
-                            AssessmentEmailStatus.SCHEDULED;
-                    }
-                    assessment.receiverEmail = assessmentInput.receiverEmail;
-                }
+                await this.configureAssessmentAssignmentEmail(
+                    assessment,
+                    assessmentInput,
+                    responderUser,
+                    assessmentInput.dates[i].deliveryDate,
+                );
 
                 await assessment.save();
                 await this.setAssessmentResponsibleUsers(
@@ -575,26 +566,12 @@ export class AssessmentService {
                 assessment.informantCaregiverRelation =
                     assessmentInput.informantCaregiverRelation;
             }
-            // If emailReminder is not checked then all the other email values will be edited
-            assessment.emailReminder = assessmentInput.emailReminder || false;
-            if (!assessmentInput.emailReminder) {
-                assessment.emailStatus = AssessmentEmailStatus.NOT_SCHEDULED;
-                assessment.receiverEmail = assessment.receiverEmail || assessmentInput.receiverEmail || null;
-                assessment.mailTemplateId = null;
-            } else if (Validator.isEmail(assessmentInput.receiverEmail)) {
-                if (!assessmentInput.mailTemplateId) {
-                    throw new Error('Mail template not found!');
-                }
-                assessment.mailTemplateId = assessmentInput.mailTemplateId;
-
-                if (!assessmentInput.deliveryDate) {
-                    assessment.emailStatus =
-                        AssessmentEmailStatus.NOT_SCHEDULED;
-                } else {
-                    assessment.emailStatus = AssessmentEmailStatus.SCHEDULED;
-                }
-                assessment.receiverEmail = assessmentInput.receiverEmail;
-            }
+            await this.configureAssessmentAssignmentEmail(
+                assessment,
+                assessmentInput,
+                responderUser,
+                assessmentInput.deliveryDate,
+            );
             await assessment.save();
             await this.setAssessmentResponsibleUsers(
                 assessment,
@@ -661,6 +638,50 @@ export class AssessmentService {
         } finally {
             await queryRunner.release();
         }
+    }
+
+    private async configureAssessmentAssignmentEmail(
+        assessment: Assessment,
+        assessmentInput: CreateFullAssessmentInput | UpdateFullAssessmentInput,
+        responderUser: User,
+        deliveryDate?: Date,
+    ): Promise<void> {
+        assessment.receiverEmail = responderUser.email || assessmentInput.receiverEmail || null;
+        assessment.mailTemplateId = null;
+        assessment.emailReminder = true;
+
+        if (!Validator.isEmail(assessment.receiverEmail)) {
+            assessment.emailStatus = AssessmentEmailStatus.NOT_SCHEDULED;
+            return;
+        }
+
+        const mailTemplate = await this.notificationConfigurationService.resolveAssessmentAssignedMailTemplate({
+            responderUserId: responderUser.id,
+            patientId: assessmentInput.patientId,
+            targetUserId: assessmentInput.targetUserId,
+        });
+
+        if (!mailTemplate) {
+            await this.notificationDispatchService.recordLog({
+                channel: NotificationChannel.EMAIL,
+                event: NotificationEvent.ASSESSMENT_ASSIGNED,
+                status: NotificationLogStatus.SKIPPED_NO_CONFIGURATION,
+                recipientId: responderUser.id,
+                recipientEmail: assessment.receiverEmail,
+                message: 'No active notification configuration found for assessment assignment.',
+                metadata: {
+                    assessmentId: assessment.id,
+                    patientId: assessmentInput.patientId,
+                    targetUserId: assessmentInput.targetUserId,
+                    responderUserId: responderUser.id,
+                },
+            });
+            assessment.emailStatus = AssessmentEmailStatus.NOT_SCHEDULED;
+            return;
+        }
+
+        assessment.mailTemplateId = mailTemplate.id;
+        assessment.emailStatus = AssessmentEmailStatus.SCHEDULED;
     }
 
     async archiveOneAssessment(id: number, currentUser?: User) {

@@ -26,6 +26,7 @@ import { User } from 'src/modules/user/models/user.model';
 import { PermissionService } from 'src/modules/permission/providers/permission.service';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { uniqueDepartmentIds } from 'src/shared/department-compatibility';
+import { MailTemplatePurposeEnum } from '../enums/mail-template-purpose.enum';
 
 enum DepartmentAccessScope {
     ALL = 'ALL',
@@ -120,6 +121,7 @@ export class MailTemplateService {
         try {
             const mail = this.mailTemplateRepository.create({
                 ...restInput,
+                purpose: restInput.purpose || MailTemplatePurposeEnum.NOTIFICATION,
                 isPublic,
             });
 

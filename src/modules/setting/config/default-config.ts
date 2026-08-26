@@ -12,8 +12,6 @@ export const defaultConfig: SettingDto = {
     treatmentFinalizationUndoWindowDays: 30,
     patientCaseManagerAssignableHierarchyRank: 500,
     maxLoginAttempts: 5,
-    sendWelcomeEmails: true,
-    welcomeEmailTemplateId: null,
     googleCalendarEnabled: false,
     googleCalendarClientId: '',
     googleCalendarClientSecret: '',

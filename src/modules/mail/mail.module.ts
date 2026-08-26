@@ -27,11 +27,13 @@ import { QuestionnaireBundleResolutionService } from '../questionnaire/services/
 import { SettingModule } from '../setting/setting.module';
 import { User } from '../user/models/user.model';
 import { PermissionModule } from '../permission/permission.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
     SettingModule,
     PermissionModule,
+    NotificationModule,
     NestjsQueryGraphQLModule.forFeature({
       imports: [
         NestjsQueryTypeOrmModule.forFeature([

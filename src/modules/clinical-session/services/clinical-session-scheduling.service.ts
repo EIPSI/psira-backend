@@ -163,6 +163,7 @@ export class ClinicalSessionSchedulingService {
         }
 
         await this.normalizeSessionNumbersForSession(session);
+        await this.syncActiveSchemeResourcesFrom(session, currentUser);
         await this.googleCalendarSyncService.syncOccurrence(occurrence.id);
 
         const savedSession = await this.clinicalSessionRepository.findOneOrFail(session.id, {
@@ -207,6 +208,7 @@ export class ClinicalSessionSchedulingService {
         }
 
         await this.normalizeSessionNumbersForSession(session);
+        await this.syncActiveSchemeResourcesFrom(session, currentUser);
         await this.googleCalendarSyncService.syncOccurrence(occurrence.id);
 
         const savedSession = await this.clinicalSessionRepository.findOneOrFail(session.id, {
@@ -816,9 +818,10 @@ export class ClinicalSessionSchedulingService {
         referenceSession: ClinicalSession,
         status: ClinicalSessionSchemeApplicationStatus,
     ): Promise<void> {
-        application.status = status;
-        application.stoppedAtClinicalSessionId = referenceSession.id;
-        await this.schemeApplicationRepository.save(application);
+        await this.schemeApplicationRepository.update(application.id, {
+            status,
+            stoppedAtClinicalSessionId: referenceSession.id,
+        });
     }
 
     private async cancelPendingResourcesForApplication(
@@ -897,6 +900,10 @@ export class ClinicalSessionSchedulingService {
         }
 
         await this.normalizeSessionNumbersForSession(baseSession);
+        const normalizedBaseSession = await this.clinicalSessionRepository.findOneOrFail(baseSession.id, {
+            relations: ['calendarOccurrence', 'responsibleUsers', 'patient'],
+        });
+        await this.syncActiveSchemeResourcesFrom(normalizedBaseSession, currentUser);
         return this.getClinicalSessions({
             patientId: baseSession.patientId,
             therapistId: baseSession.patientId ? undefined : baseSession.therapistId,
@@ -954,6 +961,7 @@ export class ClinicalSessionSchedulingService {
 
         await this.renumberFutureSessionsAfterCancellation(session);
         await this.normalizeSessionNumbersForSession(session);
+        await this.syncActiveSchemeResourcesFrom(session, currentUser);
         await this.googleCalendarSyncService.syncOccurrence(session.calendarOccurrenceId);
         await this.dispatchSessionNumberAutomationsForCase(session, currentUser);
         await this.dispatchNoShowCancellationAutomation(session, currentUser, input);
@@ -1930,19 +1938,186 @@ export class ClinicalSessionSchedulingService {
         if (!session.sessionNumber || previousSessionNumber === session.sessionNumber) return;
 
         const occurrence = session.calendarOccurrence || await this.occurrenceRepository.findOne(session.calendarOccurrenceId);
-        if (!occurrence?.schemeId) return;
+        if (!occurrence) return;
 
         const patient = session.patientId
             ? await this.patientRepository.findOne(session.patientId)
             : null;
-        const sessionInput = this.buildSessionInputForResourceSync(session, occurrence, patient);
-        const desiredResourceInputs = await this.buildResourcesFromScheme(sessionInput);
+        const applications = await this.activeSchemeApplicationsForSessionContext(session);
+        if (applications.length) {
+            for (const application of applications) {
+                await this.syncPendingResourcesForSchemeApplication(
+                    session,
+                    occurrence,
+                    patient || undefined,
+                    application,
+                );
+            }
+            return;
+        }
+
+        if (occurrence.schemeId) {
+            await this.syncPendingResourcesForSchemeId(
+                session,
+                occurrence,
+                patient || undefined,
+                occurrence.schemeId,
+                session.sessionNumber,
+            );
+        }
+    }
+
+    private async syncActiveSchemeResourcesFrom(
+        referenceSession: ClinicalSession,
+        currentUser?: User,
+    ): Promise<void> {
+        await this.ensureLegacySchemeApplicationsForSession(referenceSession);
+        const applications = await this.activeSchemeApplicationsForSessionContext(referenceSession);
+        if (!applications.length) return;
+
+        const sessions = await this.futureSessionsFrom(referenceSession, true);
+        for (const session of sessions) {
+            for (const application of applications) {
+                const schemeSessionNumber = await this.resolveSchemeSessionNumberForApplication(
+                    session,
+                    application,
+                );
+                if (!schemeSessionNumber) continue;
+                const applicationMap = new Map<number, ClinicalSessionSchemeApplication>([
+                    [application.schemeId, application],
+                ]);
+                await this.addSchemeResourcesToSession(
+                    session,
+                    [application.schemeId],
+                    currentUser,
+                    schemeSessionNumber,
+                    applicationMap,
+                );
+            }
+        }
+    }
+
+    private async activeSchemeApplicationsForSessionContext(
+        session: ClinicalSession,
+    ): Promise<ClinicalSessionSchemeApplication[]> {
+        const query = this.schemeApplicationRepository
+            .createQueryBuilder('application')
+            .leftJoinAndSelect('application.scheme', 'scheme')
+            .leftJoinAndSelect('application.startSession', 'startSession')
+            .where('application."sessionKind" = :sessionKind', {
+                sessionKind: session.sessionKind,
+            })
+            .andWhere('application.status = :status', {
+                status: ClinicalSessionSchemeApplicationStatus.ACTIVE,
+            })
+            .orderBy('application."createdAt"', 'ASC');
+
+        this.applySchemeApplicationContextFilter(query, session);
+        return query.getMany();
+    }
+
+    private async resolveSchemeSessionNumberForApplication(
+        session: ClinicalSession,
+        application: ClinicalSessionSchemeApplication,
+    ): Promise<number | undefined> {
+        if (application.applicationMode === ClinicalSessionSchemeApplicationMode.ORIGINAL_SESSION_NUMBER) {
+            return session.sessionNumber;
+        }
+
+        const sessionOccurrence = session.calendarOccurrence ||
+            await this.occurrenceRepository.findOne(session.calendarOccurrenceId);
+        const startSession = application.startSession || (
+            application.startClinicalSessionId
+                ? await this.clinicalSessionRepository.findOne(application.startClinicalSessionId, {
+                    relations: ['calendarOccurrence'],
+                })
+                : undefined
+        );
+        const startOccurrence = startSession?.calendarOccurrence || (
+            startSession?.calendarOccurrenceId
+                ? await this.occurrenceRepository.findOne(startSession.calendarOccurrenceId)
+                : undefined
+        );
+        if (!sessionOccurrence || !startOccurrence) return session.sessionNumber;
+
+        const query = this.clinicalSessionRepository
+            .createQueryBuilder('session')
+            .innerJoin('session.calendarOccurrence', 'occurrence')
+            .where('session."sessionKind" = :sessionKind', {
+                sessionKind: session.sessionKind,
+            })
+            .andWhere('session."clinicalStatus" != :cancelledStatus', {
+                cancelledStatus: ClinicalSessionStatus.CANCELLED,
+            })
+            .andWhere('occurrence."startAt" >= :startAt', {
+                startAt: startOccurrence.startAt,
+            })
+            .andWhere('occurrence."startAt" <= :endAt', {
+                endAt: sessionOccurrence.startAt,
+            });
+
+        if (session.patientId) {
+            query.andWhere('session."patientId" = :patientId', {
+                patientId: session.patientId,
+            });
+        } else {
+            query
+                .andWhere('session."patientId" IS NULL')
+                .andWhere('session."therapistId" = :therapistId', {
+                    therapistId: session.therapistId,
+                });
+        }
+
+        return query.getCount();
+    }
+
+    private async syncPendingResourcesForSchemeApplication(
+        session: ClinicalSession,
+        occurrence: CalendarOccurrence,
+        patient: Patient | undefined,
+        application: ClinicalSessionSchemeApplication,
+    ): Promise<void> {
+        const schemeSessionNumber = await this.resolveSchemeSessionNumberForApplication(
+            session,
+            application,
+        );
+        if (!schemeSessionNumber) return;
+        await this.syncPendingResourcesForSchemeId(
+            session,
+            occurrence,
+            patient,
+            application.schemeId,
+            schemeSessionNumber,
+            application,
+        );
+    }
+
+    private async syncPendingResourcesForSchemeId(
+        session: ClinicalSession,
+        occurrence: CalendarOccurrence,
+        patient: Patient | undefined,
+        schemeId: number,
+        schemeSessionNumber?: number,
+        application?: ClinicalSessionSchemeApplication,
+    ): Promise<void> {
+        const sessionInput = {
+            ...this.buildSessionInputForResourceSync(session, occurrence, patient),
+            schemeId,
+            schemeIds: [schemeId],
+        };
+        const desiredResourceInputs = await this.buildResourcesFromScheme(
+            sessionInput,
+            undefined,
+            schemeSessionNumber,
+        );
         const desiredTemplateIds = desiredResourceInputs
             .map(resource => resource.resourceTemplateId)
             .filter((id): id is number => !!id);
 
         const currentResources = await this.resourceRepository.find({
-            where: { clinicalSessionId: session.id },
+            where: application
+                ? { clinicalSessionId: session.id, schemeApplicationId: application.id }
+                : { clinicalSessionId: session.id },
             relations: ['assessment'],
         });
 
@@ -1962,13 +2137,19 @@ export class ClinicalSessionSchedulingService {
                 await this.updatePendingResourceFromTemplate(
                     resource,
                     occurrence,
-                    desiredInput,
+                    {
+                        ...desiredInput,
+                        schemeApplicationId: application?.id,
+                        schemeRelativeSessionNumber: schemeSessionNumber,
+                    },
                 );
             }
         }
 
         const refreshedResources = await this.resourceRepository.find({
-            where: { clinicalSessionId: session.id },
+            where: application
+                ? { clinicalSessionId: session.id, schemeApplicationId: application.id }
+                : { clinicalSessionId: session.id },
         });
         const activeTemplateIds = refreshedResources
             .filter(resource => ![
@@ -1984,7 +2165,11 @@ export class ClinicalSessionSchedulingService {
             await this.createResourceForSession(
                 session,
                 occurrence,
-                desiredInput,
+                {
+                    ...desiredInput,
+                    schemeApplicationId: application?.id,
+                    schemeRelativeSessionNumber: schemeSessionNumber,
+                },
                 sessionInput,
             );
         }
