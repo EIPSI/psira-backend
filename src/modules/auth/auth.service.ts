@@ -46,14 +46,15 @@ export class AuthService {
         loginDto: LoginRequestDto,
     ): Promise<User> {
         // Username comparison done using lowercase
-        const identifier = loginDto.identifier?.toLowerCase();
+        const identifier = loginDto.identifier?.trim().toLowerCase();
         const password = loginDto.password;
 
         const user = await User.findOne({
             relations: ['roles'],
-            where: {
-                username: identifier,
-            },
+            where: [
+                { username: identifier },
+                { email: identifier },
+            ],
         });
 
         // invalid username

@@ -5,6 +5,7 @@ import { Document, Types } from "mongoose";
 
 export enum QuestionnaireBundleNodeType {
     QUESTIONNAIRE = 'QUESTIONNAIRE',
+    SCREEN = 'SCREEN',
     FIXED_GROUP = 'FIXED_GROUP',
     RANDOM_GROUP = 'RANDOM_GROUP',
 }
@@ -32,6 +33,18 @@ export class QuestionnaireBundleNode {
 
     @Field(() => String, { nullable: true })
     label?: string;
+
+    @Field(() => String, { nullable: true })
+    displayTitle?: string;
+
+    @Field(() => String, { nullable: true })
+    headerHtml?: string;
+
+    @Field(() => String, { nullable: true })
+    footerHtml?: string;
+
+    @Field(() => Boolean, { nullable: true })
+    showTitle?: boolean;
 
     @Field(() => String, { nullable: true })
     questionnaireId?: Types.ObjectId | string;
@@ -66,6 +79,14 @@ export class QuestionnaireBundle extends Document {
     @Field(() => String, { nullable: true })
     @Prop({ type: String, default: '[]' })
     structureJson?: string;
+
+    @Field(() => String, { nullable: true })
+    @Prop({ type: String, default: '' })
+    headerHtml?: string;
+
+    @Field(() => String, { nullable: true })
+    @Prop({ type: String, default: '' })
+    noticeHtml?: string;
 
     @Field(() => [Number], { nullable: true })
     @Prop({ type: [Number] })

@@ -17,6 +17,18 @@ export class QuestionnaireBundleNodeInput {
     label?: string;
 
     @Field(() => String, { nullable: true })
+    displayTitle?: string;
+
+    @Field(() => String, { nullable: true })
+    headerHtml?: string;
+
+    @Field(() => String, { nullable: true })
+    footerHtml?: string;
+
+    @Field(() => Boolean, { nullable: true })
+    showTitle?: boolean;
+
+    @Field(() => String, { nullable: true })
     questionnaireId?: Types.ObjectId | string;
 
     @Field(() => QuestionnaireBundleRandomizationMode, { nullable: true })
@@ -42,6 +54,12 @@ export class CreateQuestionnaireBundleInput {
 
     @Field(() => String, { nullable: true })
     structureJson?: string;
+
+    @Field(() => String, { nullable: true })
+    headerHtml?: string;
+
+    @Field(() => String, { nullable: true })
+    noticeHtml?: string;
 
     @Field(() => [Number], { nullable: true })
     departmentIds: number[]

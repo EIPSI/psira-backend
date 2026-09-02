@@ -120,6 +120,11 @@ export class NotificationConfigurationService {
             { group: 'Resumen periódico', label: 'Inicio del período', token: '{{period.start}}', description: 'Fecha inicial incluida en el resumen.' },
             { group: 'Resumen periódico', label: 'Fin del período', token: '{{period.end}}', description: 'Fecha final incluida en el resumen.' },
             { group: 'Resumen periódico', label: 'Tabla de evaluaciones', token: '{{assessmentsTable}}', description: 'Tabla renderizada con evaluaciones del período.' },
+            { group: 'Consentimiento informado', label: 'Modelo', token: '{{consent.modelName}}', description: 'Nombre del modelo de consentimiento informado.' },
+            { group: 'Consentimiento informado', label: 'Versión', token: '{{consent.version}}', description: 'Versión del consentimiento informado.' },
+            { group: 'Consentimiento informado', label: 'Resolución', token: '{{consent.resolution}}', description: 'Resolución final de la respuesta.' },
+            { group: 'Consentimiento informado', label: 'Link de pendientes', token: '{{consent.pendingLink}}', description: 'Acceso a la pantalla de consentimientos pendientes.' },
+            { group: 'Consentimiento informado', label: 'Link de respuesta', token: '{{consent.link}}', description: 'Acceso directo para responder consentimientos pendientes.' },
         ];
     }
 
@@ -282,6 +287,7 @@ export class NotificationConfigurationService {
     }
 
     private eventFamily(event: NotificationEvent): NotificationFamily {
+        if (event.startsWith('INFORMED_CONSENT_')) return NotificationFamily.INFORMED_CONSENT;
         if (event.startsWith('ASSESSMENT_')) return NotificationFamily.ASSESSMENT;
         if (event.startsWith('CASE_')) return NotificationFamily.CASE;
         return NotificationFamily.AUTOMATION;

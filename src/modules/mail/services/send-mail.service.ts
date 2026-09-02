@@ -18,6 +18,8 @@ import { NotificationChannel } from 'src/modules/notification/enums/notification
 import { NotificationEvent } from 'src/modules/notification/enums/notification-event.enum';
 import { NotificationLogStatus } from 'src/modules/notification/enums/notification-log-status.enum';
 import { NotificationConfigurationService } from 'src/modules/notification/services/notification-configuration.service';
+import { SettingKey } from 'src/modules/setting/enums/setting-name.enum';
+import { SettingService } from 'src/modules/setting/providers/setting.service';
 
 @Injectable()
 export class SendMailService {
@@ -26,6 +28,7 @@ export class SendMailService {
         private mailerService: MailerService,
         private notificationDispatchService: NotificationDispatchService,
         private notificationConfigurationService: NotificationConfigurationService,
+        private settingService: SettingService,
         @InjectRepository(Assessment)
         private assessmentRepository: Repository<Assessment>,
     ) {}
@@ -33,6 +36,7 @@ export class SendMailService {
     @Cron(CronExpression.EVERY_MINUTE)
     async checkAssessmentEmails() {
         try {
+            if (!await this.notificationsEnabled()) return;
             await this.schedulePendingAssessmentAssignmentEmails();
 
             const selectAssessment = await this.assessmentRepository
@@ -63,6 +67,15 @@ export class SendMailService {
                 .where('assessment."emailReminder" = true')
                 .andWhere('assessment."deliveryDate" IS NOT NULL')
                 .andWhere('assessment."reminderMinutes" IS NOT NULL')
+                .andWhere('(assessment.deleted = false OR assessment.deleted IS NULL)')
+                .andWhere('(assessment."isActive" = true OR assessment."isActive" IS NULL)')
+                .andWhere('assessment.status IN (:...reminderStatuses)', {
+                    reminderStatuses: [
+                        AssessmentStatus.PLANNED,
+                        AssessmentStatus.OPEN_FOR_COMPLETION,
+                    ],
+                })
+                .andWhere('(assessment."expirationDate" IS NULL OR assessment."expirationDate" >= now())')
                 .getMany();
 
             await Promise.all(
@@ -109,7 +122,7 @@ export class SendMailService {
                 if (!mailTemplate) return;
 
                 await this.assessmentRepository.update(assessment.id, {
-                    emailReminder: true,
+                    emailReminder: !!(assessment.reminderMinutes || []).length,
                     emailStatus: AssessmentEmailStatus.SCHEDULED,
                     mailTemplateId: mailTemplate.id,
                     receiverEmail: assessment.responderUser.email || assessment.receiverEmail,
@@ -120,6 +133,7 @@ export class SendMailService {
 
     async sendAssessmentEmail(id: number) {
         try {
+            if (!await this.notificationsEnabled()) return true;
             const assessment = await this.assessmentRepository.findOneOrFail({
                 where: { id },
                 relations: ['mailTemplate', 'patient', 'targetUser', 'responderUser', 'assessmentType'],
@@ -146,7 +160,7 @@ export class SendMailService {
         const deliveryDate = new Date(assessmentInfo.deliveryDate);
         const now = new Date();
 
-        if (this.isAssessmentAnswered(assessmentInfo)) {
+        if (!this.canSendAssessmentReminder(assessmentInfo)) {
             return;
         }
 
@@ -214,6 +228,25 @@ export class SendMailService {
         );
     }
 
+    private canSendAssessmentReminder(assessmentInfo: Assessment): boolean {
+        if (this.isAssessmentAnswered(assessmentInfo)) return false;
+        if (assessmentInfo.deleted || assessmentInfo.isActive === false) return false;
+        if (
+            [
+                AssessmentStatus.CANCELLED,
+                AssessmentStatus.COMPLETED,
+                AssessmentStatus.PARTIALLY_COMPLETED,
+                AssessmentStatus.EXPIRED,
+            ].includes(assessmentInfo.status as AssessmentStatus)
+        ) {
+            return false;
+        }
+        if (assessmentInfo.expirationDate && new Date(assessmentInfo.expirationDate) < new Date()) {
+            return false;
+        }
+        return true;
+    }
+
     async sendEmail(
         assessmentInfo: Assessment,
         options: {
@@ -223,6 +256,7 @@ export class SendMailService {
             metadata?: Record<string, any>;
         } = {},
     ): Promise<boolean> {
+        if (!await this.notificationsEnabled()) return false;
         const event = options.event || NotificationEvent.ASSESSMENT_ASSIGNED;
         const mailTemplate = options.mailTemplate || assessmentInfo.mailTemplate;
         const updateAssessmentStatus = options.updateAssessmentStatus !== false;
@@ -305,7 +339,7 @@ export class SendMailService {
         await this.mailerService
             .sendMail({
                 to: assessmentInfo.receiverEmail,
-                from: configService.getSenderMail(),
+                from: this.resolveSender(mailTemplate),
                 subject: mailTemplate.subject,
                 html: template(templateData),
             })
@@ -403,11 +437,19 @@ export class SendMailService {
         return new Date(date).toLocaleDateString('es-AR');
     }
 
+    private resolveSender(template?: { senderName?: string }): string {
+        const senderMail = configService.getSenderMail();
+        const senderName = (template?.senderName || '').trim();
+        if (!senderName) return senderMail;
+        return `"${senderName.replace(/"/g, '\\"')}" <${senderMail}>`;
+    }
+
     /**
      * Send credentials to new users through the central notification configuration.
      */
     async sendWelcomeEmail(user: User, tempPassword: string): Promise<boolean> {
         try {
+            if (!await this.notificationsEnabled()) return true;
             if (!user.email) {
                 return true;
             }
@@ -469,7 +511,7 @@ export class SendMailService {
 
             await this.mailerService.sendMail({
                 to: user.email,
-                from: configService.getSenderMail(),
+                from: this.resolveSender(mailTemplate),
                 subject: mailTemplate.subject,
                 html: html,
             });
@@ -500,5 +542,9 @@ export class SendMailService {
 
     private getLoginUrl(): string {
         return `${configService.getAppUrl().replace(/\/$/, '')}/auth/login`;
+    }
+
+    private async notificationsEnabled(): Promise<boolean> {
+        return (await this.settingService.getKey(SettingKey.NOTIFICATIONS_ENABLED)) !== false;
     }
 }

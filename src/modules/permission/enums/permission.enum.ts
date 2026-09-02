@@ -138,6 +138,36 @@ export const systemPermissions = [
         name: 'view notification logs',
         group: 'Notifications',
     },
+    {
+        key: 'VIEW_INFORMED_CONSENT_MODELS',
+        name: 'view informed consent models',
+        group: 'Informed Consent',
+    },
+    {
+        key: 'MANAGE_INFORMED_CONSENT_MODELS',
+        name: 'manage informed consent models',
+        group: 'Informed Consent',
+    },
+    {
+        key: 'VIEW_INFORMED_CONSENT_MANAGEMENT',
+        name: 'view informed consent management',
+        group: 'Informed Consent',
+    },
+    {
+        key: 'MANAGE_INFORMED_CONSENT_MANAGEMENT',
+        name: 'manage informed consent management',
+        group: 'Informed Consent',
+    },
+    {
+        key: 'VIEW_INFORMED_CONSENT_RESPONSES',
+        name: 'view informed consent responses',
+        group: 'Informed Consent',
+    },
+    {
+        key: 'REVIEW_INFORMED_CONSENT_RESPONSES',
+        name: 'review informed consent responses',
+        group: 'Informed Consent',
+    },
 
     { key: 'VIEW_REPORTS', name: 'view reports', group: 'Reports' },
     { key: 'MANAGE_REPORTS', name: 'manage reports', group: 'Reports' },

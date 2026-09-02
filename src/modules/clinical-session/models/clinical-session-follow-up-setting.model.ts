@@ -19,6 +19,10 @@ export class ClinicalSessionFollowUpSetting extends BaseEntity {
     @Column({ default: 7 })
     editWindowDays: number;
 
+    @Field(() => Int)
+    @Column({ default: 1 })
+    dashboardLookaheadDays: number;
+
     @Field(() => GraphQLISODateTime)
     @UpdateDateColumn()
     updatedAt: Date;

@@ -422,10 +422,33 @@ export class TreatmentCycleService {
             query.andWhere('entry."occurredAt" <= :to', { to: filter.to });
         }
 
-        return query
+        const entries = await query
             .orderBy('entry."occurredAt"', filter.sortDirection === 'ASC' ? 'ASC' : 'DESC')
             .addOrderBy('entry.id', filter.sortDirection === 'ASC' ? 'ASC' : 'DESC')
             .getMany();
+        const assessmentIds = entries
+            .map(entry => entry.metadata?.assessmentId)
+            .filter((id): id is number => !!id);
+        const assessmentById = new Map<number, Assessment>();
+        if (assessmentIds.length) {
+            const assessments = await this.assessmentRepository
+                .createQueryBuilder('assessment')
+                .leftJoinAndSelect('assessment.assessmentType', 'assessmentType')
+                .where('assessment.id IN (:...ids)', { ids: [...new Set(assessmentIds)] })
+                .getMany();
+            assessments.forEach(assessment => assessmentById.set(assessment.id, assessment));
+        }
+        return entries.map(entry => {
+            const assessment = entry.metadata?.assessmentId
+                ? assessmentById.get(entry.metadata.assessmentId)
+                : undefined;
+            entry.assessmentId = entry.metadata?.assessmentId;
+            entry.assessmentTypeId = entry.metadata?.assessmentTypeId || assessment?.assessmentTypeId;
+            entry.questionnaireAssessmentId = entry.metadata?.questionnaireAssessmentId || assessment?.questionnaireAssessmentId;
+            entry.assessmentName = entry.metadata?.assessmentName || assessment?.name;
+            entry.assessmentTypeName = entry.metadata?.assessmentTypeName || assessment?.assessmentType?.name;
+            return entry;
+        });
     }
 
     private async dispatchCycleAutomation(

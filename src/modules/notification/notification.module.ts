@@ -6,6 +6,7 @@ import { MailTemplate } from '../mail/models/mail-template.model';
 import { Patient } from '../patient/models/patient.model';
 import { Role } from '../permission/models/role.model';
 import { User } from '../user/models/user.model';
+import { SettingModule } from '../setting/setting.module';
 import { NotificationLog } from './models/notification-log.model';
 import { NotificationConfiguration } from './models/notification-configuration.model';
 import { NotificationPreference } from './models/notification-preference.model';
@@ -17,6 +18,7 @@ import { NotificationPreferenceService } from './services/notification-preferenc
 
 @Module({
     imports: [
+        SettingModule,
         TypeOrmModule.forFeature([
             NotificationConfiguration,
             NotificationPreference,

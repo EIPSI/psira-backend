@@ -26,7 +26,6 @@ export class CalendarOccurrenceResolver {
     ) {}
 
     @Query(() => [CalendarOccurrence])
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
     calendarOccurrences(
         @Args('from', { type: () => GraphQLISODateTime }) from: Date,
         @Args('to', { type: () => GraphQLISODateTime }) to: Date,

@@ -13,6 +13,8 @@ export const defaultConfig: SettingDto = {
     patientCaseManagerAssignableHierarchyRank: 500,
     maxLoginAttempts: 5,
     googleCalendarEnabled: false,
+    notificationsEnabled: true,
+    informedConsentEnabled: true,
     googleCalendarClientId: '',
     googleCalendarClientSecret: '',
     googleCalendarRedirectUri: '',

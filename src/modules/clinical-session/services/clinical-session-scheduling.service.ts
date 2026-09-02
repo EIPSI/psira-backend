@@ -103,10 +103,10 @@ export class ClinicalSessionSchedulingService {
         this.normalizeSchemeIds(input);
         const responsibleUserIds = this.resolveSessionResponsibleUserIds(input, currentUser);
         this.syncLegacyResponsibleFields(input, responsibleUserIds);
-        await this.assertCanAssignSessionResponsibles(input, responsibleUserIds, currentUser);
-        await this.resolveSchemeSessionNumber(input);
         const treatmentCycleId =
-            input.treatmentCycleId || await this.resolveActiveTreatmentCycleId(input);
+            input.treatmentCycleId || await this.resolveTreatmentCycleIdForSession(input);
+        await this.assertCanAssignSessionResponsibles(input, responsibleUserIds, currentUser);
+        await this.resolveSchemeSessionNumber(input, treatmentCycleId);
         const resources = input.resources?.length
             ? input.resources
             : await this.buildResourcesFromScheme(input, currentUser);
@@ -295,8 +295,14 @@ export class ClinicalSessionSchedulingService {
         if (input.editWindowDays < 0) {
             throw new BadRequestException('Edit window must be zero or greater');
         }
+        if (input.dashboardLookaheadDays !== undefined && input.dashboardLookaheadDays < 0) {
+            throw new BadRequestException('Dashboard lookahead must be zero or greater');
+        }
         const settings = await this.getOrCreateFollowUpSettings();
         settings.editWindowDays = input.editWindowDays;
+        if (input.dashboardLookaheadDays !== undefined) {
+            settings.dashboardLookaheadDays = input.dashboardLookaheadDays;
+        }
         return this.followUpSettingRepository.save(settings);
     }
 
@@ -1226,6 +1232,7 @@ export class ClinicalSessionSchedulingService {
                 this.followUpSettingRepository.create({
                     id: 1,
                     editWindowDays: 7,
+                    dashboardLookaheadDays: 1,
                 }),
             );
         }
@@ -1459,9 +1466,17 @@ export class ClinicalSessionSchedulingService {
             })
             .orderBy('session."sessionNumber"', 'ASC');
 
-        if (cancelledSession.patientId) {
+        if (cancelledSession.treatmentCycleId) {
+            query.andWhere('session."treatmentCycleId" = :treatmentCycleId', {
+                treatmentCycleId: cancelledSession.treatmentCycleId,
+            });
+        } else if (cancelledSession.patientId) {
             query.andWhere('session."patientId" = :patientId', {
                 patientId: cancelledSession.patientId,
+            });
+        } else if (cancelledSession.therapistId) {
+            query.andWhere('session."therapistId" = :therapistId', {
+                therapistId: cancelledSession.therapistId,
             });
         }
 
@@ -1519,9 +1534,17 @@ export class ClinicalSessionSchedulingService {
                 cancelledStatus: ClinicalSessionStatus.CANCELLED,
             });
 
-        if (session.patientId) {
+        if (session.treatmentCycleId) {
+            peerSessions.andWhere('session."treatmentCycleId" = :treatmentCycleId', {
+                treatmentCycleId: session.treatmentCycleId,
+            });
+        } else if (session.patientId) {
             peerSessions.andWhere('session."patientId" = :patientId', {
                 patientId: session.patientId,
+            });
+        } else if (session.therapistId) {
+            peerSessions.andWhere('session."therapistId" = :therapistId', {
+                therapistId: session.therapistId,
             });
         } else {
             peerSessions.andWhere('session."patientId" IS NULL');
@@ -1597,9 +1620,17 @@ export class ClinicalSessionSchedulingService {
             .orderBy('occurrence."startAt"', 'ASC')
             .addOrderBy('session.id', 'ASC');
 
-        if (referenceSession.patientId) {
+        if (referenceSession.treatmentCycleId) {
+            query.andWhere('session."treatmentCycleId" = :treatmentCycleId', {
+                treatmentCycleId: referenceSession.treatmentCycleId,
+            });
+        } else if (referenceSession.patientId) {
             query.andWhere('session."patientId" = :patientId', {
                 patientId: referenceSession.patientId,
+            });
+        } else if (referenceSession.therapistId) {
+            query.andWhere('session."therapistId" = :therapistId', {
+                therapistId: referenceSession.therapistId,
             });
         } else {
             query.andWhere('session."patientId" IS NULL');
@@ -1872,6 +1903,7 @@ export class ClinicalSessionSchedulingService {
 
     private async resolveSchemeSessionNumber(
         input: CreateClinicalSessionInput,
+        treatmentCycleId?: number,
     ): Promise<void> {
         const query = this.clinicalSessionRepository
             .createQueryBuilder('session')
@@ -1883,11 +1915,17 @@ export class ClinicalSessionSchedulingService {
                 cancelledStatus: ClinicalSessionStatus.CANCELLED,
             })
             .andWhere(
-                input.patientId
-                    ? 'session."patientId" = :patientId'
-                    : 'session."patientId" IS NULL',
-                { patientId: input.patientId },
+                input.sessionKind === ClinicalSessionKind.SUPERVISION
+                    ? (input.therapistId ? 'session."therapistId" = :therapistId' : 'session."therapistId" IS NULL')
+                    : (input.patientId ? 'session."patientId" = :patientId' : 'session."patientId" IS NULL'),
+                { patientId: input.patientId, therapistId: input.therapistId },
             );
+
+        if (treatmentCycleId) {
+            query.andWhere('session."treatmentCycleId" = :treatmentCycleId', {
+                treatmentCycleId,
+            });
+        }
 
         const sessionsBefore = await query
             .andWhere('occurrence."startAt" < :startAt', { startAt: input.startAt })
@@ -2542,31 +2580,60 @@ export class ClinicalSessionSchedulingService {
         return assessment;
     }
 
-    private async resolveActiveTreatmentCycleId(
-        input: Pick<CreateClinicalSessionInput, 'sessionKind' | 'patientId' | 'therapistId'>,
+    private async resolveTreatmentCycleIdForSession(
+        input: Pick<CreateClinicalSessionInput, 'sessionKind' | 'patientId' | 'therapistId' | 'startAt'>,
     ): Promise<number | undefined> {
+        const cycleKind = input.sessionKind === ClinicalSessionKind.SUPERVISION
+            ? TreatmentCycleKind.SUPERVISION
+            : TreatmentCycleKind.CLINICAL;
         const query = this.treatmentCycleRepository
             .createQueryBuilder('cycle')
             .where('cycle.status = :status', { status: TreatmentCycleStatus.ACTIVE })
+            .andWhere('cycle."cycleKind" = :kind', { kind: cycleKind })
             .orderBy('cycle."cycleNumber"', 'DESC')
             .addOrderBy('cycle."startedAt"', 'DESC');
 
         if (input.sessionKind === ClinicalSessionKind.SUPERVISION) {
             if (!input.therapistId) return undefined;
-            query
-                .andWhere('cycle."cycleKind" = :kind', { kind: TreatmentCycleKind.SUPERVISION })
-                .andWhere('cycle."therapistId" = :therapistId', {
-                    therapistId: input.therapistId,
-                });
+            query.andWhere('cycle."therapistId" = :therapistId', {
+                therapistId: input.therapistId,
+            });
         } else {
             if (!input.patientId) return undefined;
-            query
-                .andWhere('cycle."cycleKind" = :kind', { kind: TreatmentCycleKind.CLINICAL })
-                .andWhere('cycle."patientId" = :patientId', { patientId: input.patientId });
+            query.andWhere('cycle."patientId" = :patientId', { patientId: input.patientId });
         }
 
         const cycle = await query.getOne();
-        return cycle?.id;
+        if (cycle) return cycle.id;
+
+        const existingCountQuery = this.treatmentCycleRepository
+            .createQueryBuilder('cycle')
+            .where('cycle."cycleKind" = :kind', { kind: cycleKind });
+        if (cycleKind === TreatmentCycleKind.SUPERVISION) {
+            existingCountQuery.andWhere('cycle."therapistId" = :therapistId', {
+                therapistId: input.therapistId,
+            });
+        } else {
+            existingCountQuery.andWhere('cycle."patientId" = :patientId', {
+                patientId: input.patientId,
+            });
+        }
+
+        const existingCount = await existingCountQuery.getCount();
+        if (existingCount > 0) return undefined;
+
+        const firstCycle = await this.treatmentCycleRepository.save(
+            this.treatmentCycleRepository.create({
+                cycleKind,
+                status: TreatmentCycleStatus.ACTIVE,
+                cycleNumber: 1,
+                patientId: cycleKind === TreatmentCycleKind.CLINICAL ? input.patientId : undefined,
+                therapistId: cycleKind === TreatmentCycleKind.SUPERVISION ? input.therapistId : undefined,
+                startedAt: new Date(input.startAt),
+                previousCycleCount: 0,
+            }),
+        );
+        return firstCycle.id;
     }
 
     private async buildReplacementInput(

@@ -1,25 +1,50 @@
-import { ExecutionContext, Injectable, Logger } from '@nestjs/common';
+import { ExecutionContext, Injectable, Logger, Optional } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { AuthGuard } from '@nestjs/passport';
 import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host';
 import { AuthenticationError } from 'apollo-server-express';
+import { ForbiddenError } from 'apollo-server-express';
 import { Reflector } from '@nestjs/core';
+import { InformedConsentAccessService } from '../informed-consent/services/informed-consent-access.service';
 
 @Injectable()
 export class GqlAuthGuard extends AuthGuard('jwt') {
-  constructor(private reflector: Reflector) {
+  constructor(
+    private reflector: Reflector,
+    @Optional()
+    private readonly informedConsentAccessService?: InformedConsentAccessService,
+  ) {
     super();
   }
 
   protected readonly logger = new Logger(GqlAuthGuard.name);
 
-  canActivate(context: ExecutionContext) {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const ctx = GqlExecutionContext.create(context);
     const { req } = ctx.getContext();
 
-    return super.canActivate(
+    const activation = super.canActivate(
       new ExecutionContextHost([req]),
     );
+    const activated = await this.resolveActivation(activation);
+    const fieldName = ctx.getInfo()?.fieldName;
+    const userId = req?.user?.id;
+    if (
+      activated
+      && userId
+      && this.informedConsentAccessService
+      && await this.informedConsentAccessService.shouldBlockOperation(userId, fieldName)
+    ) {
+      throw new ForbiddenError('Pending mandatory informed consent must be completed before using PSIRA.');
+    }
+    return activated;
+  }
+
+  private resolveActivation(activation: any): Promise<boolean> {
+    if (activation && typeof activation.toPromise === 'function') {
+      return activation.toPromise();
+    }
+    return Promise.resolve(activation);
   }
 
   handleRequest(err: any, user: any) {

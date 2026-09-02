@@ -80,6 +80,21 @@ export class CaseHistoryEntry extends BaseEntity {
     @Column({ type: 'text', nullable: true })
     reasonSnapshot?: string;
 
+    @Field(() => Int, { nullable: true })
+    assessmentId?: number;
+
+    @Field(() => Int, { nullable: true })
+    assessmentTypeId?: number;
+
+    @Field(() => String, { nullable: true })
+    questionnaireAssessmentId?: string;
+
+    @Field(() => String, { nullable: true })
+    assessmentName?: string;
+
+    @Field(() => String, { nullable: true })
+    assessmentTypeName?: string;
+
     @Column({ type: 'jsonb', nullable: true })
     metadata?: any;
 

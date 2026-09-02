@@ -13,6 +13,19 @@ import {
 } from '../models/questionnaire-bundle.schema';
 import { ResolvedQuestionnaire } from '../models/questionnaire-assessment.schema';
 
+interface BundleScreenContext {
+    id: string;
+    label?: string;
+    headerHtml?: string;
+    footerHtml?: string;
+    index: number;
+}
+
+interface BundlePresentationContext {
+    headerHtml?: string;
+    noticeHtml?: string;
+}
+
 @Injectable()
 export class QuestionnaireBundleResolutionService {
     constructor(
@@ -30,6 +43,7 @@ export class QuestionnaireBundleResolutionService {
         resolvedQuestionnaires: ResolvedQuestionnaire[];
     }> {
         const resolvedQuestionnaires: ResolvedQuestionnaire[] = [];
+        const screenState = { nextScreenIndex: 0 };
 
         for (const questionnaireId of questionnaires || []) {
             await this.assertQuestionnaireCanBeUsed(questionnaireId);
@@ -45,10 +59,16 @@ export class QuestionnaireBundleResolutionService {
                 .exec();
 
             const bundlePath = [bundle.name].filter(Boolean);
+            const bundlePresentation: BundlePresentationContext = {
+                headerHtml: bundle.headerHtml,
+                noticeHtml: bundle.noticeHtml,
+            };
             const bundleQuestionnaires = await this.resolveNodes(
                 this.structureForBundle(bundle),
                 bundle._id,
                 bundlePath,
+                screenState,
+                bundlePresentation,
             );
 
             for (const resolvedQuestionnaire of bundleQuestionnaires) {
@@ -85,12 +105,15 @@ export class QuestionnaireBundleResolutionService {
         nodes: QuestionnaireBundleNode[],
         sourceBundleId: Types.ObjectId,
         path: string[],
+        screenState: { nextScreenIndex: number },
+        bundlePresentation?: BundlePresentationContext,
+        screen?: BundleScreenContext,
     ): Promise<ResolvedQuestionnaire[]> {
         const resolvedQuestionnaires: ResolvedQuestionnaire[] = [];
 
         for (const node of nodes || []) {
             resolvedQuestionnaires.push(
-                ...(await this.resolveNode(node, sourceBundleId, path)),
+                ...(await this.resolveNode(node, sourceBundleId, path, screenState, bundlePresentation, screen)),
             );
         }
 
@@ -101,6 +124,9 @@ export class QuestionnaireBundleResolutionService {
         node: QuestionnaireBundleNode,
         sourceBundleId: Types.ObjectId,
         path: string[],
+        screenState: { nextScreenIndex: number },
+        bundlePresentation?: BundlePresentationContext,
+        screen?: BundleScreenContext,
     ): Promise<ResolvedQuestionnaire[]> {
         if (!node?.type) {
             throw new BadRequestException('Bundle node type is required');
@@ -117,6 +143,9 @@ export class QuestionnaireBundleResolutionService {
                     sourceBundleId,
                     path,
                     0,
+                    bundlePresentation,
+                    screen,
+                    node,
                 ),
             ];
         }
@@ -128,8 +157,19 @@ export class QuestionnaireBundleResolutionService {
 
         const nextPath = node.label ? [...path, node.label] : path;
 
+        if (node.type === QuestionnaireBundleNodeType.SCREEN) {
+            const nextScreen: BundleScreenContext = {
+                id: node.id,
+                label: node.displayTitle || '',
+                headerHtml: node.headerHtml,
+                footerHtml: node.footerHtml,
+                index: screenState.nextScreenIndex++,
+            };
+            return this.resolveNodes(children, sourceBundleId, nextPath, screenState, bundlePresentation, nextScreen);
+        }
+
         if (node.type === QuestionnaireBundleNodeType.FIXED_GROUP) {
-            return this.resolveNodes(children, sourceBundleId, nextPath);
+            return this.resolveNodes(children, sourceBundleId, nextPath, screenState, bundlePresentation, screen);
         }
 
         if (node.type === QuestionnaireBundleNodeType.RANDOM_GROUP) {
@@ -141,7 +181,7 @@ export class QuestionnaireBundleResolutionService {
                     ? this.weightedSelect(children, node.selectionCount || 1)
                     : this.weightedSelect(children, children.length);
 
-            return this.resolveNodes(selectedChildren, sourceBundleId, nextPath);
+            return this.resolveNodes(selectedChildren, sourceBundleId, nextPath, screenState, bundlePresentation, screen);
         }
 
         throw new BadRequestException(`Unsupported bundle node type "${node.type}"`);
@@ -182,12 +222,24 @@ export class QuestionnaireBundleResolutionService {
         sourceBundleId: Types.ObjectId | null,
         path: string[],
         orderIndex: number,
+        bundlePresentation?: BundlePresentationContext,
+        screen?: BundleScreenContext,
+        node?: QuestionnaireBundleNode,
     ): ResolvedQuestionnaire {
         return {
             occurrenceId: new Types.ObjectId().toHexString(),
             questionnaireId: questionnaireId.toString(),
             sourceBundleId: sourceBundleId ? sourceBundleId.toString() : null,
             path,
+            screenId: screen?.id,
+            screenLabel: screen?.label,
+            screenHeaderHtml: screen?.headerHtml,
+            screenFooterHtml: screen?.footerHtml,
+            bundleHeaderHtml: bundlePresentation?.headerHtml,
+            bundleNoticeHtml: bundlePresentation?.noticeHtml,
+            questionnaireDisplayTitle: node?.displayTitle,
+            showQuestionnaireTitle: node?.showTitle,
+            screenIndex: screen?.index,
             orderIndex,
         };
     }

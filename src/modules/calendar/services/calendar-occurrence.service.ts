@@ -39,9 +39,12 @@ export class CalendarOccurrenceService {
         const query = this.occurrenceRepository
             .createQueryBuilder('occurrence')
             .leftJoinAndSelect('occurrence.patient', 'patient')
+            .leftJoinAndSelect('patient.departments', 'patientDepartment')
             .leftJoinAndSelect('occurrence.therapist', 'therapist')
+            .leftJoinAndSelect('therapist.departments', 'therapistDepartment')
             .leftJoin('therapist.supervisors', 'therapistSupervisor')
             .leftJoinAndSelect('occurrence.supervisor', 'supervisor')
+            .leftJoinAndSelect('supervisor.departments', 'supervisorDepartment')
             .leftJoinAndSelect('occurrence.responsibleUsers', 'responsibleUser')
             .leftJoinAndSelect('occurrence.clinicalSession', 'clinicalSession')
             .leftJoinAndSelect('occurrence.assessments', 'assessment')

@@ -1,5 +1,6 @@
 import { ForbiddenException, UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { InjectRepository } from '@nestjs/typeorm';
 import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
 import { UseOrPermissions } from 'src/modules/permission/decorators/permission.decorator';
@@ -19,6 +20,7 @@ import { NotificationConfiguration } from '../models/notification-configuration.
 import { NotificationPreference } from '../models/notification-preference.model';
 import { NotificationConfigurationService } from '../services/notification-configuration.service';
 import { NotificationPreferenceService } from '../services/notification-preference.service';
+import { Repository } from 'typeorm';
 
 @Resolver(() => NotificationConfiguration)
 @UseGuards(GqlAuthGuard, PermissionGuard)
@@ -26,6 +28,8 @@ export class NotificationConfigurationResolver {
     constructor(
         private readonly notificationConfigurationService: NotificationConfigurationService,
         private readonly notificationPreferenceService: NotificationPreferenceService,
+        @InjectRepository(User)
+        private readonly userRepository: Repository<User>,
     ) {}
 
     @Query(() => [NotificationConfiguration])
@@ -64,12 +68,6 @@ export class NotificationConfigurationResolver {
     }
 
     @Query(() => NotificationPreference)
-    @UseOrPermissions([
-        PermissionEnum.VIEW_NOTIFICATIONS,
-        PermissionEnum.MANAGE_NOTIFICATIONS,
-        PermissionEnum.MANAGE_PATIENTS,
-        PermissionEnum.MANAGE_USERS,
-    ])
     notificationPreference(
         @Args('input') input: NotificationPreferenceQueryInput,
         @CurrentUser() currentUser: User,
@@ -112,16 +110,18 @@ export class NotificationConfigurationResolver {
     }
 
     @Mutation(() => NotificationPreference)
-    @UseOrPermissions([
-        PermissionEnum.MANAGE_NOTIFICATIONS,
-        PermissionEnum.MANAGE_PATIENTS,
-        PermissionEnum.MANAGE_USERS,
-    ])
     updateNotificationPreference(
         @Args('input') input: UpdateNotificationPreferenceInput,
         @CurrentUser() currentUser: User,
     ): Promise<NotificationPreference> {
-        this.assertOwnUserPreference(input, currentUser);
+        return this.updatePreferenceWithAccess(input, currentUser);
+    }
+
+    private async updatePreferenceWithAccess(
+        input: UpdateNotificationPreferenceInput,
+        currentUser: User,
+    ): Promise<NotificationPreference> {
+        await this.assertCanEditPreference(input, currentUser);
         return this.notificationPreferenceService.update(input);
     }
 
@@ -131,6 +131,32 @@ export class NotificationConfigurationResolver {
     ): void {
         if (input.userId && Number(input.userId) !== Number(currentUser.id)) {
             throw new ForbiddenException('User notification preferences can only be edited by the same user.');
+        }
+    }
+
+    private async assertCanEditPreference(
+        input: NotificationPreferenceQueryInput,
+        currentUser: User,
+    ): Promise<void> {
+        if (input.userId) {
+            this.assertOwnUserPreference(input, currentUser);
+            return;
+        }
+        const user = await this.userRepository.findOne(currentUser.id, {
+            relations: ['roles', 'roles.permissions'],
+        });
+        const permissionNames = (user?.roles ?? [])
+            .flatMap(role => role.permissions ?? [])
+            .map(permission => permission.name);
+        const allowed = [
+            PermissionEnum.MANAGE_NOTIFICATIONS,
+            PermissionEnum.MANAGE_PATIENTS,
+            PermissionEnum.MANAGE_USERS,
+        ].some(permission => permissionNames.includes(permission));
+        if (!allowed) {
+            throw new ForbiddenException(
+                "At least one of the permissions 'manage notifications, manage patients, manage users' is required to access this resource",
+            );
         }
     }
 }

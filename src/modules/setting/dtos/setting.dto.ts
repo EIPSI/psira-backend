@@ -65,6 +65,14 @@ export class SettingDto {
     googleCalendarEnabled?: boolean;
 
     @IsOptional()
+    @Field({ nullable: true, defaultValue: true })
+    notificationsEnabled?: boolean;
+
+    @IsOptional()
+    @Field({ nullable: true, defaultValue: true })
+    informedConsentEnabled?: boolean;
+
+    @IsOptional()
     @Field({ nullable: true })
     googleCalendarClientId?: string;
 

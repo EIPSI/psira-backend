@@ -54,12 +54,7 @@ export class UserAccountProvisioningService {
     }
 
     private buildUsername(input: ProvisionPersonUserInput): string | null {
-        const rawUsername =
-            input.email ||
-            input.phone ||
-            input.fallbackUsername;
-
-        return rawUsername ? rawUsername.trim().toLowerCase() : null;
+        return input.email ? input.email.trim().toLowerCase() : null;
     }
 
     private generateRandomPassword(): string {

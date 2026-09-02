@@ -4,6 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Assessment } from 'src/modules/assessment/models/assessment.model';
 import { AssessmentStatus } from 'src/modules/questionnaire/enums/assessment-status.enum';
 import { Repository } from 'typeorm';
+import { SettingKey } from 'src/modules/setting/enums/setting-name.enum';
+import { SettingService } from 'src/modules/setting/providers/setting.service';
 import { NotificationEvent } from '../enums/notification-event.enum';
 import { NotificationLog } from '../models/notification-log.model';
 import { NotificationPreference } from '../models/notification-preference.model';
@@ -21,10 +23,12 @@ export class NotificationPeriodicService {
         private readonly logRepository: Repository<NotificationLog>,
         private readonly dispatchService: NotificationDispatchService,
         private readonly preferenceService: NotificationPreferenceService,
+        private readonly settingService: SettingService,
     ) {}
 
     @Cron(CronExpression.EVERY_HOUR)
     async checkDueAssessmentNotifications(): Promise<void> {
+        if ((await this.settingService.getKey(SettingKey.NOTIFICATIONS_ENABLED)) === false) return;
         await this.dispatchNotAnsweredNotifications();
         await this.dispatchPeriodicSummaries();
     }

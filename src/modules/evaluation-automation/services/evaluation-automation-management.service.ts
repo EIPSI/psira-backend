@@ -91,10 +91,18 @@ export class EvaluationAutomationManagementService {
         if (automationId) {
             await this.getAutomationOrFail(automationId, currentUser);
         }
+        const where: any = automationId ? { automationId } : {};
+        const filteredUserId = this.extractEqFilterNumber(query?.filter, 'userId');
+        if (filteredUserId) where.userId = filteredUserId;
+        const hasAllAccess = !currentUser?.id || await this.hasAllAutomationAccess(currentUser.id);
         const runs = await this.runRepository.find({
-            where: automationId ? { automationId } : {},
-            relations: ['automation', 'automation.departments', 'user'],
+            where,
+            relations: hasAllAccess
+                ? ['automation', 'user']
+                : ['automation', 'automation.departments', 'user'],
         });
+        if (hasAllAccess) return applyQuery(runs, query);
+
         const permittedAutomationIds = (await this.filterAutomationsByAccess(
             runs.map(run => run.automation).filter(Boolean) as EvaluationAutomation[],
             currentUser,
@@ -103,6 +111,22 @@ export class EvaluationAutomationManagementService {
             ? runs
             : runs.filter(run => !run.automationId || permittedAutomationIds.includes(run.automationId));
         return applyQuery(filteredRuns, query);
+    }
+
+    private extractEqFilterNumber(filter: any, fieldName: string): number | undefined {
+        if (!filter) return undefined;
+        const directValue = filter[fieldName]?.eq;
+        if (directValue !== undefined && directValue !== null && directValue !== '') {
+            const value = Number(directValue);
+            return Number.isFinite(value) ? value : undefined;
+        }
+        if (Array.isArray(filter.and)) {
+            for (const child of filter.and) {
+                const value = this.extractEqFilterNumber(child, fieldName);
+                if (value) return value;
+            }
+        }
+        return undefined;
     }
 
     async previewAutomations(

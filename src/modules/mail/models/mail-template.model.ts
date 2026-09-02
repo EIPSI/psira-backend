@@ -33,6 +33,10 @@ export class MailTemplate extends BaseEntity {
     @Column()
     subject: string;
 
+    @FilterableField(() => String, { nullable: true })
+    @Column({ nullable: true })
+    senderName?: string;
+
     @Field(() => String)
     @Column()
     body: string;

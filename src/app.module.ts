@@ -29,6 +29,7 @@ import { RandomizationModule } from './modules/randomization/randomization.modul
 import { EvaluationAutomationModule } from './modules/evaluation-automation/evaluation-automation.module';
 import { TreatmentCycleModule } from './modules/treatment-cycle/treatment-cycle.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { InformedConsentModule } from './modules/informed-consent/informed-consent.module';
 
 @Module({
     imports: [
@@ -88,6 +89,7 @@ import { NotificationModule } from './modules/notification/notification.module';
         EvaluationAutomationModule,
         TreatmentCycleModule,
         NotificationModule,
+        InformedConsentModule,
     ],
     controllers: [],
     providers: [],

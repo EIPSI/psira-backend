@@ -128,28 +128,35 @@ export class AssessmentService {
         query: AssessmentQuery,
         currentUser: User,
     ): Promise<ConnectionType<Assessment>> {
-        // Aplicar filtro de departamento si el usuario no tiene acceso total
-        const access = await this.patientPermissionService.getUserAccessScope(currentUser.id);
-
         let departmentFilter: any = {};
         const targetUserFilter = { responderUserId: { eq: currentUser.id } };
+        const canViewPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_PATIENTS);
+        const canViewAllPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_ALL_PATIENTS);
+        const canViewDepartmentPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_DEPARTMENT_PATIENTS);
+        const canViewAssignedPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_ASSIGNED_PATIENTS);
 
-        if (access.type !== PatientAccessScope.ALL) {
-            const patientAuthorizeFilter = await PatientAuthorizer.authorizePatient(currentUser?.id);
+        if (!canViewPatients && !canViewAllPatients && !canViewDepartmentPatients && !canViewAssignedPatients) {
+            departmentFilter = targetUserFilter;
+        } else {
+            const access = await this.patientPermissionService.getUserAccessScope(currentUser.id);
 
-            const currentUsersPatients = await this.patientQueryService.query({
-                filter: patientAuthorizeFilter,
-            });
+            if (access.type !== PatientAccessScope.ALL) {
+                const patientAuthorizeFilter = await PatientAuthorizer.authorizePatient(currentUser?.id);
 
-            if (currentUsersPatients.length > 0) {
-                departmentFilter = {
-                    or: [
-                        { patientId: { in: currentUsersPatients.map(p => p.id) } },
-                        targetUserFilter,
-                    ],
-                };
-            } else {
-                departmentFilter = targetUserFilter;
+                const currentUsersPatients = await this.patientQueryService.query({
+                    filter: patientAuthorizeFilter,
+                });
+
+                if (currentUsersPatients.length > 0) {
+                    departmentFilter = {
+                        or: [
+                            { patientId: { in: currentUsersPatients.map(p => p.id) } },
+                            targetUserFilter,
+                        ],
+                    };
+                } else {
+                    departmentFilter = targetUserFilter;
+                }
             }
         }
 
@@ -387,6 +394,7 @@ export class AssessmentService {
                 }
 
                 assessment.status = AssessmentStatus.OPEN_FOR_COMPLETION;
+                assessment.deleted = false;
                 assessment.name = assessmentInput.name?.trim() || null;
                 assessment.assessmentType = assessmentType;
                 assessment.clinicianId = assessmentInput.clinicianId;
@@ -674,7 +682,7 @@ export class AssessmentService {
     ): Promise<void> {
         assessment.receiverEmail = responderUser.email || assessmentInput.receiverEmail || null;
         assessment.mailTemplateId = null;
-        assessment.emailReminder = true;
+        assessment.emailReminder = !!(assessmentInput.reminderMinutes || []).length;
 
         if (!Validator.isEmail(assessment.receiverEmail)) {
             assessment.emailStatus = AssessmentEmailStatus.NOT_SCHEDULED;
@@ -730,6 +738,19 @@ export class AssessmentService {
                     : undefined);
         if (!treatmentCycleId) return;
 
+        const assessmentWithType = await this.assessmentRepository.findOne(assessment.id, {
+            relations: ['assessmentType'],
+        });
+        const assessmentName = (assessment.name || assessmentWithType?.name || '').trim();
+        const assessmentTypeName = assessmentWithType?.assessmentType?.name ||
+            (assessment.assessmentTypeId
+                ? (await this.assessmentTypeRepo.findOne(assessment.assessmentTypeId))?.name
+                : undefined);
+        const assessmentLabel = assessmentName || assessmentTypeName || `Evaluación ${assessment.id}`;
+        const noteTitle = assessment.patientId
+            ? `Nota clínica de evaluación: ${assessmentLabel}`
+            : `Nota de supervisión de evaluación: ${assessmentLabel}`;
+
         await this.caseHistoryEntryRepository.save(
             this.caseHistoryEntryRepository.create({
                 entryKind: CaseHistoryEntryKind.NOTE,
@@ -738,13 +759,14 @@ export class AssessmentService {
                 therapistId: assessment.patientId ? null : assessment.targetUserId || null,
                 treatmentCycleId,
                 occurredAt: assessment.deliveryDate || new Date(),
-                title: assessment.patientId
-                    ? 'Nota clínica de evaluación'
-                    : 'Nota de supervisión de evaluación',
+                title: noteTitle,
                 content: note,
                 metadata: {
                     assessmentId: assessment.id,
                     assessmentTypeId: assessment.assessmentTypeId,
+                    assessmentName,
+                    assessmentTypeName,
+                    questionnaireAssessmentId: assessment.questionnaireAssessmentId,
                     createdByUserId: currentUser?.id,
                 },
             }),

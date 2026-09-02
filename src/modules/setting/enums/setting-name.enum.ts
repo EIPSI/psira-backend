@@ -11,6 +11,8 @@ export enum SettingKey {
     TREATMENT_FINALIZATION_UNDO_WINDOW_DAYS = 'treatmentFinalizationUndoWindowDays',
     PATIENT_CASE_MANAGER_ASSIGNABLE_HIERARCHY_RANK = 'patientCaseManagerAssignableHierarchyRank',
     GOOGLE_CALENDAR_ENABLED = 'googleCalendarEnabled',
+    NOTIFICATIONS_ENABLED = 'notificationsEnabled',
+    INFORMED_CONSENT_ENABLED = 'informedConsentEnabled',
     GOOGLE_CALENDAR_CLIENT_ID = 'googleCalendarClientId',
     GOOGLE_CALENDAR_CLIENT_SECRET = 'googleCalendarClientSecret',
     GOOGLE_CALENDAR_REDIRECT_URI = 'googleCalendarRedirectUri',

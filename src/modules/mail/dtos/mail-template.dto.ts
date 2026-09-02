@@ -12,6 +12,9 @@ export class CreateEmailTemplate {
     @Field(() => String)
     subject?: string;
 
+    @Field(() => String, { nullable: true })
+    senderName?: string;
+
     @Field(() => String)
     body: string;
 

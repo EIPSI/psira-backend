@@ -37,7 +37,6 @@ import { PatientPermissionService, PatientAccessScope } from '../services/patien
 import { PatientStatus } from '../models/patient-status.model';
 import { CreateOnePatientStatusInput } from '../dto/update-patient-status.input';
 import { PatientStatusService } from '../providers/patient-status.service';
-import { Assessment } from 'src/modules/assessment/models/assessment.model';
 import { checkIfPropertyExists } from 'src/shared/helpers/object.helper';
 
 @ArgsType()
@@ -406,10 +405,7 @@ export class PatientResolver {
         // Get patient if authorized. Throws exception if Not Found
         await this.service.getOnePatient(currentUser, Number(input.id));
 
-        const deletedPatient = await this.service.deleteOne(input.id);
-        await Assessment.delete({ patientId: Number(input.id) });
-
-        return deletedPatient;
+        return this.service.deleteOnePatientWithDependencies(Number(input.id));
     }
 
     @Mutation(() => Patient)

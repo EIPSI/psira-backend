@@ -39,7 +39,8 @@ export class UserCrudService extends TypeOrmQueryService<User> {
             throw new BadRequestException('Email is required');
         }
 
-        input.username = input.email.toLowerCase();
+        input.email = input.email.trim().toLowerCase();
+        input.username = input.email;
 
         // Check duplicate username exists
         const exists = await super.query({
@@ -98,7 +99,8 @@ export class UserCrudService extends TypeOrmQueryService<User> {
 
         // Check for duplicate username
         if (update.email) {
-            update.username = update.email.toLowerCase();
+            update.email = update.email.trim().toLowerCase();
+            update.username = update.email;
         }
 
         if (!!update.username) {

@@ -5,6 +5,8 @@ import { Assessment } from 'src/modules/assessment/models/assessment.model';
 import { AssessmentStatus } from 'src/modules/questionnaire/enums/assessment-status.enum';
 import { User } from 'src/modules/user/models/user.model';
 import { configService } from 'src/config/config.service';
+import { SettingKey } from 'src/modules/setting/enums/setting-name.enum';
+import { SettingService } from 'src/modules/setting/providers/setting.service';
 import { url } from 'src/shared';
 import * as CryptoJS from 'crypto-js';
 import * as Handlebars from 'handlebars';
@@ -26,12 +28,14 @@ export class NotificationDispatchService {
         private readonly mailerService: MailerService,
         private readonly configurationService: NotificationConfigurationService,
         private readonly preferenceService: NotificationPreferenceService,
+        private readonly settingService: SettingService,
     ) {}
 
     async dispatchAssessmentEvent(
         event: NotificationEvent,
         assessmentId: number,
     ): Promise<void> {
+        if (!await this.notificationsEnabled()) return;
         if (
             ![
                 NotificationEvent.ASSESSMENT_ANSWERED,
@@ -154,6 +158,7 @@ export class NotificationDispatchService {
         periodEnd: Date;
         assessments: Assessment[];
     }): Promise<void> {
+        if (!await this.notificationsEnabled()) return;
         if (!input.assessments.length) return;
         const sample = input.assessments[0];
         const hydrated = await this.assessmentRepository.findOne({
@@ -207,6 +212,92 @@ export class NotificationDispatchService {
         }
     }
 
+    async dispatchUserEvent(input: {
+        event: NotificationEvent;
+        recipient: User;
+        patientId?: number;
+        therapistId?: number;
+        data?: Record<string, any>;
+    }): Promise<void> {
+        if (!await this.notificationsEnabled()) return;
+        if (!input.recipient?.email) return;
+        const configuration = await this.configurationService.resolveMailConfigurationForRecipient({
+            event: input.event,
+            recipientUserId: input.recipient.id,
+            patientId: input.patientId,
+            targetUserId: input.therapistId,
+        });
+        if (!configuration?.mailTemplate) {
+            await this.recordLog({
+                channel: NotificationChannel.EMAIL,
+                event: input.event,
+                status: NotificationLogStatus.SKIPPED_NO_CONFIGURATION,
+                recipientId: input.recipient.id,
+                recipientEmail: input.recipient.email,
+                patientId: input.patientId,
+                therapistId: input.therapistId,
+                message: 'No active template configuration matched this recipient.',
+            });
+            return;
+        }
+
+        Handlebars.registerHelper('helperMissing', function(val) {
+            if (val === undefined) return null;
+            return val;
+        });
+
+        const templateFn = Handlebars.compile(configuration.mailTemplate.body);
+        const consentLink = this.generatePublicInformedConsentURL(input.recipient.id);
+        const data = {
+            firstName: input.recipient.firstName,
+            username: input.recipient.username,
+            recipient: this.userData(input.recipient),
+            user: this.userData(input.recipient),
+            link: input.data?.link || null,
+            ...input.data,
+            consent: {
+                link: consentLink,
+                pendingLink: consentLink,
+                ...(input.data?.consent || {}),
+            },
+        };
+
+        try {
+            await this.mailerService.sendMail({
+                to: input.recipient.email,
+                from: this.resolveSender(configuration.mailTemplate),
+                subject: configuration.mailTemplate.subject,
+                html: templateFn(data),
+            });
+            await this.recordLog({
+                channel: NotificationChannel.EMAIL,
+                event: input.event,
+                status: NotificationLogStatus.SENT,
+                notificationConfigurationId: configuration.id,
+                recipientId: input.recipient.id,
+                recipientEmail: input.recipient.email,
+                mailTemplateId: configuration.mailTemplate.id,
+                patientId: input.patientId,
+                therapistId: input.therapistId,
+                subject: configuration.mailTemplate.subject,
+            });
+        } catch (error) {
+            await this.recordLog({
+                channel: NotificationChannel.EMAIL,
+                event: input.event,
+                status: NotificationLogStatus.FAILED,
+                notificationConfigurationId: configuration.id,
+                recipientId: input.recipient.id,
+                recipientEmail: input.recipient.email,
+                mailTemplateId: configuration.mailTemplate.id,
+                patientId: input.patientId,
+                therapistId: input.therapistId,
+                subject: configuration.mailTemplate.subject,
+                message: error?.message || 'Email delivery failed.',
+            });
+        }
+    }
+
     async recordLog(input: {
         channel: NotificationChannel;
         event: NotificationEvent;
@@ -232,9 +323,10 @@ export class NotificationDispatchService {
         assessment: Assessment;
         recipient: User;
         configurationId: number;
-        template: { id: number; subject: string; body: string };
+        template: { id: number; subject: string; body: string; senderName?: string };
         extraData?: Record<string, any>;
     }): Promise<void> {
+        if (!await this.notificationsEnabled()) return;
         Handlebars.registerHelper('helperMissing', function(val) {
             if (val === undefined) return null;
             return val;
@@ -246,7 +338,7 @@ export class NotificationDispatchService {
         try {
             await this.mailerService.sendMail({
                 to: input.recipient.email,
-                from: configService.getSenderMail(),
+                from: this.resolveSender(input.template),
                 subject: input.template.subject,
                 html: templateFn(data),
             });
@@ -291,6 +383,17 @@ export class NotificationDispatchService {
             seen.add(recipient.id);
             return true;
         });
+    }
+
+    private async notificationsEnabled(): Promise<boolean> {
+        return (await this.settingService.getKey(SettingKey.NOTIFICATIONS_ENABLED)) !== false;
+    }
+
+    private resolveSender(template?: { senderName?: string }): string {
+        const senderMail = configService.getSenderMail();
+        const senderName = (template?.senderName || '').trim();
+        if (!senderName) return senderMail;
+        return `"${senderName.replace(/"/g, '\\"')}" <${senderMail}>`;
     }
 
     private buildTemplateData(
@@ -387,5 +490,15 @@ export class NotificationDispatchService {
         return url(
             `assessment/overview?assessment=${encodeURIComponent(cryptoId)}`,
         );
+    }
+
+    private generatePublicInformedConsentURL(userId: number): string {
+        const expiresAt = new Date();
+        expiresAt.setMonth(expiresAt.getMonth() + 6);
+        const cryptoId = CryptoJS.AES.encrypt(
+            JSON.stringify({ userId, exp: expiresAt.getTime() }),
+            configService.getFrontendEncryptionKey(),
+        ).toString();
+        return url(`informed-consent/pending?token=${encodeURIComponent(cryptoId)}`);
     }
 }

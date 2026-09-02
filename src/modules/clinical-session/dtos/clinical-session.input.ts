@@ -173,6 +173,9 @@ export class UpdateClinicalSessionInput {
 export class UpdateClinicalSessionFollowUpSettingsInput {
     @Field(() => Int)
     editWindowDays: number;
+
+    @Field(() => Int, { nullable: true })
+    dashboardLookaheadDays?: number;
 }
 
 @InputType()

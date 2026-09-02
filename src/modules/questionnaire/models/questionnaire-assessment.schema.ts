@@ -20,6 +20,33 @@ export class ResolvedQuestionnaire {
     @Field(() => [String], { nullable: true })
     path?: string[];
 
+    @Field(() => String, { nullable: true })
+    screenId?: string;
+
+    @Field(() => String, { nullable: true })
+    screenLabel?: string;
+
+    @Field(() => String, { nullable: true })
+    screenHeaderHtml?: string;
+
+    @Field(() => String, { nullable: true })
+    screenFooterHtml?: string;
+
+    @Field(() => String, { nullable: true })
+    bundleHeaderHtml?: string;
+
+    @Field(() => String, { nullable: true })
+    bundleNoticeHtml?: string;
+
+    @Field(() => String, { nullable: true })
+    questionnaireDisplayTitle?: string;
+
+    @Field(() => Boolean, { nullable: true })
+    showQuestionnaireTitle?: boolean;
+
+    @Field(() => Number, { nullable: true })
+    screenIndex?: number;
+
     @Field(() => Number)
     orderIndex: number;
 }
