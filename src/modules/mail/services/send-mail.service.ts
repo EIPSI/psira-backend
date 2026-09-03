@@ -20,6 +20,7 @@ import { NotificationLogStatus } from 'src/modules/notification/enums/notificati
 import { NotificationConfigurationService } from 'src/modules/notification/services/notification-configuration.service';
 import { SettingKey } from 'src/modules/setting/enums/setting-name.enum';
 import { SettingService } from 'src/modules/setting/providers/setting.service';
+import * as momentTimezone from 'moment-timezone';
 
 @Injectable()
 export class SendMailService {
@@ -327,9 +328,9 @@ export class SendMailService {
             assessment: {
                 id: assessmentInfo.id,
                 name: assessmentInfo.assessmentType?.name,
-                deliveryDate: this.formatDate(assessmentInfo.deliveryDate),
-                expirationDate: this.formatDate(assessmentInfo.expirationDate),
-                submissionDate: this.formatDate(assessmentInfo.submissionDate),
+                deliveryDate: await this.formatDateTime(assessmentInfo.deliveryDate),
+                expirationDate: await this.formatDateTime(assessmentInfo.expirationDate),
+                submissionDate: await this.formatDateTime(assessmentInfo.submissionDate),
                 responseStatus: assessmentInfo.status,
                 link: url,
             },
@@ -432,9 +433,25 @@ export class SendMailService {
         };
     }
 
-    private formatDate(date?: Date): string {
+    private async formatDateTime(date?: Date): Promise<string> {
         if (!date) return null;
-        return new Date(date).toLocaleDateString('es-AR');
+        const [locale, timezone, dateFormat, timeFormat, dateTimeFormat] = await Promise.all([
+            this.settingService.getKey(SettingKey.SYSTEM_LOCALE),
+            this.settingService.getKey(SettingKey.SYSTEM_TIMEZONE),
+            this.settingService.getKey(SettingKey.DATE_FORMAT),
+            this.settingService.getKey(SettingKey.TIME_FORMAT),
+            this.settingService.getKey(SettingKey.DATETIME_FORMAT),
+        ]);
+        const resolvedFormat = !dateTimeFormat || dateTimeFormat === 'YYYY-MM-DD LT'
+            ? `${dateFormat || 'YYYY-MM-DD'} ${timeFormat || 'LT'}`
+            : dateTimeFormat;
+        const value = momentTimezone(date);
+        const withTimezone = timezone && momentTimezone.tz.zone(timezone)
+            ? value.tz(timezone)
+            : value;
+        return withTimezone
+            .locale(locale || 'en')
+            .format(resolvedFormat);
     }
 
     private resolveSender(template?: { senderName?: string }): string {

@@ -39,6 +39,14 @@ export class Department extends BaseEntity {
     @Column({ default: true })
     active?: boolean;
 
+    @Field(() => [String], { nullable: true })
+    @Column('simple-array', { nullable: true })
+    appliedRoleCodes?: string[];
+
+    @Field(() => [String], { nullable: true })
+    @Column('simple-array', { nullable: true })
+    defaultRoleCodes?: string[];
+
     @FilterableField(() => GraphQLISODateTime)
     @CreateDateColumn()
     createdAt: Date;

@@ -51,7 +51,7 @@ export class UserCrudService extends TypeOrmQueryService<User> {
             throw new BadRequestException('Username already exists');
         }
 
-        const { roleCodes, skippedAutomationIds, ...userInput } = input as any;
+        const { roleCodes, skippedAutomationIds, skipCaregiverProfileSync, ...userInput } = input as any;
         const { departmentIds: inputDepartmentIds, ...rest } = userInput;
         let departmentIds = inputDepartmentIds;
         const plainPassword = rest.password;
@@ -67,6 +67,8 @@ export class UserCrudService extends TypeOrmQueryService<User> {
         }
 
         departmentIds = await this.applyDefaultDepartmentsForRoles(roleCodes, departmentIds);
+        this.validateRequiredDepartments(roleCodes, departmentIds);
+        await this.validateDepartmentsApplyToRoles(roleCodes, departmentIds);
 
         if (departmentIds && departmentIds.length > 0) {
             const departments = await Department.find({ where: { id: In(departmentIds) } });
@@ -79,7 +81,7 @@ export class UserCrudService extends TypeOrmQueryService<User> {
             await this.sendMailService.sendWelcomeEmail(user, plainPassword);
         }
 
-        await this.syncPersonProfilesForRoles(user);
+        await this.syncPersonProfilesForRoles(user, { skipCaregiver: !!skipCaregiverProfileSync });
         await this.dispatchUserCreatedAutomation(user, skippedAutomationIds);
 
         return user;
@@ -128,13 +130,15 @@ export class UserCrudService extends TypeOrmQueryService<User> {
             await this.setRelations('roles', id, roles.map(r => r.id));
         }
 
-        if (roleCodes?.includes(RoleCode.THERAPIST) && !departmentIds) {
-            departmentIds = await Department.createQueryBuilder('department')
-                .innerJoin('department.users', 'user', 'user.id = :id', { id })
-                .getMany()
-                .then(departments => departments.map(department => department.id));
+        const effectiveRoleCodes = roleCodes || await this.getUserRoleCodes(id);
+        if (roleCodes && departmentIds === undefined) {
+            departmentIds = await this.getUserDepartmentIds(id);
         }
-        departmentIds = await this.applyDefaultDepartmentsForRoles(roleCodes, departmentIds);
+        departmentIds = await this.applyDefaultDepartmentsForRoles(effectiveRoleCodes, departmentIds);
+        if (departmentIds !== undefined) {
+            this.validateRequiredDepartments(effectiveRoleCodes, departmentIds);
+            await this.validateDepartmentsApplyToRoles(effectiveRoleCodes, departmentIds);
+        }
 
         let departments: Department[] = [];
         if (departmentIds) {
@@ -191,15 +195,15 @@ export class UserCrudService extends TypeOrmQueryService<User> {
             : true;
     }
 
-    private async syncPersonProfilesForRoles(user: User): Promise<void> {
+    private async syncPersonProfilesForRoles(user: User, options: { skipCaregiver?: boolean } = {}): Promise<void> {
         const roleCodes = user.roles?.map(role => role.code) ?? [];
 
         if (roleCodes.includes(RoleCode.PATIENT)) {
             await this.ensurePatientForUser(user);
         }
 
-        if (roleCodes.includes(RoleCode.CAREGIVER)) {
-            await this.ensureCaregiverForUser(user);
+        if (roleCodes.includes(RoleCode.CAREGIVER) && !options.skipCaregiver) {
+            throw new BadRequestException('Caregivers must be created from the caregiver creation flow and linked to a patient.');
         }
     }
 
@@ -225,21 +229,63 @@ export class UserCrudService extends TypeOrmQueryService<User> {
     }
 
     private async applyDefaultDepartmentsForRoles(roleCodes?: string[], departmentIds?: number[]): Promise<number[] | undefined> {
-        if (!roleCodes?.includes(RoleCode.THERAPIST)) {
+        if (!roleCodes?.length) {
             return departmentIds;
         }
 
-        let particular = await Department.findOne({ where: { name: 'Particular' } });
-        if (!particular) {
-            particular = Department.create({
-                name: 'Particular',
-                description: 'Default department for private therapists',
-                active: true,
-            });
-            await particular.save();
-        }
+        const departments = await Department.find();
+        const defaultDepartmentIds = departments
+            .filter(department => this.departmentDefaultsForAnyRole(department, roleCodes))
+            .map(department => department.id);
 
-        return [...new Set([...(departmentIds ?? []), particular.id])];
+        return [...new Set([...(departmentIds ?? []), ...defaultDepartmentIds])];
+    }
+
+    private validateRequiredDepartments(roleCodes?: string[], departmentIds?: number[]): void {
+        if (roleCodes?.includes(RoleCode.SUPER_ADMIN)) {
+            return;
+        }
+        if (!departmentIds?.length) {
+            throw new BadRequestException('Users must be assigned to at least one department.');
+        }
+    }
+
+    private async validateDepartmentsApplyToRoles(roleCodes?: string[], departmentIds?: number[]): Promise<void> {
+        if (!roleCodes?.length || !departmentIds?.length) {
+            return;
+        }
+        const departments = await Department.find({ where: { id: In(departmentIds) } });
+        const invalidDepartment = departments.find(department => !this.departmentAppliesToAnyRole(department, roleCodes));
+        if (invalidDepartment) {
+            throw new BadRequestException(`Department "${invalidDepartment.name}" does not apply to the selected role.`);
+        }
+    }
+
+    private departmentAppliesToAnyRole(department: Department, roleCodes: string[]): boolean {
+        const appliedRoleCodes = department.appliedRoleCodes || [];
+        if (!appliedRoleCodes.length) {
+            return true;
+        }
+        return roleCodes.some(roleCode => appliedRoleCodes.includes(roleCode));
+    }
+
+    private departmentDefaultsForAnyRole(department: Department, roleCodes: string[]): boolean {
+        const defaultRoleCodes = department.defaultRoleCodes || [];
+        return roleCodes.some(roleCode => defaultRoleCodes.includes(roleCode));
+    }
+
+    private async getUserRoleCodes(userId: number): Promise<string[]> {
+        const roles = await Role.createQueryBuilder('role')
+            .innerJoin('role.users', 'user', 'user.id = :id', { id: userId })
+            .getMany();
+        return roles.map(role => role.code);
+    }
+
+    private async getUserDepartmentIds(userId: number): Promise<number[]> {
+        const departments = await Department.createQueryBuilder('department')
+            .innerJoin('department.users', 'user', 'user.id = :id', { id: userId })
+            .getMany();
+        return departments.map(department => department.id);
     }
 
     private async ensurePatientForUser(user: User): Promise<void> {

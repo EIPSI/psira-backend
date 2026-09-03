@@ -62,4 +62,6 @@ export class CreateUserInput {
 
   @Field(() => [Int], { nullable: true })
   skippedAutomationIds?: number[];
+
+  skipCaregiverProfileSync?: boolean;
 }

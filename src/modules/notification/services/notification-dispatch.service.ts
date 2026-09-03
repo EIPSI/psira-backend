@@ -7,6 +7,7 @@ import { User } from 'src/modules/user/models/user.model';
 import { configService } from 'src/config/config.service';
 import { SettingKey } from 'src/modules/setting/enums/setting-name.enum';
 import { SettingService } from 'src/modules/setting/providers/setting.service';
+import * as momentTimezone from 'moment-timezone';
 import { url } from 'src/shared';
 import * as CryptoJS from 'crypto-js';
 import * as Handlebars from 'handlebars';
@@ -203,10 +204,10 @@ export class NotificationDispatchService {
                 template: configuration.mailTemplate,
                 extraData: {
                     period: {
-                        start: this.formatDate(input.periodStart),
-                        end: this.formatDate(input.periodEnd),
+                        start: await this.formatDateTime(input.periodStart),
+                        end: await this.formatDateTime(input.periodEnd),
                     },
-                    assessmentsTable: this.buildAssessmentsTable(input.assessments),
+                    assessmentsTable: await this.buildAssessmentsTable(input.assessments),
                 },
             });
         }
@@ -333,7 +334,7 @@ export class NotificationDispatchService {
         });
 
         const templateFn = Handlebars.compile(input.template.body);
-        const data = this.buildTemplateData(input.assessment, input.recipient, input.extraData);
+        const data = await this.buildTemplateData(input.assessment, input.recipient, input.extraData);
 
         try {
             await this.mailerService.sendMail({
@@ -396,11 +397,11 @@ export class NotificationDispatchService {
         return `"${senderName.replace(/"/g, '\\"')}" <${senderMail}>`;
     }
 
-    private buildTemplateData(
+    private async buildTemplateData(
         assessment: Assessment,
         recipient: User,
         extraData?: Record<string, any>,
-    ): Record<string, any> {
+    ): Promise<Record<string, any>> {
         const patientName = this.fullName(assessment.patient);
         const therapistName = this.fullName(assessment.targetUser);
         const assessmentLink = assessment.uuid
@@ -426,9 +427,9 @@ export class NotificationDispatchService {
             assessment: {
                 id: assessment.id,
                 name: assessment.assessmentType?.name,
-                deliveryDate: this.formatDate(assessment.deliveryDate),
-                expirationDate: this.formatDate(assessment.expirationDate),
-                submissionDate: this.formatDate(assessment.submissionDate),
+                deliveryDate: await this.formatDateTime(assessment.deliveryDate),
+                expirationDate: await this.formatDateTime(assessment.expirationDate),
+                submissionDate: await this.formatDateTime(assessment.submissionDate),
                 responseStatus: assessment.status,
                 link: assessmentLink,
             },
@@ -437,17 +438,16 @@ export class NotificationDispatchService {
         };
     }
 
-    private buildAssessmentsTable(assessments: Assessment[]): string {
-        const rows = assessments
-            .map(assessment => {
+    private async buildAssessmentsTable(assessments: Assessment[]): Promise<string> {
+        const rows = await Promise.all(assessments
+            .map(async assessment => {
                 const name = assessment.assessmentType?.name || `Evaluación #${assessment.id}`;
                 const status = assessment.submissionDate || assessment.status === AssessmentStatus.COMPLETED
                     ? 'Respondida'
                     : 'No respondida';
-                return `<tr><td>${name}</td><td>${this.formatDate(assessment.deliveryDate) || '-'}</td><td>${status}</td></tr>`;
-            })
-            .join('');
-        return `<table><thead><tr><th>Evaluación</th><th>Fecha</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table>`;
+                return `<tr><td>${name}</td><td>${await this.formatDateTime(assessment.deliveryDate) || '-'}</td><td>${status}</td></tr>`;
+            }));
+        return `<table><thead><tr><th>Evaluación</th><th>Fecha</th><th>Estado</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
     }
 
     private userData(user?: User): Record<string, any> {
@@ -476,9 +476,25 @@ export class NotificationDispatchService {
         return [person?.firstName, person?.lastName].filter(Boolean).join(' ');
     }
 
-    private formatDate(date?: Date): string {
+    private async formatDateTime(date?: Date): Promise<string> {
         if (!date) return null;
-        return new Date(date).toLocaleDateString('es-AR');
+        const [locale, timezone, dateFormat, timeFormat, dateTimeFormat] = await Promise.all([
+            this.settingService.getKey(SettingKey.SYSTEM_LOCALE),
+            this.settingService.getKey(SettingKey.SYSTEM_TIMEZONE),
+            this.settingService.getKey(SettingKey.DATE_FORMAT),
+            this.settingService.getKey(SettingKey.TIME_FORMAT),
+            this.settingService.getKey(SettingKey.DATETIME_FORMAT),
+        ]);
+        const resolvedFormat = !dateTimeFormat || dateTimeFormat === 'YYYY-MM-DD LT'
+            ? `${dateFormat || 'YYYY-MM-DD'} ${timeFormat || 'LT'}`
+            : dateTimeFormat;
+        const value = momentTimezone(date);
+        const withTimezone = timezone && momentTimezone.tz.zone(timezone)
+            ? value.tz(timezone)
+            : value;
+        return withTimezone
+            .locale(locale || 'en')
+            .format(resolvedFormat);
     }
 
     private generateAssessmentURL(assesmentUuid: string): string {

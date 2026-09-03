@@ -15,6 +15,7 @@ import { NotificationConfigurationService } from './services/notification-config
 import { NotificationDispatchService } from './services/notification-dispatch.service';
 import { NotificationPeriodicService } from './services/notification-periodic.service';
 import { NotificationPreferenceService } from './services/notification-preference.service';
+import { NotificationLogRetentionService } from './services/notification-log-retention.service';
 
 @Module({
     imports: [
@@ -37,6 +38,7 @@ import { NotificationPreferenceService } from './services/notification-preferenc
         NotificationPreferenceService,
         NotificationDispatchService,
         NotificationPeriodicService,
+        NotificationLogRetentionService,
     ],
     exports: [
         TypeOrmModule,

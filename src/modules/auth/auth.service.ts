@@ -180,7 +180,7 @@ export class AuthService {
         if (
             attempts >= maxLoginAttempts &&
             lastAttemptAt &&
-            moment().diff(lastAttemptAt, 'seconds') < userLockOutTimeInMinutes
+            moment().diff(lastAttemptAt, 'minutes') < userLockOutTimeInMinutes
         ) {
             throw new AuthenticationError(
                 'User locked out due to failed attempts. Please wait and try again later!',

@@ -47,6 +47,18 @@ export class SettingDto {
     @Max(365 * 10)
     @Min(1)
     @Field(() => Int, { nullable: true })
+    notificationLogRetentionDays?: number;
+
+    @IsOptional()
+    @Max(365 * 5)
+    @Min(1)
+    @Field(() => Int, { nullable: true })
+    accessTokenRetentionDays?: number;
+
+    @IsOptional()
+    @Max(365 * 10)
+    @Min(1)
+    @Field(() => Int, { nullable: true })
     evaluationAutomationRunRetentionDays?: number;
 
     @IsOptional()

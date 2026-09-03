@@ -48,6 +48,7 @@ export class UserAccountProvisioningService {
             departmentIds: input.departmentIds,
             roleCodes: [input.roleCode],
             skippedAutomationIds: input.skippedAutomationIds,
+            skipCaregiverProfileSync: input.roleCode === RoleCode.CAREGIVER,
         });
 
         return { user, tempPassword };

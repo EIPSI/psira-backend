@@ -15,6 +15,8 @@ import { PatientCaregiverResolver } from './resolvers/patient-caregiver.resolver
 import { PatientCaregiverService } from './services/patient.caregiver.service';
 import { PatientCaregiverInput } from './dtos/patient.caregiver.input';
 import { UserModule } from '../user/user.module';
+import { Patient } from '../patient/models/patient.model';
+import { EmergencyContact } from '../patient/models/emergency-contact.model';
 
 const guards = [GqlAuthGuard, PermissionGuard];
 @Module({
@@ -23,7 +25,9 @@ const guards = [GqlAuthGuard, PermissionGuard];
         NestjsQueryGraphQLModule.forFeature({
             imports: [NestjsQueryTypeOrmModule.forFeature([
                 Caregiver,
-                PatientCaregiver
+                PatientCaregiver,
+                Patient,
+                EmergencyContact
             ])],
             resolvers: [
                 {

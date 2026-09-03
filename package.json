@@ -59,6 +59,7 @@
         "graphql-upload": "^11.0.0",
         "handlebars": "^4.7.7",
         "moment": "^2.27.0",
+        "moment-timezone": "^0.5.33",
         "mongoose": "^5.10.11",
         "nest-schedule": "^0.6.4",
         "node-xlsx": "^0.16.1",

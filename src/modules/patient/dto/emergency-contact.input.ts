@@ -1,4 +1,4 @@
-import { Field, InputType } from '@nestjs/graphql';
+import { Field, InputType, Int } from '@nestjs/graphql';
 
 @InputType()
 export class EmergencyContactInput {
@@ -20,4 +20,7 @@ export class EmergencyContactInput {
 
     @Field({ nullable: true })
     email: string;
+
+    @Field(() => Int, { nullable: true })
+    caregiverId?: number;
 }

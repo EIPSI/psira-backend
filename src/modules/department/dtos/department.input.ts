@@ -12,4 +12,10 @@ export class DepartmentInput {
     @Field({ nullable: true, defaultValue: true })
     active?: boolean;
 
+    @Field(() => [String], { nullable: true })
+    appliedRoleCodes?: string[];
+
+    @Field(() => [String], { nullable: true })
+    defaultRoleCodes?: string[];
+
 }

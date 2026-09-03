@@ -1,5 +1,5 @@
 import { Field, InputType, Int } from "@nestjs/graphql";
-import { IsEmail, IsOptional } from "class-validator";
+import { IsEmail, IsInt, IsOptional } from "class-validator";
 
 
 @InputType()
@@ -48,4 +48,28 @@ export class CaregiverInput {
     @IsOptional()
     @Field(() => [Int], { nullable: true })
     skippedAutomationIds?: number[];
+
+    @Field(() => Int)
+    @IsInt()
+    patientId: number;
+
+    @IsOptional()
+    @Field({ nullable: true })
+    relation?: string;
+
+    @IsOptional()
+    @Field({ nullable: true })
+    emergency?: boolean;
+
+    @IsOptional()
+    @Field({ nullable: true })
+    note?: string;
+
+    @IsOptional()
+    @Field({ nullable: true })
+    skipEmergencyContactCreation?: boolean;
+
+    @IsOptional()
+    @Field(() => Int, { nullable: true })
+    emergencyContactId?: number;
 }

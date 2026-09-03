@@ -136,6 +136,10 @@ export class PatientResolver {
     ): Promise<Patient> {
         const patientInput = input['patient'] as CreatePatientInput;
 
+        if (!patientInput.departmentIds || patientInput.departmentIds.length === 0) {
+            throw new BadRequestException('Please select atleast one(1) Department for patient');
+        }
+
         // Validar que los departmentIds sean del usuario
         if (patientInput.departmentIds && patientInput.departmentIds.length > 0) {
             const canAccess = await this.patientPermissionService.canCreateInDepartments(

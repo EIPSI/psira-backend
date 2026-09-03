@@ -7,6 +7,8 @@ export enum SettingKey {
     MAX_LOGIN_ATTEMPTS = 'maxLoginAttempts',
     PASSWORD_LIFETIME_IN_DAYS = 'passwordLifeTimeInDays',
     PASSWORD_REUSE_CUTOFF_IN_DAYS = 'passwordReUseCutoffInDays',
+    NOTIFICATION_LOG_RETENTION_DAYS = 'notificationLogRetentionDays',
+    ACCESS_TOKEN_RETENTION_DAYS = 'accessTokenRetentionDays',
     EVALUATION_AUTOMATION_RUN_RETENTION_DAYS = 'evaluationAutomationRunRetentionDays',
     TREATMENT_FINALIZATION_UNDO_WINDOW_DAYS = 'treatmentFinalizationUndoWindowDays',
     PATIENT_CASE_MANAGER_ASSIGNABLE_HIERARCHY_RANK = 'patientCaseManagerAssignableHierarchyRank',

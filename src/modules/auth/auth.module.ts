@@ -8,6 +8,7 @@ import { AuthResolver } from './auth.resolver';
 import { SettingModule } from '../setting/setting.module';
 import { AccessTokenService } from './providers/access-token.service';
 import { InformedConsentModule } from '../informed-consent/informed-consent.module';
+import { AccessTokenRetentionService } from './providers/access-token-retention.service';
 
 @Module({
     imports: [
@@ -24,6 +25,7 @@ import { InformedConsentModule } from '../informed-consent/informed-consent.modu
         AuthResolver,
         JwtStrategy,
         AccessTokenService,
+        AccessTokenRetentionService,
     ],
     exports: [JwtStrategy, PassportModule],
 })
