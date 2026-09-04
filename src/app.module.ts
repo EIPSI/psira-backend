@@ -30,6 +30,7 @@ import { EvaluationAutomationModule } from './modules/evaluation-automation/eval
 import { TreatmentCycleModule } from './modules/treatment-cycle/treatment-cycle.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { InformedConsentModule } from './modules/informed-consent/informed-consent.module';
+import { LanguageModule } from './modules/language/language.module';
 
 @Module({
     imports: [
@@ -90,6 +91,7 @@ import { InformedConsentModule } from './modules/informed-consent/informed-conse
         TreatmentCycleModule,
         NotificationModule,
         InformedConsentModule,
+        LanguageModule,
     ],
     controllers: [],
     providers: [],
