@@ -660,17 +660,17 @@ export class EvaluationAutomationManagementService {
     private async hasAllAutomationAccess(userId: number): Promise<boolean> {
         return await PermissionService.userCan(
             userId,
-            PermissionEnum.VIEW_ALL_EVALUATION_AUTOMATIONS,
+            PermissionEnum.AUTOMATIONS_VIEW_ALL,
         ) || await PermissionService.userCan(
             userId,
-            PermissionEnum.MANAGE_ALL_EVALUATION_AUTOMATIONS,
+            PermissionEnum.AUTOMATIONS_EDIT_ALL,
         );
     }
 
     private async hasAllAutomationManageAccess(userId: number): Promise<boolean> {
         return PermissionService.userCan(
             userId,
-            PermissionEnum.MANAGE_ALL_EVALUATION_AUTOMATIONS,
+            PermissionEnum.AUTOMATIONS_EDIT_ALL,
         );
     }
 

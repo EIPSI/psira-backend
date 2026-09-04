@@ -48,7 +48,7 @@ export class CalendarOccurrenceResolver {
     }
 
     @Mutation(() => CalendarOccurrence)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_EDIT_DEPARTMENT)
     moveCalendarOccurrence(
         @Args('id', { type: () => Int }) id: number,
         @Args('startAt', { type: () => GraphQLISODateTime }) startAt: Date,
@@ -62,7 +62,7 @@ export class CalendarOccurrenceResolver {
     }
 
     @Mutation(() => CalendarOccurrence)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_EDIT_DEPARTMENT)
     createAssessmentOccurrence(
         @Args('assessment') assessment: CreateFullAssessmentInput,
         @CurrentUser() currentUser: User,

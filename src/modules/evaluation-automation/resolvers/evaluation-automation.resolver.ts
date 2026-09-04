@@ -37,8 +37,8 @@ export class EvaluationAutomationResolver {
 
     @Query(() => EvaluationAutomation)
     @UseOrPermissions([
-        PermissionEnum.VIEW_EVALUATION_AUTOMATIONS,
-        PermissionEnum.VIEW_ALL_EVALUATION_AUTOMATIONS,
+        PermissionEnum.AUTOMATIONS_VIEW_DEPARTMENT,
+        PermissionEnum.AUTOMATIONS_VIEW_ALL,
     ])
     evaluationAutomation(
         @Args('id', { type: () => Int }) id: number,
@@ -49,8 +49,8 @@ export class EvaluationAutomationResolver {
 
     @Query(() => EvaluationAutomationConnection)
     @UseOrPermissions([
-        PermissionEnum.VIEW_EVALUATION_AUTOMATIONS,
-        PermissionEnum.VIEW_ALL_EVALUATION_AUTOMATIONS,
+        PermissionEnum.AUTOMATIONS_VIEW_DEPARTMENT,
+        PermissionEnum.AUTOMATIONS_VIEW_ALL,
     ])
     async evaluationAutomations(
         @Args() query: EvaluationAutomationQuery,
@@ -68,8 +68,8 @@ export class EvaluationAutomationResolver {
 
     @Query(() => EvaluationAutomationRunConnection)
     @UseOrPermissions([
-        PermissionEnum.VIEW_EVALUATION_AUTOMATIONS,
-        PermissionEnum.VIEW_ALL_EVALUATION_AUTOMATIONS,
+        PermissionEnum.AUTOMATIONS_VIEW_DEPARTMENT,
+        PermissionEnum.AUTOMATIONS_VIEW_ALL,
     ])
     async evaluationAutomationRuns(
         @Args() query: EvaluationAutomationRunQuery,
@@ -89,8 +89,8 @@ export class EvaluationAutomationResolver {
 
     @Query(() => [EvaluationAutomationPreviewResultDto])
     @UseOrPermissions([
-        PermissionEnum.VIEW_EVALUATION_AUTOMATIONS,
-        PermissionEnum.VIEW_ALL_EVALUATION_AUTOMATIONS,
+        PermissionEnum.AUTOMATIONS_VIEW_DEPARTMENT,
+        PermissionEnum.AUTOMATIONS_VIEW_ALL,
     ])
     evaluationAutomationPreview(
         @Args('input') input: EvaluationAutomationPreviewInput,
@@ -101,8 +101,8 @@ export class EvaluationAutomationResolver {
 
     @Mutation(() => EvaluationAutomation)
     @UseOrPermissions([
-        PermissionEnum.MANAGE_EVALUATION_AUTOMATIONS,
-        PermissionEnum.MANAGE_ALL_EVALUATION_AUTOMATIONS,
+        PermissionEnum.AUTOMATIONS_EDIT_DEPARTMENT,
+        PermissionEnum.AUTOMATIONS_EDIT_ALL,
     ])
     createEvaluationAutomation(
         @Args('automation') input: CreateEvaluationAutomationInput,
@@ -113,8 +113,8 @@ export class EvaluationAutomationResolver {
 
     @Mutation(() => EvaluationAutomation)
     @UseOrPermissions([
-        PermissionEnum.MANAGE_EVALUATION_AUTOMATIONS,
-        PermissionEnum.MANAGE_ALL_EVALUATION_AUTOMATIONS,
+        PermissionEnum.AUTOMATIONS_EDIT_DEPARTMENT,
+        PermissionEnum.AUTOMATIONS_EDIT_ALL,
     ])
     updateEvaluationAutomation(
         @Args('automation') input: UpdateEvaluationAutomationInput,
@@ -125,8 +125,8 @@ export class EvaluationAutomationResolver {
 
     @Mutation(() => EvaluationAutomation)
     @UseOrPermissions([
-        PermissionEnum.MANAGE_EVALUATION_AUTOMATIONS,
-        PermissionEnum.MANAGE_ALL_EVALUATION_AUTOMATIONS,
+        PermissionEnum.AUTOMATIONS_EDIT_DEPARTMENT,
+        PermissionEnum.AUTOMATIONS_EDIT_ALL,
     ])
     duplicateEvaluationAutomation(
         @Args('id', { type: () => Int }) id: number,
@@ -137,8 +137,8 @@ export class EvaluationAutomationResolver {
 
     @Mutation(() => EvaluationAutomation)
     @UseOrPermissions([
-        PermissionEnum.MANAGE_EVALUATION_AUTOMATIONS,
-        PermissionEnum.MANAGE_ALL_EVALUATION_AUTOMATIONS,
+        PermissionEnum.AUTOMATIONS_EDIT_DEPARTMENT,
+        PermissionEnum.AUTOMATIONS_EDIT_ALL,
     ])
     setEvaluationAutomationActive(
         @Args('id', { type: () => Int }) id: number,
@@ -150,8 +150,8 @@ export class EvaluationAutomationResolver {
 
     @Mutation(() => Boolean)
     @UseOrPermissions([
-        PermissionEnum.MANAGE_EVALUATION_AUTOMATIONS,
-        PermissionEnum.MANAGE_ALL_EVALUATION_AUTOMATIONS,
+        PermissionEnum.AUTOMATIONS_EDIT_DEPARTMENT,
+        PermissionEnum.AUTOMATIONS_EDIT_ALL,
     ])
     deleteEvaluationAutomation(
         @Args('id', { type: () => Int }) id: number,
@@ -162,8 +162,8 @@ export class EvaluationAutomationResolver {
 
     @Mutation(() => EvaluationAutomationTestResultDto)
     @UseOrPermissions([
-        PermissionEnum.MANAGE_EVALUATION_AUTOMATIONS,
-        PermissionEnum.MANAGE_ALL_EVALUATION_AUTOMATIONS,
+        PermissionEnum.AUTOMATIONS_EDIT_DEPARTMENT,
+        PermissionEnum.AUTOMATIONS_EDIT_ALL,
     ])
     testEvaluationAutomation(
         @Args('input') input: TestEvaluationAutomationInput,

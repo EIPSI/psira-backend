@@ -156,7 +156,11 @@ export class TherapistSupervisionService {
     }
 
     private async canViewAllDepartmentUsers(userId: number): Promise<boolean> {
-        return PermissionService.userCan(userId, PermissionEnum.MANAGE_USERS);
+        return (
+            await PermissionService.userCan(userId, PermissionEnum.THERAPISTS_VIEW_ALL) ||
+            await PermissionService.userCan(userId, PermissionEnum.SUPERVISORS_VIEW_ALL) ||
+            await PermissionService.userCan(userId, PermissionEnum.USERS_VIEW_ALL)
+        );
     }
 
     private async getUserDepartmentIds(userId: number): Promise<number[]> {

@@ -21,7 +21,7 @@ export class EvaluationSchemeGenerationResolver {
     constructor(private readonly schemeGenerationService: SchemeGenerationService) {}
 
     @Mutation(() => EvaluationSchemeAssignment)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
     applyEvaluationScheme(
         @Args('assignment') input: ApplyEvaluationSchemeInput,
         @CurrentUser() currentUser: User,
@@ -30,7 +30,7 @@ export class EvaluationSchemeGenerationResolver {
     }
 
     @Mutation(() => [CalendarOccurrence])
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
     generateSchemeOccurrences(
         @Args('generation') input: GenerateSchemeOccurrencesInput,
         @CurrentUser() currentUser: User,
@@ -39,7 +39,7 @@ export class EvaluationSchemeGenerationResolver {
     }
 
     @Mutation(() => [CalendarOccurrence])
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
     regenerateFutureSchemeOccurrences(
         @Args('generation') input: RegenerateFutureSchemeOccurrencesInput,
         @CurrentUser() currentUser: User,

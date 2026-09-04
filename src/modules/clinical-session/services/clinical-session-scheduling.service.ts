@@ -1214,7 +1214,7 @@ export class ClinicalSessionSchedulingService {
         currentUser?: User,
     ): Promise<void> {
         if (!session.calendarOccurrence?.startAt || !currentUser) return;
-        if (await this.userHasPermission(currentUser.id, PermissionEnum.MANAGE_ALL_ASSESSMENTS)) {
+        if (await this.userHasPermission(currentUser.id, PermissionEnum.ASSESSMENTS_EDIT_ALL)) {
             return;
         }
         const settings = await this.getOrCreateFollowUpSettings();
@@ -1284,10 +1284,10 @@ export class ClinicalSessionSchedulingService {
         session: ClinicalSession,
         currentUser: User,
     ): Promise<boolean> {
-        if (await this.userHasPermission(currentUser.id, PermissionEnum.MANAGE_ALL_ASSESSMENTS)) {
+        if (await this.userHasPermission(currentUser.id, PermissionEnum.ASSESSMENTS_EDIT_ALL)) {
             return true;
         }
-        if (!(await this.userHasPermission(currentUser.id, PermissionEnum.MANAGE_DEPARTMENT_ASSESSMENTS))) {
+        if (!(await this.userHasPermission(currentUser.id, PermissionEnum.CLINICAL_EDIT_DEPARTMENT))) {
             return false;
         }
 

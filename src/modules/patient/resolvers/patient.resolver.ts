@@ -22,7 +22,10 @@ import {
 } from '@nestjs/graphql';
 import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
-import { UsePermission } from 'src/modules/permission/decorators/permission.decorator';
+import {
+    UseOrPermissions,
+    UsePermission,
+} from 'src/modules/permission/decorators/permission.decorator';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { PermissionGuard } from 'src/modules/permission/guards/permission.guard';
 import { PermissionService } from 'src/modules/permission/providers/permission.service';
@@ -83,7 +86,11 @@ export class PatientResolver {
     ) {}
 
     @Query(() => PatientConnection)
-    @UsePermission(PermissionEnum.VIEW_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_VIEW_ALL,
+        PermissionEnum.PATIENTS_VIEW_DEPARTMENT,
+        PermissionEnum.PATIENTS_VIEW_ASSIGNED,
+    ])
     async patients(
         @Args({ type: () => PatientQuery }) query: PatientQuery,
         @CurrentUser() currentUser: User,
@@ -118,7 +125,11 @@ export class PatientResolver {
     }
 
     @Query(() => Patient)
-    @UsePermission(PermissionEnum.VIEW_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_VIEW_ALL,
+        PermissionEnum.PATIENTS_VIEW_DEPARTMENT,
+        PermissionEnum.PATIENTS_VIEW_ASSIGNED,
+    ])
     async patient(
         @Args('id', { type: () => ID }) patientId: number,
         @CurrentUser() currentUser: User,
@@ -128,7 +139,11 @@ export class PatientResolver {
     }
 
     @Mutation(() => Patient)
-    @UsePermission(PermissionEnum.MANAGE_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_CREATE_ALL,
+        PermissionEnum.PATIENTS_CREATE_DEPARTMENT,
+        PermissionEnum.PATIENTS_CREATE_ASSIGNED,
+    ])
     async createOnePatient(
         @Args('input', { type: () => CreateOnePatientInput })
         input: CreateOnePatientInput,
@@ -163,7 +178,7 @@ export class PatientResolver {
         // Auto-assignment for VIEW_ASSIGNED_PATIENTS
         const hasAssignedPermission = await PermissionService.userCan(
             currentUser.id,
-            PermissionEnum.VIEW_ASSIGNED_PATIENTS,
+            PermissionEnum.PATIENTS_VIEW_ASSIGNED,
         );
 
         if (hasAssignedPermission) {
@@ -179,7 +194,7 @@ export class PatientResolver {
         // Department validation
         const canViewAllPatients = await PermissionService.userCan(
             currentUser.id,
-            PermissionEnum.VIEW_ALL_PATIENTS,
+            PermissionEnum.PATIENTS_VIEW_ALL,
         );
 
         if (!canViewAllPatients && !hasAssignedPermission) {
@@ -232,7 +247,11 @@ export class PatientResolver {
     }
 
     @Mutation(() => Patient)
-    @UsePermission(PermissionEnum.MANAGE_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_EDIT_ALL,
+        PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
+        PermissionEnum.PATIENTS_EDIT_ASSIGNED,
+    ])
     async updateOnePatient(
         @Args('input') input: UpdateOnePatientInput,
         @CurrentUser() currentUser: User,
@@ -369,7 +388,11 @@ export class PatientResolver {
     }
 
     @Mutation(() => Patient)
-    @UsePermission(PermissionEnum.MANAGE_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_EDIT_ALL,
+        PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
+        PermissionEnum.PATIENTS_EDIT_ASSIGNED,
+    ])
     async changePatientStatus(
         @Args('input', { type: () => ChangePatientStatusInput })
         input: ChangePatientStatusInput,
@@ -400,7 +423,11 @@ export class PatientResolver {
     }
 
     @Mutation(() => PatientDeleteResponse)
-    @UsePermission(PermissionEnum.DELETE_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_DELETE_ALL,
+        PermissionEnum.PATIENTS_DELETE_DEPARTMENT,
+        PermissionEnum.PATIENTS_DELETE_ASSIGNED,
+    ])
     async deleteOnePatient(
         @Args('input', { type: () => DeleteOnePatientInput })
         input: DeleteOnePatientInput,
@@ -413,7 +440,11 @@ export class PatientResolver {
     }
 
     @Mutation(() => Patient)
-    @UsePermission(PermissionEnum.MANAGE_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_ARCHIVE_ALL,
+        PermissionEnum.PATIENTS_ARCHIVE_DEPARTMENT,
+        PermissionEnum.PATIENTS_ARCHIVE_ASSIGNED,
+    ])
     async archiveOnePatient(
         @Args('id', { type: () => ID }) id: number,
         @CurrentUser() currentUser: User,
@@ -425,7 +456,11 @@ export class PatientResolver {
     }
 
     @Mutation(() => Patient)
-    @UsePermission(PermissionEnum.MANAGE_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_RESTORE_ALL,
+        PermissionEnum.PATIENTS_RESTORE_DEPARTMENT,
+        PermissionEnum.PATIENTS_RESTORE_ASSIGNED,
+    ])
     async restoreOnePatient(
         @Args('id', { type: () => ID }) id: number,
         @CurrentUser() currentUser: User,
@@ -437,7 +472,11 @@ export class PatientResolver {
     }
 
     @Query(() => PatientReport)
-    @UsePermission(PermissionEnum.VIEW_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_VIEW_ALL,
+        PermissionEnum.PATIENTS_VIEW_DEPARTMENT,
+        PermissionEnum.PATIENTS_VIEW_ASSIGNED,
+    ])
     async generatePatientReport(
         @Args('id', { type: () => ID }) id: number,
         @Args('questionnaireId', { nullable: true }) questionnaireId: string,
@@ -458,7 +497,11 @@ export class PatientResolver {
     }
 
     @Query(() => [PatientReport])
-    @UsePermission(PermissionEnum.VIEW_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_VIEW_ALL,
+        PermissionEnum.PATIENTS_VIEW_DEPARTMENT,
+        PermissionEnum.PATIENTS_VIEW_ASSIGNED,
+    ])
     async generateMultiplePatientReports(
         @Args('ids', { type: () => [ID] }) ids: number[],
         @Args('questionnaireId', { nullable: true }) questionnaireId: string,
@@ -488,7 +531,7 @@ export class PatientResolver {
     }
 
     @Mutation(() => PatientStatus)
-    @UsePermission(PermissionEnum.MANAGE_SETTINGS)
+    @UsePermission(PermissionEnum.SETTINGS_EDIT_ALL)
     async createOnePatientStatus(
         @Args('input', { type: () => CreateOnePatientStatusInput })
         input: CreateOnePatientStatusInput,

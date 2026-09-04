@@ -1,7 +1,10 @@
 import { UseGuards } from "@nestjs/common";
 import { Args, Int, Mutation, Query, Resolver } from "@nestjs/graphql";
 import { GqlAuthGuard } from "src/modules/auth/auth.guard";
-import { UsePermission } from "src/modules/permission/decorators/permission.decorator";
+import {
+    UseOrPermissions,
+    UsePermission,
+} from "src/modules/permission/decorators/permission.decorator";
 import { PermissionEnum } from "src/modules/permission/enums/permission.enum";
 import { PermissionGuard } from "src/modules/permission/guards/permission.guard";
 import { CurrentUser } from "src/modules/auth/auth-user.decorator";
@@ -20,7 +23,11 @@ export class CaseManagerResolver {
     ) { }
 
     @Mutation(() => Boolean)
-    @UsePermission(PermissionEnum.MANAGE_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_EDIT_ALL,
+        PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
+        PermissionEnum.PATIENTS_EDIT_ASSIGNED,
+    ])
     assignPatientCaseManager(
         @Args({ name: 'patientId', type: () => Int }) patientId: number,
         @Args({ name: 'userId', type: () => Int }) clinicianId: number,
@@ -31,7 +38,11 @@ export class CaseManagerResolver {
     }
 
     @Mutation(() => Boolean)
-    @UsePermission(PermissionEnum.MANAGE_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_EDIT_ALL,
+        PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
+        PermissionEnum.PATIENTS_EDIT_ASSIGNED,
+    ])
     unassignPatientCaseManager(
         @Args({ name: 'patientId', type: () => Int }) patientId: number,
         @Args({ name: 'userId', type: () => Int }) clinicianId: number,
@@ -41,7 +52,11 @@ export class CaseManagerResolver {
 
 
     @Query(() => UserConnectionDto)
-    @UsePermission(PermissionEnum.VIEW_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_VIEW_ALL,
+        PermissionEnum.PATIENTS_VIEW_DEPARTMENT,
+        PermissionEnum.PATIENTS_VIEW_ASSIGNED,
+    ])
     getPatientCaseManagers(
         @Args() caseManagerFilter: CaseManagerFilter,
     ): Promise<UserConnectionDto> {

@@ -34,10 +34,10 @@ export class NotificationConfigurationResolver {
 
     @Query(() => [NotificationConfiguration])
     @UseOrPermissions([
-        PermissionEnum.VIEW_NOTIFICATIONS,
-        PermissionEnum.MANAGE_NOTIFICATIONS,
-        PermissionEnum.VIEW_TEMPLATES,
-        PermissionEnum.MANAGE_TEMPLATES,
+        PermissionEnum.NOTIFICATIONS_VIEW_DEPARTMENT,
+        PermissionEnum.NOTIFICATIONS_EDIT_DEPARTMENT,
+        PermissionEnum.MAIL_TEMPLATES_VIEW_DEPARTMENT,
+        PermissionEnum.MAIL_TEMPLATES_EDIT_DEPARTMENT,
     ])
     notificationConfigurations(): Promise<NotificationConfiguration[]> {
         return this.notificationConfigurationService.list();
@@ -45,10 +45,10 @@ export class NotificationConfigurationResolver {
 
     @Query(() => NotificationConfiguration)
     @UseOrPermissions([
-        PermissionEnum.VIEW_NOTIFICATIONS,
-        PermissionEnum.MANAGE_NOTIFICATIONS,
-        PermissionEnum.VIEW_TEMPLATES,
-        PermissionEnum.MANAGE_TEMPLATES,
+        PermissionEnum.NOTIFICATIONS_VIEW_DEPARTMENT,
+        PermissionEnum.NOTIFICATIONS_EDIT_DEPARTMENT,
+        PermissionEnum.MAIL_TEMPLATES_VIEW_DEPARTMENT,
+        PermissionEnum.MAIL_TEMPLATES_EDIT_DEPARTMENT,
     ])
     notificationConfiguration(
         @Args('id', { type: () => Int }) id: number,
@@ -58,10 +58,10 @@ export class NotificationConfigurationResolver {
 
     @Query(() => [NotificationTemplateShortcutDto])
     @UseOrPermissions([
-        PermissionEnum.VIEW_NOTIFICATIONS,
-        PermissionEnum.MANAGE_NOTIFICATIONS,
-        PermissionEnum.VIEW_TEMPLATES,
-        PermissionEnum.MANAGE_TEMPLATES,
+        PermissionEnum.NOTIFICATIONS_VIEW_DEPARTMENT,
+        PermissionEnum.NOTIFICATIONS_EDIT_DEPARTMENT,
+        PermissionEnum.MAIL_TEMPLATES_VIEW_DEPARTMENT,
+        PermissionEnum.MAIL_TEMPLATES_EDIT_DEPARTMENT,
     ])
     notificationTemplateShortcuts(): NotificationTemplateShortcutDto[] {
         return this.notificationConfigurationService.templateShortcuts();
@@ -78,8 +78,8 @@ export class NotificationConfigurationResolver {
 
     @Mutation(() => NotificationConfiguration)
     @UseOrPermissions([
-        PermissionEnum.MANAGE_NOTIFICATIONS,
-        PermissionEnum.MANAGE_TEMPLATES,
+        PermissionEnum.NOTIFICATIONS_EDIT_DEPARTMENT,
+        PermissionEnum.MAIL_TEMPLATES_EDIT_DEPARTMENT,
     ])
     createNotificationConfiguration(
         @Args('input') input: CreateNotificationConfigurationInput,
@@ -89,8 +89,8 @@ export class NotificationConfigurationResolver {
 
     @Mutation(() => NotificationConfiguration)
     @UseOrPermissions([
-        PermissionEnum.MANAGE_NOTIFICATIONS,
-        PermissionEnum.MANAGE_TEMPLATES,
+        PermissionEnum.NOTIFICATIONS_EDIT_DEPARTMENT,
+        PermissionEnum.MAIL_TEMPLATES_EDIT_DEPARTMENT,
     ])
     updateNotificationConfiguration(
         @Args('input') input: UpdateNotificationConfigurationInput,
@@ -100,8 +100,8 @@ export class NotificationConfigurationResolver {
 
     @Mutation(() => Boolean)
     @UseOrPermissions([
-        PermissionEnum.MANAGE_NOTIFICATIONS,
-        PermissionEnum.MANAGE_TEMPLATES,
+        PermissionEnum.NOTIFICATIONS_EDIT_DEPARTMENT,
+        PermissionEnum.MAIL_TEMPLATES_EDIT_DEPARTMENT,
     ])
     deleteNotificationConfiguration(
         @Args('id', { type: () => Int }) id: number,
@@ -149,9 +149,13 @@ export class NotificationConfigurationResolver {
             .flatMap(role => role.permissions ?? [])
             .map(permission => permission.name);
         const allowed = [
-            PermissionEnum.MANAGE_NOTIFICATIONS,
-            PermissionEnum.MANAGE_PATIENTS,
-            PermissionEnum.MANAGE_USERS,
+            PermissionEnum.NOTIFICATIONS_EDIT_ALL,
+            PermissionEnum.NOTIFICATIONS_EDIT_DEPARTMENT,
+            PermissionEnum.PATIENTS_EDIT_ALL,
+            PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
+            PermissionEnum.USERS_EDIT_ALL,
+            PermissionEnum.USERS_EDIT_DEPARTMENT,
+            PermissionEnum.USERS_EDIT_DEPARTMENT_HIERARCHY,
         ].some(permission => permissionNames.includes(permission));
         if (!allowed) {
             throw new ForbiddenException(

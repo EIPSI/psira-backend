@@ -24,12 +24,12 @@ export class CaseEventReasonResolver {
 
     @Query(() => [CaseEventReasonTree])
     @UseOrPermissions([
-        PermissionEnum.VIEW_SETTINGS,
-        PermissionEnum.VIEW_ASSESSMENTS,
-        PermissionEnum.VIEW_EVALUATION_AUTOMATIONS,
-        PermissionEnum.MANAGE_EVALUATION_AUTOMATIONS,
-        PermissionEnum.VIEW_ALL_EVALUATION_AUTOMATIONS,
-        PermissionEnum.MANAGE_ALL_EVALUATION_AUTOMATIONS,
+        PermissionEnum.SETTINGS_VIEW_ALL,
+        PermissionEnum.CLINICAL_VIEW_DEPARTMENT,
+        PermissionEnum.AUTOMATIONS_VIEW_DEPARTMENT,
+        PermissionEnum.AUTOMATIONS_EDIT_DEPARTMENT,
+        PermissionEnum.AUTOMATIONS_VIEW_ALL,
+        PermissionEnum.AUTOMATIONS_EDIT_ALL,
     ])
     caseEventReasonTrees(
         @Args('includeInactive', { type: () => Boolean, nullable: true }) includeInactive?: boolean,
@@ -39,12 +39,12 @@ export class CaseEventReasonResolver {
 
     @Query(() => [CaseEventReason])
     @UseOrPermissions([
-        PermissionEnum.VIEW_SETTINGS,
-        PermissionEnum.VIEW_ASSESSMENTS,
-        PermissionEnum.VIEW_EVALUATION_AUTOMATIONS,
-        PermissionEnum.MANAGE_EVALUATION_AUTOMATIONS,
-        PermissionEnum.VIEW_ALL_EVALUATION_AUTOMATIONS,
-        PermissionEnum.MANAGE_ALL_EVALUATION_AUTOMATIONS,
+        PermissionEnum.SETTINGS_VIEW_ALL,
+        PermissionEnum.CLINICAL_VIEW_DEPARTMENT,
+        PermissionEnum.AUTOMATIONS_VIEW_DEPARTMENT,
+        PermissionEnum.AUTOMATIONS_EDIT_DEPARTMENT,
+        PermissionEnum.AUTOMATIONS_VIEW_ALL,
+        PermissionEnum.AUTOMATIONS_EDIT_ALL,
     ])
     caseEventReasons(
         @Args('context', { type: () => CaseEventReasonContext }) context: CaseEventReasonContext,
@@ -57,7 +57,7 @@ export class CaseEventReasonResolver {
     }
 
     @Mutation(() => CaseEventReason)
-    @UseOrPermissions([PermissionEnum.MANAGE_SETTINGS, PermissionEnum.MANAGE_ASSESSMENTS])
+    @UseOrPermissions([PermissionEnum.SETTINGS_EDIT_ALL, PermissionEnum.CLINICAL_EDIT_DEPARTMENT])
     createCaseEventReason(
         @Args('reason') input: CreateCaseEventReasonInput,
     ): Promise<CaseEventReason> {
@@ -65,7 +65,7 @@ export class CaseEventReasonResolver {
     }
 
     @Mutation(() => CaseEventReason)
-    @UseOrPermissions([PermissionEnum.MANAGE_SETTINGS, PermissionEnum.MANAGE_ASSESSMENTS])
+    @UseOrPermissions([PermissionEnum.SETTINGS_EDIT_ALL, PermissionEnum.CLINICAL_EDIT_DEPARTMENT])
     updateCaseEventReason(
         @Args('reason') input: UpdateCaseEventReasonInput,
     ): Promise<CaseEventReason> {
@@ -73,7 +73,7 @@ export class CaseEventReasonResolver {
     }
 
     @Mutation(() => CaseEventReason)
-    @UseOrPermissions([PermissionEnum.MANAGE_SETTINGS, PermissionEnum.MANAGE_ASSESSMENTS])
+    @UseOrPermissions([PermissionEnum.SETTINGS_EDIT_ALL, PermissionEnum.CLINICAL_EDIT_DEPARTMENT])
     deactivateCaseEventReason(
         @Args('id', { type: () => Int }) id: number,
     ): Promise<CaseEventReason> {
@@ -81,7 +81,7 @@ export class CaseEventReasonResolver {
     }
 
     @Mutation(() => Boolean)
-    @UseOrPermissions([PermissionEnum.MANAGE_SETTINGS, PermissionEnum.MANAGE_ASSESSMENTS])
+    @UseOrPermissions([PermissionEnum.SETTINGS_EDIT_ALL, PermissionEnum.CLINICAL_EDIT_DEPARTMENT])
     deleteCaseEventReason(
         @Args('id', { type: () => Int }) id: number,
     ): Promise<boolean> {
@@ -89,7 +89,7 @@ export class CaseEventReasonResolver {
     }
 
     @Mutation(() => CaseEventReasonTree)
-    @UseOrPermissions([PermissionEnum.MANAGE_SETTINGS, PermissionEnum.MANAGE_ASSESSMENTS])
+    @UseOrPermissions([PermissionEnum.SETTINGS_EDIT_ALL, PermissionEnum.CLINICAL_EDIT_DEPARTMENT])
     createCaseEventReasonTree(
         @Args('tree') input: CreateCaseEventReasonTreeInput,
     ): Promise<CaseEventReasonTree> {
@@ -97,7 +97,7 @@ export class CaseEventReasonResolver {
     }
 
     @Mutation(() => CaseEventReasonTree)
-    @UseOrPermissions([PermissionEnum.MANAGE_SETTINGS, PermissionEnum.MANAGE_ASSESSMENTS])
+    @UseOrPermissions([PermissionEnum.SETTINGS_EDIT_ALL, PermissionEnum.CLINICAL_EDIT_DEPARTMENT])
     updateCaseEventReasonTree(
         @Args('tree') input: UpdateCaseEventReasonTreeInput,
     ): Promise<CaseEventReasonTree> {
@@ -105,7 +105,7 @@ export class CaseEventReasonResolver {
     }
 
     @Mutation(() => CaseEventReasonTree)
-    @UseOrPermissions([PermissionEnum.MANAGE_SETTINGS, PermissionEnum.MANAGE_ASSESSMENTS])
+    @UseOrPermissions([PermissionEnum.SETTINGS_EDIT_ALL, PermissionEnum.CLINICAL_EDIT_DEPARTMENT])
     deactivateCaseEventReasonTree(
         @Args('id', { type: () => Int }) id: number,
     ): Promise<CaseEventReasonTree> {

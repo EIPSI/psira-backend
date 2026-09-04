@@ -15,7 +15,10 @@ import {
 } from '../dtos/mail-template.query';
 import { ConnectionType } from '@nestjs-query/query-graphql';
 import { SendMailService } from '../services/send-mail.service';
-import { UsePermission } from 'src/modules/permission/decorators/permission.decorator';
+import {
+    UseOrPermissions,
+    UsePermission,
+} from 'src/modules/permission/decorators/permission.decorator';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { User } from 'src/modules/user/models/user.model';
 
@@ -28,7 +31,7 @@ export class MailResolver {
     ) {}
 
     @Query(() => MailTemplate)
-    @UsePermission(PermissionEnum.VIEW_TEMPLATES)
+    @UsePermission(PermissionEnum.MAIL_TEMPLATES_VIEW_DEPARTMENT)
     async getEmailTemplate(
         @Args('id', { type: () => ID }) id: number,
         @CurrentUser() currentUser: User,
@@ -37,7 +40,7 @@ export class MailResolver {
     }
 
     @Query(() => MailTemplateConnection)
-    @UsePermission(PermissionEnum.VIEW_TEMPLATES)
+    @UsePermission(PermissionEnum.MAIL_TEMPLATES_VIEW_DEPARTMENT)
     async getAllEmailTemplates(
         @Args({ type: () => MailTemplateQuery }) query: MailTemplateQuery,
         @Args('departmentIds', { type: () => [Int], nullable: true })
@@ -55,7 +58,12 @@ export class MailResolver {
     }
 
     @Mutation(() => Boolean)
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.NOTIFICATIONS_EDIT_ALL,
+        PermissionEnum.NOTIFICATIONS_EDIT_DEPARTMENT,
+        PermissionEnum.MAIL_TEMPLATES_EDIT_ALL,
+        PermissionEnum.MAIL_TEMPLATES_EDIT_DEPARTMENT,
+    ])
     async sendAssessmentEmail(
         @Args('assessmentId', { type: () => ID }) assessmentId: number,
     ) {
@@ -63,7 +71,7 @@ export class MailResolver {
     }
 
     @Mutation(() => MailTemplate)
-    @UsePermission(PermissionEnum.MANAGE_TEMPLATES)
+    @UsePermission(PermissionEnum.MAIL_TEMPLATES_EDIT_DEPARTMENT)
     async createEmailTemplate(
         @Args('input') input: CreateEmailTemplate,
         @CurrentUser() currentUser: User,
@@ -72,13 +80,13 @@ export class MailResolver {
     }
 
     @Mutation(() => Boolean)
-    @UsePermission(PermissionEnum.DELETE_TEMPLATES)
+    @UsePermission(PermissionEnum.MAIL_TEMPLATES_DELETE_DEPARTMENT)
     async deleteEmailTemplate(@Args('id') templateId: number) {
         return this.mailService.deleteEmailTemplate(templateId);
     }
 
     @Mutation(() => MailTemplate)
-    @UsePermission(PermissionEnum.MANAGE_TEMPLATES)
+    @UsePermission(PermissionEnum.MAIL_TEMPLATES_EDIT_DEPARTMENT)
     async updateEmailTemplate(
         @Args('input') input: UpdateEmailTemplate,
         @CurrentUser() currentUser: User,

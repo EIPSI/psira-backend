@@ -37,7 +37,11 @@ export class ClinicalSessionResolver {
     ) {}
 
     @Mutation(() => ClinicalSession)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.CLINICAL_CREATE_ALL,
+        PermissionEnum.CLINICAL_CREATE_DEPARTMENT,
+        PermissionEnum.CLINICAL_CREATE_ASSIGNED,
+    ])
     createClinicalSession(
         @Args('session') input: CreateClinicalSessionInput,
         @CurrentUser() currentUser: User,
@@ -46,7 +50,11 @@ export class ClinicalSessionResolver {
     }
 
     @Query(() => [ClinicalSession])
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.CLINICAL_VIEW_ALL,
+        PermissionEnum.CLINICAL_VIEW_DEPARTMENT,
+        PermissionEnum.CLINICAL_VIEW_ASSIGNED,
+    ])
     clinicalSessions(
         @Args('filter', {
             type: () => ClinicalSessionListFilterInput,
@@ -58,7 +66,11 @@ export class ClinicalSessionResolver {
     }
 
     @Query(() => [ClinicalSessionSchemeApplication])
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.CLINICAL_VIEW_ALL,
+        PermissionEnum.CLINICAL_VIEW_DEPARTMENT,
+        PermissionEnum.CLINICAL_VIEW_ASSIGNED,
+    ])
     clinicalSessionSchemeApplications(
         @Args('clinicalSessionId', { type: () => Int }) clinicalSessionId: number,
     ): Promise<ClinicalSessionSchemeApplication[]> {
@@ -66,7 +78,11 @@ export class ClinicalSessionResolver {
     }
 
     @Query(() => [ClinicalSessionFollowUpVersion])
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.CLINICAL_VIEW_ALL,
+        PermissionEnum.CLINICAL_VIEW_DEPARTMENT,
+        PermissionEnum.CLINICAL_VIEW_ASSIGNED,
+    ])
     clinicalSessionFollowUpVersions(
         @Args('clinicalSessionId', { type: () => Int }) clinicalSessionId: number,
     ): Promise<ClinicalSessionFollowUpVersion[]> {
@@ -74,13 +90,22 @@ export class ClinicalSessionResolver {
     }
 
     @Query(() => ClinicalSessionFollowUpSetting)
-    @UseOrPermissions([PermissionEnum.VIEW_ASSESSMENTS, PermissionEnum.VIEW_SETTINGS])
+    @UseOrPermissions([
+        PermissionEnum.CLINICAL_VIEW_ALL,
+        PermissionEnum.CLINICAL_VIEW_DEPARTMENT,
+        PermissionEnum.CLINICAL_VIEW_ASSIGNED,
+        PermissionEnum.SETTINGS_VIEW_ALL,
+    ])
     clinicalSessionFollowUpSettings(): Promise<ClinicalSessionFollowUpSetting> {
         return this.schedulingService.getClinicalSessionFollowUpSettings();
     }
 
     @Mutation(() => ClinicalSession)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.CLINICAL_EDIT_ALL,
+        PermissionEnum.CLINICAL_EDIT_DEPARTMENT,
+        PermissionEnum.CLINICAL_EDIT_ASSIGNED,
+    ])
     moveClinicalSession(
         @Args('session') input: MoveClinicalSessionInput,
         @CurrentUser() currentUser: User,
@@ -89,7 +114,11 @@ export class ClinicalSessionResolver {
     }
 
     @Mutation(() => [ClinicalSession])
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.CLINICAL_EDIT_ALL,
+        PermissionEnum.CLINICAL_EDIT_DEPARTMENT,
+        PermissionEnum.CLINICAL_EDIT_ASSIGNED,
+    ])
     restructureClinicalSessions(
         @Args('restructure') input: RestructureClinicalSessionsInput,
         @CurrentUser() currentUser: User,
@@ -98,7 +127,11 @@ export class ClinicalSessionResolver {
     }
 
     @Mutation(() => ClinicalSession)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.CLINICAL_EDIT_ALL,
+        PermissionEnum.CLINICAL_EDIT_DEPARTMENT,
+        PermissionEnum.CLINICAL_EDIT_ASSIGNED,
+    ])
     updateClinicalSession(
         @Args('session') input: UpdateClinicalSessionInput,
         @CurrentUser() currentUser: User,
@@ -107,7 +140,11 @@ export class ClinicalSessionResolver {
     }
 
     @Mutation(() => ClinicalSessionResource)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.CLINICAL_EDIT_ALL,
+        PermissionEnum.CLINICAL_EDIT_DEPARTMENT,
+        PermissionEnum.CLINICAL_EDIT_ASSIGNED,
+    ])
     updateClinicalSessionResource(
         @Args('resource') input: UpdateClinicalSessionResourceInput,
         @CurrentUser() currentUser: User,
@@ -116,7 +153,11 @@ export class ClinicalSessionResolver {
     }
 
     @Mutation(() => [ClinicalSessionResource])
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.CLINICAL_EDIT_ALL,
+        PermissionEnum.CLINICAL_EDIT_DEPARTMENT,
+        PermissionEnum.CLINICAL_EDIT_ASSIGNED,
+    ])
     addClinicalSessionSchemes(
         @Args('schemes') input: AddClinicalSessionSchemesInput,
         @CurrentUser() currentUser: User,
@@ -125,7 +166,11 @@ export class ClinicalSessionResolver {
     }
 
     @Mutation(() => ClinicalSessionResource)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.CLINICAL_EDIT_ALL,
+        PermissionEnum.CLINICAL_EDIT_DEPARTMENT,
+        PermissionEnum.CLINICAL_EDIT_ASSIGNED,
+    ])
     discardClinicalSessionAssessment(
         @Args('assessment') input: DiscardClinicalSessionAssessmentInput,
         @CurrentUser() currentUser: User,
@@ -134,7 +179,11 @@ export class ClinicalSessionResolver {
     }
 
     @Mutation(() => ClinicalSessionSchemeApplication)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.CLINICAL_EDIT_ALL,
+        PermissionEnum.CLINICAL_EDIT_DEPARTMENT,
+        PermissionEnum.CLINICAL_EDIT_ASSIGNED,
+    ])
     stopClinicalSessionScheme(
         @Args('scheme') input: StopClinicalSessionSchemeInput,
         @CurrentUser() currentUser: User,
@@ -143,7 +192,7 @@ export class ClinicalSessionResolver {
     }
 
     @Mutation(() => ClinicalSessionFollowUpSetting)
-    @UsePermission(PermissionEnum.MANAGE_SETTINGS)
+    @UsePermission(PermissionEnum.SETTINGS_EDIT_ALL)
     updateClinicalSessionFollowUpSettings(
         @Args('settings') input: UpdateClinicalSessionFollowUpSettingsInput,
     ): Promise<ClinicalSessionFollowUpSetting> {
@@ -151,7 +200,11 @@ export class ClinicalSessionResolver {
     }
 
     @Mutation(() => ClinicalSession)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UseOrPermissions([
+        PermissionEnum.CLINICAL_EDIT_ALL,
+        PermissionEnum.CLINICAL_EDIT_DEPARTMENT,
+        PermissionEnum.CLINICAL_EDIT_ASSIGNED,
+    ])
     cancelClinicalSession(
         @Args('session') input: CancelClinicalSessionInput,
         @CurrentUser() currentUser: User,

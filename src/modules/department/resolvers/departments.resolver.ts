@@ -18,7 +18,7 @@ export class CreateManyDepartmentsInput extends CreateManyInputType('departments
 
 @Resolver(() => Department)
 @UseGuards(GqlAuthGuard, PermissionGuard)
-@UseOrPermissions([PermissionEnum.VIEW_PATIENTS, PermissionEnum.MANAGE_PATIENTS])
+@UseOrPermissions([PermissionEnum.PATIENTS_VIEW_DEPARTMENT, PermissionEnum.PATIENTS_EDIT_DEPARTMENT])
 export class DepartmentResolver {
 
     constructor(
@@ -26,7 +26,7 @@ export class DepartmentResolver {
     ) { }
 
     @Mutation(() => Department)
-    @UsePermission(PermissionEnum.MANAGE_SETTINGS)
+    @UsePermission(PermissionEnum.SETTINGS_EDIT_ALL)
     async createOneDepartment(@Args('input', { type: () => CreateOneDepartmentInput }) input: CreateOneDepartmentInput): Promise<Department> {
 
         // delegate further actions to service
@@ -34,7 +34,7 @@ export class DepartmentResolver {
     }
 
     @Mutation(() => [Department])
-    @UsePermission(PermissionEnum.MANAGE_PATIENTS)
+    @UsePermission(PermissionEnum.PATIENTS_EDIT_DEPARTMENT)
     async createManyDepartments(@Args('input', { type: () => CreateManyDepartmentsInput }) input: CreateManyDepartmentsInput): Promise<Department[]> {
 
         // delegate further actions to service

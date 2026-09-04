@@ -26,7 +26,7 @@ export class CaregiverResolver {
 
     ) { }
 
-    @UsePermission(PermissionEnum.VIEW_PATIENTS)
+    @UsePermission(PermissionEnum.PATIENTS_VIEW_DEPARTMENT)
     @Query(() => [CaregiverConnection])
     async caregivers(
         @Args({ type: () => CaregiverQuery }) query: CaregiverQuery,
@@ -43,7 +43,7 @@ export class CaregiverResolver {
     }
 
     @Mutation(() => Caregiver)
-    @UsePermission(PermissionEnum.MANAGE_CAREGIVERS)
+    @UsePermission(PermissionEnum.CAREGIVERS_EDIT_DEPARTMENT)
     async createOneCaregiver(@Args('input', { type: () => CreateOneCaregiverInput }) input: CreateOneCaregiverInput): Promise<Caregiver> {
         try {
             const caregiverInput = input['caregiver'] as CaregiverInput;

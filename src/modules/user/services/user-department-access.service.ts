@@ -32,8 +32,10 @@ export class UserDepartmentAccessService {
      */
     async getUserDepartmentAccess(userId: number): Promise<UserDepartmentAccess> {
         if (
-            await this.permissionService.userCan(userId, PermissionEnum.MANAGE_USERS) ||
-            await this.permissionService.userCan(userId, PermissionEnum.ASSIGN_ANY_ASSESSMENT_USER)
+            await this.permissionService.userCan(userId, PermissionEnum.USERS_VIEW_ALL) ||
+            await this.permissionService.userCan(userId, PermissionEnum.USERS_CREATE_ALL) ||
+            await this.permissionService.userCan(userId, PermissionEnum.USERS_EDIT_ALL) ||
+            await this.permissionService.userCan(userId, PermissionEnum.USERS_DELETE_ALL)
         ) {
             return { scope: DepartmentAccessScope.ALL };
         }
@@ -95,7 +97,12 @@ export class UserDepartmentAccessService {
         }
 
         // Check creator's permission to manage users
-        if (!await this.permissionService.userCan(creatorUserId, PermissionEnum.MANAGE_USERS)) {
+        if (
+            !await this.permissionService.userCan(creatorUserId, PermissionEnum.USERS_CREATE_DEPARTMENT) &&
+            !await this.permissionService.userCan(creatorUserId, PermissionEnum.USERS_CREATE_DEPARTMENT_HIERARCHY) &&
+            !await this.permissionService.userCan(creatorUserId, PermissionEnum.USERS_EDIT_DEPARTMENT) &&
+            !await this.permissionService.userCan(creatorUserId, PermissionEnum.USERS_EDIT_DEPARTMENT_HIERARCHY)
+        ) {
             return false;
         }
 

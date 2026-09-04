@@ -27,7 +27,7 @@ export class RandomizationRuleResolver {
     ) {}
 
     @Query(() => RandomizationRule)
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UsePermission(PermissionEnum.RANDOMIZATIONS_VIEW_DEPARTMENT)
     getRandomizationRule(
         @Args('id', { type: () => Int }) id: number,
     ): Promise<RandomizationRule> {
@@ -35,7 +35,7 @@ export class RandomizationRuleResolver {
     }
 
     @Query(() => RandomizationRuleConnection)
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UsePermission(PermissionEnum.RANDOMIZATIONS_VIEW_DEPARTMENT)
     async randomizationRules(
         @Args() query: RandomizationRuleQuery,
         @Args('departmentIds', { type: () => [Int], nullable: true })
@@ -53,7 +53,7 @@ export class RandomizationRuleResolver {
     }
 
     @Mutation(() => RandomizationRule)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.RANDOMIZATIONS_EDIT_DEPARTMENT)
     createRandomizationRule(
         @Args('rule') input: CreateRandomizationRuleInput,
         @CurrentUser() currentUser: User,
@@ -62,7 +62,7 @@ export class RandomizationRuleResolver {
     }
 
     @Mutation(() => RandomizationRule)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.RANDOMIZATIONS_EDIT_DEPARTMENT)
     updateRandomizationRule(
         @Args('rule') input: UpdateRandomizationRuleInput,
         @CurrentUser() currentUser: User,
@@ -71,7 +71,7 @@ export class RandomizationRuleResolver {
     }
 
     @Mutation(() => RandomizationRule)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.RANDOMIZATIONS_EDIT_DEPARTMENT)
     duplicateRandomizationRule(
         @Args('id', { type: () => Int }) id: number,
         @CurrentUser() currentUser: User,
@@ -80,7 +80,7 @@ export class RandomizationRuleResolver {
     }
 
     @Mutation(() => RandomizationRule)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.RANDOMIZATIONS_EDIT_DEPARTMENT)
     setRandomizationRuleActive(
         @Args('id', { type: () => Int }) id: number,
         @Args('active', { type: () => Boolean }) active: boolean,
@@ -89,7 +89,7 @@ export class RandomizationRuleResolver {
     }
 
     @Mutation(() => Boolean)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.RANDOMIZATIONS_EDIT_DEPARTMENT)
     deleteRandomizationRule(
         @Args('id', { type: () => Int }) id: number,
     ): Promise<boolean> {

@@ -847,13 +847,13 @@ export class TreatmentCycleService {
         currentUser?: User,
     ): Promise<void> {
         if (!currentUser) return;
-        if (await this.userHasPermission(currentUser.id, PermissionEnum.MANAGE_ALL_ASSESSMENTS)) {
+        if (await this.userHasPermission(currentUser.id, PermissionEnum.ASSESSMENTS_EDIT_ALL)) {
             return;
         }
         if (
             await this.userHasPermission(
                 currentUser.id,
-                PermissionEnum.MANAGE_DEPARTMENT_ASSESSMENTS,
+                PermissionEnum.CLINICAL_EDIT_DEPARTMENT,
             ) &&
             await this.userSharesCycleDepartment(cycle, currentUser.id)
         ) {

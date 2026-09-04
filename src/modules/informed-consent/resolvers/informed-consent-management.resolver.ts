@@ -20,8 +20,8 @@ export class InformedConsentManagementResolver {
 
     @Query(() => [InformedConsentManagement])
     @UseOrPermissions([
-        PermissionEnum.VIEW_INFORMED_CONSENT_MANAGEMENT,
-        PermissionEnum.MANAGE_INFORMED_CONSENT_MANAGEMENT,
+        PermissionEnum.INFORMED_CONSENT_MANAGEMENT_VIEW_DEPARTMENT,
+        PermissionEnum.INFORMED_CONSENT_MANAGEMENT_EDIT_DEPARTMENT,
     ])
     informedConsentManagements(): Promise<InformedConsentManagement[]> {
         return this.managementService.list();
@@ -29,8 +29,8 @@ export class InformedConsentManagementResolver {
 
     @Query(() => InformedConsentManagement)
     @UseOrPermissions([
-        PermissionEnum.VIEW_INFORMED_CONSENT_MANAGEMENT,
-        PermissionEnum.MANAGE_INFORMED_CONSENT_MANAGEMENT,
+        PermissionEnum.INFORMED_CONSENT_MANAGEMENT_VIEW_DEPARTMENT,
+        PermissionEnum.INFORMED_CONSENT_MANAGEMENT_EDIT_DEPARTMENT,
     ])
     informedConsentManagement(
         @Args('id', { type: () => Int }) id: number,
@@ -39,7 +39,7 @@ export class InformedConsentManagementResolver {
     }
 
     @Mutation(() => InformedConsentManagement)
-    @UseOrPermissions([PermissionEnum.MANAGE_INFORMED_CONSENT_MANAGEMENT])
+    @UseOrPermissions([PermissionEnum.INFORMED_CONSENT_MANAGEMENT_EDIT_DEPARTMENT])
     createInformedConsentManagement(
         @Args('input') input: CreateInformedConsentManagementInput,
         @CurrentUser() currentUser: User,
@@ -48,7 +48,7 @@ export class InformedConsentManagementResolver {
     }
 
     @Mutation(() => InformedConsentManagement)
-    @UseOrPermissions([PermissionEnum.MANAGE_INFORMED_CONSENT_MANAGEMENT])
+    @UseOrPermissions([PermissionEnum.INFORMED_CONSENT_MANAGEMENT_EDIT_DEPARTMENT])
     updateInformedConsentManagement(
         @Args('input') input: UpdateInformedConsentManagementInput,
     ): Promise<InformedConsentManagement> {
@@ -56,7 +56,7 @@ export class InformedConsentManagementResolver {
     }
 
     @Mutation(() => InformedConsentManagement)
-    @UseOrPermissions([PermissionEnum.MANAGE_INFORMED_CONSENT_MANAGEMENT])
+    @UseOrPermissions([PermissionEnum.INFORMED_CONSENT_MANAGEMENT_EDIT_DEPARTMENT])
     duplicateInformedConsentManagement(
         @Args('id', { type: () => Int }) id: number,
         @CurrentUser() currentUser: User,
@@ -65,7 +65,7 @@ export class InformedConsentManagementResolver {
     }
 
     @Mutation(() => Boolean)
-    @UseOrPermissions([PermissionEnum.MANAGE_INFORMED_CONSENT_MANAGEMENT])
+    @UseOrPermissions([PermissionEnum.INFORMED_CONSENT_MANAGEMENT_EDIT_DEPARTMENT])
     deleteInformedConsentManagement(
         @Args('id', { type: () => Int }) id: number,
     ): Promise<boolean> {

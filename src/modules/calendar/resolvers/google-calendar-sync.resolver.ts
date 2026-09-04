@@ -22,19 +22,19 @@ export class GoogleCalendarSyncResolver {
     constructor(private readonly syncService: GoogleCalendarSyncService) {}
 
     @Query(() => GoogleCalendarIntegrationStatus)
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_VIEW_DEPARTMENT)
     async googleCalendarIntegrationStatus(): Promise<GoogleCalendarIntegrationStatus> {
         return { configured: await this.syncService.isConfigured() };
     }
 
     @Query(() => String)
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_VIEW_DEPARTMENT)
     googleCalendarAuthorizationUrl(@CurrentUser() currentUser: User): Promise<string> {
         return this.syncService.getAuthorizationUrl(currentUser);
     }
 
     @Mutation(() => GoogleCalendarConnection)
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_VIEW_DEPARTMENT)
     connectGoogleCalendar(
         @Args('code') code: string,
         @CurrentUser() currentUser: User,
@@ -43,7 +43,7 @@ export class GoogleCalendarSyncResolver {
     }
 
     @Mutation(() => CalendarOccurrence, { nullable: true })
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_EDIT_DEPARTMENT)
     pullGoogleCalendarDateChange(
         @Args('externalEventId') externalEventId: string,
     ): Promise<CalendarOccurrence | null> {

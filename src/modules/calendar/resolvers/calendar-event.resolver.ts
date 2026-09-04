@@ -14,7 +14,7 @@ export class CalendarEventResolver {
     constructor(private readonly calendarEventService: CalendarEventService) {}
 
     @Query(() => [CalendarEvent])
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_VIEW_DEPARTMENT)
     calendarEvents(
         @Args('filter', { type: () => CalendarEventFilterInput })
         filter: CalendarEventFilterInput,

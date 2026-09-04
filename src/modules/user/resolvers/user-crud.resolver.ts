@@ -18,7 +18,10 @@ import {
 } from '@nestjs/graphql';
 import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
-import { UsePermission } from 'src/modules/permission/decorators/permission.decorator';
+import {
+    UseOrPermissions,
+    UsePermission,
+} from 'src/modules/permission/decorators/permission.decorator';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { PermissionGuard } from 'src/modules/permission/guards/permission.guard';
 import { CreateOneUserInput } from '../dto/create-one-user.input';
@@ -46,7 +49,11 @@ export class UserCrudResolver extends CRUDResolver(User, {
     UpdateDTOClass: UpdateUserInput,
     read: {
         defaultSort: [{ field: 'id', direction: SortDirection.DESC }],
-        decorators: [UsePermission(PermissionEnum.VIEW_USERS)],
+        decorators: [UseOrPermissions([
+            PermissionEnum.USERS_VIEW_ALL,
+            PermissionEnum.USERS_VIEW_DEPARTMENT,
+            PermissionEnum.USERS_VIEW_DEPARTMENT_HIERARCHY,
+        ])],
     },
     create: { disabled: true },
     update: { disabled: true },
@@ -61,7 +68,11 @@ export class UserCrudResolver extends CRUDResolver(User, {
     }
 
     @Query(() => UserConnection)
-    @UsePermission(PermissionEnum.VIEW_USERS)
+    @UseOrPermissions([
+        PermissionEnum.USERS_VIEW_ALL,
+        PermissionEnum.USERS_VIEW_DEPARTMENT,
+        PermissionEnum.USERS_VIEW_DEPARTMENT_HIERARCHY,
+    ])
     async users(
         @Args({ type: () => UserQuery }) query: UserQuery,
         @CurrentUser() currentUser: User,
@@ -87,7 +98,11 @@ export class UserCrudResolver extends CRUDResolver(User, {
     }
 
     @Query(() => User)
-    @UsePermission(PermissionEnum.VIEW_USERS)
+    @UseOrPermissions([
+        PermissionEnum.USERS_VIEW_ALL,
+        PermissionEnum.USERS_VIEW_DEPARTMENT,
+        PermissionEnum.USERS_VIEW_DEPARTMENT_HIERARCHY,
+    ])
     async user(
         @Args('id', { type: () => ID }) id: number,
         @CurrentUser() currentUser: User,
@@ -113,7 +128,11 @@ export class UserCrudResolver extends CRUDResolver(User, {
     }
 
     @Mutation(() => User)
-    @UsePermission(PermissionEnum.MANAGE_USERS)
+    @UseOrPermissions([
+        PermissionEnum.USERS_CREATE_ALL,
+        PermissionEnum.USERS_CREATE_DEPARTMENT,
+        PermissionEnum.USERS_CREATE_DEPARTMENT_HIERARCHY,
+    ])
     async createOneUser(
         @Args('input', { type: () => CreateOneUserInput })
         input: CreateOneUserInput,
@@ -139,7 +158,11 @@ export class UserCrudResolver extends CRUDResolver(User, {
     }
 
     @Mutation(() => User)
-    @UsePermission(PermissionEnum.MANAGE_USERS)
+    @UseOrPermissions([
+        PermissionEnum.USERS_EDIT_ALL,
+        PermissionEnum.USERS_EDIT_DEPARTMENT,
+        PermissionEnum.USERS_EDIT_DEPARTMENT_HIERARCHY,
+    ])
     async updateOneUser(
         @Args('input', { type: () => UpdateOneUserInput })
         input: UpdateOneUserInput,
@@ -189,7 +212,11 @@ export class UserCrudResolver extends CRUDResolver(User, {
     }
 
     @Mutation(() => Boolean)
-    @UsePermission(PermissionEnum.MANAGE_USERS)
+    @UseOrPermissions([
+        PermissionEnum.USERS_DELETE_ALL,
+        PermissionEnum.USERS_DELETE_DEPARTMENT,
+        PermissionEnum.USERS_DELETE_DEPARTMENT_HIERARCHY,
+    ])
     async deleteOneUser(
         @Args('input', { type: () => DeleteOneUserInput })
         input: DeleteOneUserInput,
@@ -215,7 +242,7 @@ export class UserCrudResolver extends CRUDResolver(User, {
                 creatorDeptIds.includes(d.id)
             );
 
-            const isSuperAdmin = await this.permissionService.userCan(currentUser.id, PermissionEnum.MANAGE_USERS);
+            const isSuperAdmin = await this.permissionService.userCan(currentUser.id, PermissionEnum.USERS_DELETE_ALL);
 
             if (!userInSameDept && !isSuperAdmin) {
                 throw new ForbiddenException(
@@ -229,7 +256,11 @@ export class UserCrudResolver extends CRUDResolver(User, {
     }
 
     @Mutation(() => User)
-    @UsePermission(PermissionEnum.MANAGE_USERS)
+    @UseOrPermissions([
+        PermissionEnum.USERS_RESTORE_ALL,
+        PermissionEnum.USERS_RESTORE_DEPARTMENT,
+        PermissionEnum.USERS_RESTORE_DEPARTMENT_HIERARCHY,
+    ])
     async restoreOneUser(
         @Args('input', { type: () => ID }) id: number,
         @CurrentUser() currentUser: User,
@@ -248,7 +279,7 @@ export class UserCrudResolver extends CRUDResolver(User, {
                 creatorDeptIds.includes(d.id)
             );
 
-            const isSuperAdmin = await this.permissionService.userCan(currentUser.id, PermissionEnum.MANAGE_USERS);
+            const isSuperAdmin = await this.permissionService.userCan(currentUser.id, PermissionEnum.USERS_RESTORE_ALL);
 
             if (!userInSameDept && !isSuperAdmin) {
                 throw new ForbiddenException(
@@ -262,7 +293,11 @@ export class UserCrudResolver extends CRUDResolver(User, {
     }
 
     @Mutation(() => UpdateManyResponseType())
-    @UsePermission(PermissionEnum.MANAGE_USERS)
+    @UseOrPermissions([
+        PermissionEnum.USERS_RESTORE_ALL,
+        PermissionEnum.USERS_RESTORE_DEPARTMENT,
+        PermissionEnum.USERS_RESTORE_DEPARTMENT_HIERARCHY,
+    ])
     async restoreManyUsers(
         @Args('input', { type: () => FilterType(User) }) filter: Filter<User>,
         @CurrentUser() currentUser: User,

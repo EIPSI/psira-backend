@@ -30,8 +30,8 @@ export class InformedConsentResponseResolver {
 
     @Query(() => [InformedConsentResponse])
     @UseOrPermissions([
-        PermissionEnum.VIEW_INFORMED_CONSENT_RESPONSES,
-        PermissionEnum.REVIEW_INFORMED_CONSENT_RESPONSES,
+        PermissionEnum.INFORMED_CONSENT_RESPONSES_VIEW_DEPARTMENT,
+        PermissionEnum.INFORMED_CONSENT_RESPONSES_REVIEW_DEPARTMENT,
     ])
     informedConsentResponses(): Promise<InformedConsentResponse[]> {
         return this.responseService.listResponses();
@@ -54,8 +54,8 @@ export class InformedConsentResponseResolver {
 
     @Query(() => InformedConsentResponse)
     @UseOrPermissions([
-        PermissionEnum.VIEW_INFORMED_CONSENT_RESPONSES,
-        PermissionEnum.REVIEW_INFORMED_CONSENT_RESPONSES,
+        PermissionEnum.INFORMED_CONSENT_RESPONSES_VIEW_DEPARTMENT,
+        PermissionEnum.INFORMED_CONSENT_RESPONSES_REVIEW_DEPARTMENT,
     ])
     informedConsentResponse(
         @Args('id', { type: () => Int }) id: number,
@@ -98,9 +98,9 @@ export class InformedConsentResponseResolver {
 
     @Mutation(() => InformedConsentResponse)
     @UseOrPermissions([
-        PermissionEnum.REVIEW_INFORMED_CONSENT_RESPONSES,
-        PermissionEnum.MANAGE_PATIENTS,
-        PermissionEnum.MANAGE_USERS,
+        PermissionEnum.INFORMED_CONSENT_RESPONSES_REVIEW_DEPARTMENT,
+        PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
+        PermissionEnum.USERS_EDIT_DEPARTMENT,
     ])
     revokeInformedConsentResponse(
         @Args('input') input: ReviewInformedConsentResponseInput,

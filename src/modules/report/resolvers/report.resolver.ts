@@ -37,19 +37,19 @@ export class ReportResolver {
     constructor(private readonly reportService: ReportService) {}
 
     @Query(() => ReportQueryConnection)
-    @UsePermission(PermissionEnum.VIEW_REPORTS)
+    @UsePermission(PermissionEnum.REPORTS_VIEW_DEPARTMENT)
     async reports(@Args({ type: () => ReportQuery }) query: ReportQuery) {
         return this.reportService.getReports(query);
     }
 
     @Query(() => [ShinyApp])
-    @UsePermission(PermissionEnum.VIEW_REPORTS)
+    @UsePermission(PermissionEnum.REPORTS_VIEW_DEPARTMENT)
     async availableShinyApps(): Promise<ShinyApp[]> {
         return this.reportService.getAvailableShinyApps();
     }
 
     @Query(() => Report, { nullable: true })
-    @UsePermission(PermissionEnum.VIEW_REPORTS)
+    @UsePermission(PermissionEnum.REPORTS_VIEW_DEPARTMENT)
     async getReportForCurrentUser(
         @Args('id', { type: () => Int }) id: number,
         @CurrentUser() currentUser: User,
@@ -58,7 +58,7 @@ export class ReportResolver {
     }
 
     @Query(() => ReportEmbed, { nullable: true })
-    @UsePermission(PermissionEnum.VIEW_REPORTS)
+    @UsePermission(PermissionEnum.REPORTS_VIEW_DEPARTMENT)
     async getReportEmbed(
         @Args('id', { type: () => Int }) id: number,
         @Args('patientId', { type: () => Int, nullable: true })
@@ -69,7 +69,7 @@ export class ReportResolver {
     }
 
     @Mutation(() => ReportSession, { nullable: true })
-    @UsePermission(PermissionEnum.VIEW_REPORTS)
+    @UsePermission(PermissionEnum.REPORTS_VIEW_DEPARTMENT)
     async startReportSession(
         @Args('reportId', { type: () => Int }) reportId: number,
         @Args('patientId', { type: () => Int, nullable: true })
@@ -84,13 +84,13 @@ export class ReportResolver {
     }
 
     @Query(() => [ReportSession])
-    @UsePermission(PermissionEnum.MANAGE_REPORTS)
+    @UsePermission(PermissionEnum.REPORTS_EDIT_DEPARTMENT)
     async reportSessions(): Promise<ReportSession[]> {
         return this.reportService.getReportSessions();
     }
 
     @Mutation(() => ReportSession, { nullable: true })
-    @UsePermission(PermissionEnum.VIEW_REPORTS)
+    @UsePermission(PermissionEnum.REPORTS_VIEW_DEPARTMENT)
     async heartbeatReportSession(
         @Args('sessionId', { type: () => Int }) sessionId: number,
         @CurrentUser() currentUser: User,
@@ -102,7 +102,7 @@ export class ReportResolver {
     }
 
     @Mutation(() => ReportSession, { nullable: true })
-    @UsePermission(PermissionEnum.VIEW_REPORTS)
+    @UsePermission(PermissionEnum.REPORTS_VIEW_DEPARTMENT)
     async endReportSession(
         @Args('sessionId', { type: () => Int }) sessionId: number,
         @CurrentUser() currentUser: User,
@@ -111,7 +111,7 @@ export class ReportResolver {
     }
 
     @Query(() => [Report])
-    @UsePermission(PermissionEnum.VIEW_REPORTS)
+    @UsePermission(PermissionEnum.REPORTS_VIEW_DEPARTMENT)
     async getReportsByResource(
         @Args('resource', { type: () => String }) resource: string,
         @CurrentUser() currentUser: User,
@@ -123,7 +123,7 @@ export class ReportResolver {
     }
 
     @Mutation(() => Report)
-    @UsePermission(PermissionEnum.MANAGE_REPORTS)
+    @UsePermission(PermissionEnum.REPORTS_EDIT_DEPARTMENT)
     async createOneReport(
         @Args('input', { type: () => CreateOneReportInput })
         input: CreateOneReportInput,
@@ -133,7 +133,7 @@ export class ReportResolver {
     }
 
     @Mutation(() => Report)
-    @UsePermission(PermissionEnum.MANAGE_REPORTS)
+    @UsePermission(PermissionEnum.REPORTS_EDIT_DEPARTMENT)
     async updateOneReport(
         @Args('input', { type: () => UpdateOneReportInput })
         input: UpdateOneReportInput,
@@ -142,7 +142,7 @@ export class ReportResolver {
     }
 
     @Mutation(() => ReportDeleteResponse)
-    @UsePermission(PermissionEnum.DELETE_REPORTS)
+    @UsePermission(PermissionEnum.REPORTS_DELETE_DEPARTMENT)
     async deleteReport(
         @Args('input', { type: () => DeleteOneReportInput })
         input: DeleteOneReportInput,

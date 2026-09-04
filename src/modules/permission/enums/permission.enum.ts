@@ -1,264 +1,66 @@
+type PermissionDefinition = {
+    key: string;
+    name: string;
+    group: string;
+};
+
+const permission = (
+    key: string,
+    name: string,
+    group: string,
+): PermissionDefinition => ({ key, name, group });
+
+const scoped = (
+    resourceKey: string,
+    resourceName: string,
+    group: string,
+    actions: string[],
+    scopes: string[],
+): PermissionDefinition[] =>
+    actions.flatMap(action =>
+        scopes.map(scope =>
+            permission(
+                `${resourceKey}_${action}_${scope}`.toUpperCase(),
+                `${resourceName}.${action}.${scope}`.replace(/_/g, '-'),
+                group,
+            ),
+        ),
+    );
+
 export const systemPermissions = [
-    { key: 'MANAGE_USERS', name: 'manage users', group: 'User Management' },
-    { key: 'VIEW_USERS', name: 'view users', group: 'User Management' },
-    { key: 'DELETE_USERS', name: 'delete users', group: 'User Management' },
-
-    {
-        key: 'MANAGE_PATIENTS',
-        name: 'manage patients',
-        group: 'Patient Management',
-    },
-    {
-        key: 'REMOVE_SELF_CASE_MANAGER',
-        name: 'remove self case manager',
-        group: 'Patient Management',
-    },
-    {
-        key: 'VIEW_PATIENTS',
-        name: 'view patients',
-        group: 'Patient Management',
-    },
-    {
-        key: 'VIEW_DEPARTMENT_PATIENTS',
-        name: 'view department patients',
-        group: 'Patient Management',
-    },
-    {
-        key: 'VIEW_ASSIGNED_PATIENTS',
-        name: 'view assigned patients',
-        group: 'Patient Management',
-    },
-    {
-        key: 'VIEW_ALL_PATIENTS',
-        name: 'view all patients',
-        group: 'Patient Management',
-    },
-    {
-        key: 'DELETE_PATIENTS',
-        name: 'delete patients',
-        group: 'Patient Management',
-    },
-
-    {
-        key: 'VIEW_SYSCONFIG',
-        name: 'view sysconf',
-        group: 'System Configuration',
-    },
-    {
-        key: 'MANAGE_SYSCONFIG',
-        name: 'manage sysconf',
-        group: 'System Configuration',
-    },
-
-    {
-        key: 'VIEW_SETTINGS',
-        name: 'view settings',
-        group: 'System Configuration',
-    }, // this could be redundant, as all users need to access settings
-    {
-        key: 'MANAGE_SETTINGS',
-        name: 'manage settings',
-        group: 'System Configuration',
-    },
-
-    {
-        key: 'VIEW_QUESTIONNAIRES',
-        name: 'view questionnaires',
-        group: 'Questionnaires',
-    },
-    {
-        key: 'MANAGE_QUESTIONNAIRES',
-        name: 'manage questionnaires',
-        group: 'Questionnaires',
-    },
-    {
-        key: 'DELETE_QUESTIONNAIRES',
-        name: 'delete questionnaires',
-        group: 'Questionnaires',
-    },
-
-    { key: 'VIEW_ASSESSMENTS', name: 'view assessments', group: 'Assessments' },
-    {
-        key: 'MANAGE_ASSESSMENTS',
-        name: 'manage assessments',
-        group: 'Assessments',
-    },
-    {
-        key: 'MANAGE_DEPARTMENT_ASSESSMENTS',
-        name: 'manage department assessments',
-        group: 'Assessments',
-    },
-    {
-        key: 'MANAGE_ALL_ASSESSMENTS',
-        name: 'manage all assessments',
-        group: 'Assessments',
-    },
-    {
-        key: 'ASSIGN_ANY_ASSESSMENT_USER',
-        name: 'assign any assessment user',
-        group: 'Assessments',
-    },
-    {
-        key: 'DELETE_ASSESSMENTS',
-        name: 'delete assessments',
-        group: 'Assessments',
-    },
-    {
-        key: 'VIEW_EVALUATION_AUTOMATIONS',
-        name: 'view evaluation automations',
-        group: 'Evaluation Automations',
-    },
-    {
-        key: 'VIEW_ALL_EVALUATION_AUTOMATIONS',
-        name: 'view all evaluation automations',
-        group: 'Evaluation Automations',
-    },
-    {
-        key: 'MANAGE_EVALUATION_AUTOMATIONS',
-        name: 'manage evaluation automations',
-        group: 'Evaluation Automations',
-    },
-    {
-        key: 'MANAGE_ALL_EVALUATION_AUTOMATIONS',
-        name: 'manage all evaluation automations',
-        group: 'Evaluation Automations',
-    },
-    {
-        key: 'VIEW_NOTIFICATIONS',
-        name: 'view notifications',
-        group: 'Notifications',
-    },
-    {
-        key: 'MANAGE_NOTIFICATIONS',
-        name: 'manage notifications',
-        group: 'Notifications',
-    },
-    {
-        key: 'VIEW_NOTIFICATION_LOGS',
-        name: 'view notification logs',
-        group: 'Notifications',
-    },
-    {
-        key: 'VIEW_INFORMED_CONSENT_MODELS',
-        name: 'view informed consent models',
-        group: 'Informed Consent',
-    },
-    {
-        key: 'MANAGE_INFORMED_CONSENT_MODELS',
-        name: 'manage informed consent models',
-        group: 'Informed Consent',
-    },
-    {
-        key: 'VIEW_INFORMED_CONSENT_MANAGEMENT',
-        name: 'view informed consent management',
-        group: 'Informed Consent',
-    },
-    {
-        key: 'MANAGE_INFORMED_CONSENT_MANAGEMENT',
-        name: 'manage informed consent management',
-        group: 'Informed Consent',
-    },
-    {
-        key: 'VIEW_INFORMED_CONSENT_RESPONSES',
-        name: 'view informed consent responses',
-        group: 'Informed Consent',
-    },
-    {
-        key: 'REVIEW_INFORMED_CONSENT_RESPONSES',
-        name: 'review informed consent responses',
-        group: 'Informed Consent',
-    },
-
-    { key: 'VIEW_REPORTS', name: 'view reports', group: 'Reports' },
-    { key: 'MANAGE_REPORTS', name: 'manage reports', group: 'Reports' },
-    { key: 'DELETE_REPORTS', name: 'delete reports', group: 'Reports' },
-
-    {
-        key: 'VIEW_REPORTING_TOOLS',
-        name: 'view reporting_tools',
-        group: 'Reporting Tools',
-    },
-    {
-        key: 'MANAGE_REPORTING_TOOLS',
-        name: 'manage reporting_tools',
-        group: 'Reporting Tools',
-    },
-
-    {
-        key: 'VIEW_ROLES_PERMISSIONS',
-        name: 'view roles_permissions',
-        group: 'Roles and Permissions',
-    },
-    {
-        key: 'MANAGE_ROLES_PERMISSIONS',
-        name: 'manage roles_permissions',
-        group: 'Roles and Permissions',
-    },
-
-    {
-        key: 'MANAGE_CAREGIVERS',
-        name: 'manage caregivers',
-        group: 'Caregiver Management',
-    },
-    {
-        key: 'VIEW_CAREGIVERS',
-        name: 'view caregivers',
-        group: 'Caregiver Management',
-    },
-    {
-        key: 'VIEW_ALL_CAREGIVERS',
-        name: 'view all caregivers',
-        group: 'Caregiver Management',
-    },
-    {
-        key: 'DELETE_CAREGIVERS',
-        name: 'delete caregivers',
-        group: 'Caregiver Management',
-    },
-    {
-        key: 'VIEW_TEMPLATES',
-        name: 'view templates',
-        group: 'Mail Templates'
-    },
-    {
-        key: 'MANAGE_TEMPLATES',
-        name: 'manage templates',
-        group: 'Mail Templates'
-    },
-    {
-        key: 'DELETE_TEMPLATES',
-        name: 'delete templates',
-        group: 'Mail Templates'
-    },
-    {
-        key: 'VIEW_QUESTIONNAIRE_BUNDLES',
-        name: 'view questionnaire bundles',
-        group: 'Questionnaire Bundles',
-    },
-    {
-        key: 'MANAGE_QUESTIONNAIRE_BUNDLES',
-        name: 'manage questionnaire bundles',
-        group: 'Questionnaire Bundles',
-    },
-    {
-        key: 'DELETE_QUESTIONNAIRE_BUNDLES',
-        name: 'delete questionnaire bundles',
-        group: 'Questionnaire Bundles',
-    },
+    ...scoped('users', 'users', 'User Management', ['view', 'create', 'edit', 'delete', 'restore'], ['all', 'department', 'department_hierarchy']),
+    ...scoped('patients', 'patients', 'Patient Management', ['view', 'create', 'edit', 'delete', 'archive', 'restore'], ['all', 'department', 'assigned']),
+    ...scoped('therapists', 'therapists', 'Therapists', ['view', 'create', 'edit', 'delete'], ['all', 'department', 'assigned']),
+    ...scoped('supervisors', 'supervisors', 'Supervisors', ['view', 'create', 'edit', 'delete'], ['all', 'department']),
+    ...scoped('caregivers', 'caregivers', 'Caregiver Management', ['view', 'create', 'edit', 'delete'], ['all', 'department', 'assigned']),
+    ...scoped('clinical', 'clinical', 'Clinical Work', ['view', 'create', 'edit', 'delete'], ['all', 'department', 'assigned']),
+    ...scoped('assessments', 'assessments', 'Assessments', ['view', 'create', 'edit', 'delete', 'archive', 'restore', 'assign'], ['all', 'department', 'assigned']),
+    ...scoped('questionnaires', 'questionnaires', 'Questionnaires', ['view', 'create', 'edit', 'delete'], ['all', 'department']),
+    ...scoped('questionnaire_bundles', 'questionnaire-bundles', 'Questionnaire Bundles', ['view', 'create', 'edit', 'delete'], ['all', 'department']),
+    ...scoped('evaluation_schemes', 'evaluation-schemes', 'Evaluation Schemes', ['view', 'create', 'edit', 'delete'], ['all', 'department']),
+    ...scoped('randomizations', 'randomizations', 'Randomizations', ['view', 'create', 'edit', 'delete'], ['all', 'department']),
+    ...scoped('automations', 'automations', 'Evaluation Automations', ['view', 'create', 'edit', 'delete', 'test'], ['all', 'department']),
+    ...scoped('notifications', 'notifications', 'Notifications', ['view', 'create', 'edit', 'delete'], ['all', 'department']),
+    ...scoped('notification_logs', 'notification-logs', 'Notifications', ['view'], ['all', 'department']),
+    ...scoped('mail_templates', 'mail-templates', 'Mail Templates', ['view', 'create', 'edit', 'delete'], ['all', 'department']),
+    ...scoped('informed_consent_models', 'informed-consent-models', 'Informed Consent', ['view', 'create', 'edit', 'delete'], ['all', 'department']),
+    ...scoped('informed_consent_management', 'informed-consent-management', 'Informed Consent', ['view', 'create', 'edit', 'delete'], ['all', 'department']),
+    ...scoped('informed_consent_responses', 'informed-consent-responses', 'Informed Consent', ['view', 'review'], ['all', 'department', 'assigned']),
+    ...scoped('reports', 'reports', 'Reports', ['view', 'create', 'edit', 'delete'], ['all', 'department', 'assigned']),
+    ...scoped('departments', 'departments', 'Departments', ['view', 'create', 'edit', 'delete'], ['all']),
+    ...scoped('roles', 'roles', 'Roles and Permissions', ['view', 'create', 'edit', 'delete'], ['all', 'department_hierarchy']),
+    ...scoped('permissions', 'permissions', 'Roles and Permissions', ['view', 'assign'], ['all', 'department_hierarchy']),
+    ...scoped('settings', 'settings', 'System Configuration', ['view', 'edit'], ['all']),
+    ...scoped('system', 'system', 'System Configuration', ['view', 'edit'], ['all']),
 ] as const;
 
-/**
- * Below code create PermissionEnum constant as infered type
- * from the above permissions list, for typing and compatibility
- * with its usage as an enum.
- */
 type PermissionType = {
     [key in typeof systemPermissions[number]['key']]: string;
 };
 
 const flattenedPermissions = {} as PermissionType;
-for (const permission of systemPermissions) {
-    flattenedPermissions[permission.key] = permission.name;
+for (const item of systemPermissions) {
+    flattenedPermissions[item.key] = item.name;
 }
 
 export const PermissionEnum = flattenedPermissions;

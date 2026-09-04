@@ -480,9 +480,13 @@ export class InformedConsentResponseService {
         });
         if (user?.isSuperUser) return;
         if (this.hasAnyPermission(user, [
-            PermissionEnum.REVIEW_INFORMED_CONSENT_RESPONSES,
-            PermissionEnum.MANAGE_PATIENTS,
-            PermissionEnum.MANAGE_USERS,
+            PermissionEnum.INFORMED_CONSENT_RESPONSES_REVIEW_ALL,
+            PermissionEnum.INFORMED_CONSENT_RESPONSES_REVIEW_DEPARTMENT,
+            PermissionEnum.PATIENTS_EDIT_ALL,
+            PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
+            PermissionEnum.USERS_EDIT_ALL,
+            PermissionEnum.USERS_EDIT_DEPARTMENT,
+            PermissionEnum.USERS_EDIT_DEPARTMENT_HIERARCHY,
         ])) return;
 
         if (response.patientId) {

@@ -24,7 +24,7 @@ export class TreatmentCycleResolver {
     constructor(private readonly treatmentCycleService: TreatmentCycleService) {}
 
     @Query(() => TreatmentCycle)
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_VIEW_DEPARTMENT)
     treatmentCycle(
         @Args('id', { type: () => Int }) id: number,
     ): Promise<TreatmentCycle> {
@@ -32,7 +32,7 @@ export class TreatmentCycleResolver {
     }
 
     @Query(() => [TreatmentCycle])
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_VIEW_DEPARTMENT)
     treatmentCycles(
         @Args('filter', { type: () => TreatmentCycleListFilterInput, nullable: true })
         filter?: TreatmentCycleListFilterInput,
@@ -41,7 +41,7 @@ export class TreatmentCycleResolver {
     }
 
     @Query(() => TreatmentCycle, { nullable: true })
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_VIEW_DEPARTMENT)
     activeTreatmentCycle(
         @Args('filter', { type: () => TreatmentCycleListFilterInput })
         filter: TreatmentCycleListFilterInput,
@@ -50,7 +50,7 @@ export class TreatmentCycleResolver {
     }
 
     @Mutation(() => TreatmentCycle)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_EDIT_DEPARTMENT)
     finalizeTreatmentCycle(
         @Args('input') input: FinalizeTreatmentCycleInput,
         @CurrentUser() currentUser: User,
@@ -59,7 +59,7 @@ export class TreatmentCycleResolver {
     }
 
     @Mutation(() => TreatmentCycle)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_EDIT_DEPARTMENT)
     cancelTreatmentCycleFinalization(
         @Args('input') input: CancelTreatmentCycleFinalizationInput,
         @CurrentUser() currentUser: User,
@@ -68,7 +68,7 @@ export class TreatmentCycleResolver {
     }
 
     @Mutation(() => TreatmentCycle)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_EDIT_DEPARTMENT)
     startNewTreatmentCycle(
         @Args('input') input: StartNewTreatmentCycleInput,
         @CurrentUser() currentUser: User,
@@ -77,7 +77,7 @@ export class TreatmentCycleResolver {
     }
 
     @Mutation(() => CaseHistoryEntry)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_EDIT_DEPARTMENT)
     createCaseHistoryNote(
         @Args('input') input: CreateCaseHistoryNoteInput,
         @CurrentUser() currentUser: User,
@@ -86,7 +86,7 @@ export class TreatmentCycleResolver {
     }
 
     @Query(() => [CaseHistoryEntry])
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_VIEW_DEPARTMENT)
     caseHistoryEntries(
         @Args('filter', { type: () => CaseHistoryFilterInput })
         filter: CaseHistoryFilterInput,

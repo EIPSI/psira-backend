@@ -130,10 +130,10 @@ export class AssessmentService {
     ): Promise<ConnectionType<Assessment>> {
         let departmentFilter: any = {};
         const targetUserFilter = { responderUserId: { eq: currentUser.id } };
-        const canViewPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_PATIENTS);
-        const canViewAllPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_ALL_PATIENTS);
-        const canViewDepartmentPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_DEPARTMENT_PATIENTS);
-        const canViewAssignedPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_ASSIGNED_PATIENTS);
+        const canViewPatients = await this.checkPermission(currentUser.id, PermissionEnum.PATIENTS_VIEW_DEPARTMENT);
+        const canViewAllPatients = await this.checkPermission(currentUser.id, PermissionEnum.PATIENTS_VIEW_ALL);
+        const canViewDepartmentPatients = await this.checkPermission(currentUser.id, PermissionEnum.PATIENTS_VIEW_DEPARTMENT);
+        const canViewAssignedPatients = await this.checkPermission(currentUser.id, PermissionEnum.PATIENTS_VIEW_ASSIGNED);
 
         if (!canViewPatients && !canViewAllPatients && !canViewDepartmentPatients && !canViewAssignedPatients) {
             departmentFilter = targetUserFilter;
@@ -247,9 +247,9 @@ export class AssessmentService {
         currentUser: User,
     ): Promise<Assessment> {
         // Check if user can access this assessment
-        const canViewAllPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_ALL_PATIENTS);
-        const canViewDepartmentPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_DEPARTMENT_PATIENTS);
-        const canViewAssignedPatients = await this.checkPermission(currentUser.id, PermissionEnum.VIEW_ASSIGNED_PATIENTS);
+        const canViewAllPatients = await this.checkPermission(currentUser.id, PermissionEnum.PATIENTS_VIEW_ALL);
+        const canViewDepartmentPatients = await this.checkPermission(currentUser.id, PermissionEnum.PATIENTS_VIEW_DEPARTMENT);
+        const canViewAssignedPatients = await this.checkPermission(currentUser.id, PermissionEnum.PATIENTS_VIEW_ASSIGNED);
 
         if (canViewAllPatients) {
             // Can access any assessment
@@ -1014,10 +1014,10 @@ export class AssessmentService {
         patientId?: number,
         targetUserId?: number,
     ): Promise<boolean> {
-        if (await this.checkPermission(currentUser.id, PermissionEnum.MANAGE_ALL_ASSESSMENTS)) {
+        if (await this.checkPermission(currentUser.id, PermissionEnum.ASSESSMENTS_EDIT_ALL)) {
             return true;
         }
-        if (!(await this.checkPermission(currentUser.id, PermissionEnum.MANAGE_DEPARTMENT_ASSESSMENTS))) {
+        if (!(await this.checkPermission(currentUser.id, PermissionEnum.ASSESSMENTS_EDIT_DEPARTMENT))) {
             return false;
         }
 
@@ -1076,7 +1076,7 @@ export class AssessmentService {
     ): Promise<void> {
         if (!targetUserId || !currentUser) return;
 
-        if (await this.checkPermission(currentUser.id, PermissionEnum.ASSIGN_ANY_ASSESSMENT_USER)) {
+        if (await this.checkPermission(currentUser.id, PermissionEnum.ASSESSMENTS_ASSIGN_ALL)) {
             return;
         }
 

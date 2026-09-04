@@ -19,7 +19,7 @@ export class ClinicalSessionCancellationReasonResolver {
     ) {}
 
     @Query(() => [ClinicalSessionCancellationReason])
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_VIEW_DEPARTMENT)
     clinicalSessionCancellationReasons(
         @Args('parentId', { type: () => Int, nullable: true }) parentId?: number,
         @Args('includeInactive', { type: () => Boolean, nullable: true }) includeInactive?: boolean,
@@ -28,7 +28,7 @@ export class ClinicalSessionCancellationReasonResolver {
     }
 
     @Mutation(() => ClinicalSessionCancellationReason)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_EDIT_DEPARTMENT)
     createClinicalSessionCancellationReason(
         @Args('reason') input: CreateClinicalSessionCancellationReasonInput,
     ): Promise<ClinicalSessionCancellationReason> {
@@ -36,7 +36,7 @@ export class ClinicalSessionCancellationReasonResolver {
     }
 
     @Mutation(() => ClinicalSessionCancellationReason)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_EDIT_DEPARTMENT)
     updateClinicalSessionCancellationReason(
         @Args('reason') input: UpdateClinicalSessionCancellationReasonInput,
     ): Promise<ClinicalSessionCancellationReason> {
@@ -44,7 +44,7 @@ export class ClinicalSessionCancellationReasonResolver {
     }
 
     @Mutation(() => ClinicalSessionCancellationReason)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.CLINICAL_EDIT_DEPARTMENT)
     deactivateClinicalSessionCancellationReason(
         @Args('id', { type: () => Int }) id: number,
     ): Promise<ClinicalSessionCancellationReason> {

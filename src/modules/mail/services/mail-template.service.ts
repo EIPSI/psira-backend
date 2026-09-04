@@ -274,8 +274,10 @@ export class MailTemplateService {
 
     private async getUserDepartmentAccess(userId: number): Promise<{ scope: DepartmentAccessScope; departmentIds?: number[] }> {
         if (
-            await this.permissionService.userCan(userId, PermissionEnum.MANAGE_USERS) ||
-            await this.permissionService.userCan(userId, PermissionEnum.ASSIGN_ANY_ASSESSMENT_USER)
+            await this.permissionService.userCan(userId, PermissionEnum.MAIL_TEMPLATES_VIEW_ALL) ||
+            await this.permissionService.userCan(userId, PermissionEnum.MAIL_TEMPLATES_CREATE_ALL) ||
+            await this.permissionService.userCan(userId, PermissionEnum.MAIL_TEMPLATES_EDIT_ALL) ||
+            await this.permissionService.userCan(userId, PermissionEnum.MAIL_TEMPLATES_DELETE_ALL)
         ) {
             return { scope: DepartmentAccessScope.ALL };
         }

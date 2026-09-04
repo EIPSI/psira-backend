@@ -23,8 +23,8 @@ export class InformedConsentModelResolver {
 
     @Query(() => [InformedConsentModel])
     @UseOrPermissions([
-        PermissionEnum.VIEW_INFORMED_CONSENT_MODELS,
-        PermissionEnum.MANAGE_INFORMED_CONSENT_MODELS,
+        PermissionEnum.INFORMED_CONSENT_MODELS_VIEW_DEPARTMENT,
+        PermissionEnum.INFORMED_CONSENT_MODELS_EDIT_DEPARTMENT,
     ])
     informedConsentModels(): Promise<InformedConsentModel[]> {
         return this.modelService.list();
@@ -32,8 +32,8 @@ export class InformedConsentModelResolver {
 
     @Query(() => InformedConsentModel)
     @UseOrPermissions([
-        PermissionEnum.VIEW_INFORMED_CONSENT_MODELS,
-        PermissionEnum.MANAGE_INFORMED_CONSENT_MODELS,
+        PermissionEnum.INFORMED_CONSENT_MODELS_VIEW_DEPARTMENT,
+        PermissionEnum.INFORMED_CONSENT_MODELS_EDIT_DEPARTMENT,
     ])
     informedConsentModel(
         @Args('id', { type: () => Int }) id: number,
@@ -43,15 +43,15 @@ export class InformedConsentModelResolver {
 
     @Query(() => [InformedConsentShortcutDto])
     @UseOrPermissions([
-        PermissionEnum.VIEW_INFORMED_CONSENT_MODELS,
-        PermissionEnum.MANAGE_INFORMED_CONSENT_MODELS,
+        PermissionEnum.INFORMED_CONSENT_MODELS_VIEW_DEPARTMENT,
+        PermissionEnum.INFORMED_CONSENT_MODELS_EDIT_DEPARTMENT,
     ])
     informedConsentShortcuts(): InformedConsentShortcutDto[] {
         return this.modelService.shortcuts();
     }
 
     @Mutation(() => InformedConsentModel)
-    @UseOrPermissions([PermissionEnum.MANAGE_INFORMED_CONSENT_MODELS])
+    @UseOrPermissions([PermissionEnum.INFORMED_CONSENT_MODELS_EDIT_DEPARTMENT])
     createInformedConsentModel(
         @Args('input') input: CreateInformedConsentModelInput,
         @CurrentUser() currentUser: User,
@@ -60,7 +60,7 @@ export class InformedConsentModelResolver {
     }
 
     @Mutation(() => InformedConsentModel)
-    @UseOrPermissions([PermissionEnum.MANAGE_INFORMED_CONSENT_MODELS])
+    @UseOrPermissions([PermissionEnum.INFORMED_CONSENT_MODELS_EDIT_DEPARTMENT])
     updateInformedConsentModel(
         @Args('input') input: UpdateInformedConsentModelInput,
     ): Promise<InformedConsentModel> {
@@ -68,7 +68,7 @@ export class InformedConsentModelResolver {
     }
 
     @Mutation(() => InformedConsentVersion)
-    @UseOrPermissions([PermissionEnum.MANAGE_INFORMED_CONSENT_MODELS])
+    @UseOrPermissions([PermissionEnum.INFORMED_CONSENT_MODELS_EDIT_DEPARTMENT])
     createInformedConsentVersion(
         @Args('input') input: CreateInformedConsentVersionInput,
         @CurrentUser() currentUser: User,
@@ -77,7 +77,7 @@ export class InformedConsentModelResolver {
     }
 
     @Mutation(() => InformedConsentModel)
-    @UseOrPermissions([PermissionEnum.MANAGE_INFORMED_CONSENT_MODELS])
+    @UseOrPermissions([PermissionEnum.INFORMED_CONSENT_MODELS_EDIT_DEPARTMENT])
     publishInformedConsentVersion(
         @Args('versionId', { type: () => Int }) versionId: number,
     ): Promise<InformedConsentModel> {
@@ -85,7 +85,7 @@ export class InformedConsentModelResolver {
     }
 
     @Mutation(() => Boolean)
-    @UseOrPermissions([PermissionEnum.MANAGE_INFORMED_CONSENT_MODELS])
+    @UseOrPermissions([PermissionEnum.INFORMED_CONSENT_MODELS_EDIT_DEPARTMENT])
     deleteInformedConsentModel(
         @Args('id', { type: () => Int }) id: number,
     ): Promise<boolean> {
@@ -93,7 +93,7 @@ export class InformedConsentModelResolver {
     }
 
     @Mutation(() => InformedConsentModel)
-    @UseOrPermissions([PermissionEnum.MANAGE_INFORMED_CONSENT_MODELS])
+    @UseOrPermissions([PermissionEnum.INFORMED_CONSENT_MODELS_EDIT_DEPARTMENT])
     duplicateInformedConsentModel(
         @Args('id', { type: () => Int }) id: number,
         @CurrentUser() currentUser: User,

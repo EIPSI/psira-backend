@@ -35,7 +35,7 @@ export class EvaluationSchemeManagementResolver {
     ) {}
 
     @Query(() => EvaluationSchemeConnection)
-    @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_VIEW_DEPARTMENT)
     async evaluationSchemes(
         @Args() query: EvaluationSchemeQuery,
         @Args('departmentIds', { type: () => [Int], nullable: true })
@@ -53,7 +53,7 @@ export class EvaluationSchemeManagementResolver {
     }
 
     @Mutation(() => EvaluationScheme)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
     createEvaluationScheme(
         @Args('scheme') input: CreateEvaluationSchemeInput,
     ): Promise<EvaluationScheme> {
@@ -61,7 +61,7 @@ export class EvaluationSchemeManagementResolver {
     }
 
     @Mutation(() => EvaluationScheme)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
     updateEvaluationScheme(
         @Args('scheme') input: UpdateEvaluationSchemeInput,
     ): Promise<EvaluationScheme> {
@@ -69,7 +69,7 @@ export class EvaluationSchemeManagementResolver {
     }
 
     @Mutation(() => Boolean)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
     deleteEvaluationScheme(
         @Args('id', { type: () => Int }) id: number,
     ): Promise<boolean> {
@@ -77,7 +77,7 @@ export class EvaluationSchemeManagementResolver {
     }
 
     @Mutation(() => SchemeSessionTemplate)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
     addSchemeSessionTemplate(
         @Args('sessionTemplate') input: SchemeSessionTemplateInput,
     ): Promise<SchemeSessionTemplate> {
@@ -85,7 +85,7 @@ export class EvaluationSchemeManagementResolver {
     }
 
     @Mutation(() => SchemeResourceTemplate)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
     addSchemeResourceTemplate(
         @Args('resourceTemplate') input: AddSchemeResourceTemplateInput,
     ): Promise<SchemeResourceTemplate> {
@@ -93,7 +93,7 @@ export class EvaluationSchemeManagementResolver {
     }
 
     @Mutation(() => SchemeResourceTemplate)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
     updateSchemeResourceTemplate(
         @Args('resourceTemplate') input: UpdateSchemeResourceTemplateInput,
     ): Promise<SchemeResourceTemplate> {
@@ -101,7 +101,7 @@ export class EvaluationSchemeManagementResolver {
     }
 
     @Mutation(() => Boolean)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
     deleteSchemeResourceTemplate(
         @Args('id', { type: () => Int }) id: number,
     ): Promise<boolean> {
@@ -109,7 +109,7 @@ export class EvaluationSchemeManagementResolver {
     }
 
     @Mutation(() => IndependentEvaluationTemplate)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
     addIndependentEvaluationTemplate(
         @Args('evaluationTemplate') input: IndependentEvaluationTemplateInput,
     ): Promise<IndependentEvaluationTemplate> {
@@ -117,7 +117,7 @@ export class EvaluationSchemeManagementResolver {
     }
 
     @Mutation(() => IndependentEvaluationTemplate)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
     updateIndependentEvaluationTemplate(
         @Args('evaluationTemplate') input: UpdateIndependentEvaluationTemplateInput,
     ): Promise<IndependentEvaluationTemplate> {
@@ -125,7 +125,7 @@ export class EvaluationSchemeManagementResolver {
     }
 
     @Mutation(() => Boolean)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
     deleteIndependentEvaluationTemplate(
         @Args('id', { type: () => Int }) id: number,
     ): Promise<boolean> {
@@ -133,7 +133,7 @@ export class EvaluationSchemeManagementResolver {
     }
 
     @Mutation(() => Boolean)
-    @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
     clearIndependentEvaluationTemplates(
         @Args('schemeId', { type: () => Int }) schemeId: number,
     ): Promise<boolean> {

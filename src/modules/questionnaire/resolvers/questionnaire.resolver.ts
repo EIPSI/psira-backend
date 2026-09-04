@@ -34,7 +34,7 @@ export class QuestionnaireResolver {
     }
 
     @Query(() => Questionnaire)
-    @UsePermission(PermissionEnum.VIEW_QUESTIONNAIRES)
+    @UsePermission(PermissionEnum.QUESTIONNAIRES_VIEW_DEPARTMENT)
     getQuestionnaireVersion(
         @Args('_id', { type: () => String }) questionnaireId: Types.ObjectId,
     ): Promise<Questionnaire> {
@@ -62,7 +62,7 @@ export class QuestionnaireResolver {
     }
 
     @Mutation(() => Questionnaire)
-    @UsePermission(PermissionEnum.MANAGE_QUESTIONNAIRES)
+    @UsePermission(PermissionEnum.QUESTIONNAIRES_EDIT_DEPARTMENT)
     async createQuestionnaire(
         @Args('xlsForm', { type: () => CreateQuestionnaireInput })
         xlsForm: CreateQuestionnaireInput,
@@ -72,7 +72,7 @@ export class QuestionnaireResolver {
     }
 
     @Mutation(() => Questionnaire)
-    @UsePermission(PermissionEnum.MANAGE_QUESTIONNAIRES)
+    @UsePermission(PermissionEnum.QUESTIONNAIRES_EDIT_DEPARTMENT)
     async updateQuestionnaire(
         @Args('_id', { type: () => String })
         id: Types.ObjectId,
@@ -85,7 +85,7 @@ export class QuestionnaireResolver {
     }
 
     @Mutation(() => Questionnaire)
-    @UsePermission(PermissionEnum.DELETE_QUESTIONNAIRES)
+    @UsePermission(PermissionEnum.QUESTIONNAIRES_DELETE_DEPARTMENT)
     async deleteQuestionnaire(
         @Args('_id', { type: () => String }) questionnaireId: string,
     ) {

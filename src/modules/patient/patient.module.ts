@@ -3,7 +3,10 @@ import { NestjsQueryGraphQLModule } from '@nestjs-query/query-graphql';
 import { NestjsQueryTypeOrmModule } from '@nestjs-query/query-typeorm';
 import { Module } from '@nestjs/common';
 import { GqlAuthGuard } from '../auth/auth.guard';
-import { UsePermission } from '../permission/decorators/permission.decorator';
+import {
+    UseOrPermissions,
+    UsePermission,
+} from '../permission/decorators/permission.decorator';
 import { PermissionEnum } from '../permission/enums/permission.enum';
 import { PermissionGuard } from '../permission/guards/permission.guard';
 import { CreatePatientInput } from './dto/create-patient.input';
@@ -101,22 +104,38 @@ const guards = [GqlAuthGuard, PermissionGuard];
                             { field: 'id', direction: SortDirection.DESC },
                         ],
                         decorators: [
-                            UsePermission(PermissionEnum.VIEW_PATIENTS),
+                            UseOrPermissions([
+                                PermissionEnum.PATIENTS_VIEW_ALL,
+                                PermissionEnum.PATIENTS_VIEW_DEPARTMENT,
+                                PermissionEnum.PATIENTS_VIEW_ASSIGNED,
+                            ]),
                         ],
                     },
                     create: {
                         decorators: [
-                            UsePermission(PermissionEnum.MANAGE_PATIENTS),
+                            UseOrPermissions([
+                                PermissionEnum.PATIENTS_CREATE_ALL,
+                                PermissionEnum.PATIENTS_CREATE_DEPARTMENT,
+                                PermissionEnum.PATIENTS_CREATE_ASSIGNED,
+                            ]),
                         ],
                     },
                     update: {
                         decorators: [
-                            UsePermission(PermissionEnum.MANAGE_PATIENTS),
+                            UseOrPermissions([
+                                PermissionEnum.PATIENTS_EDIT_ALL,
+                                PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
+                                PermissionEnum.PATIENTS_EDIT_ASSIGNED,
+                            ]),
                         ],
                     },
                     delete: {
                         decorators: [
-                            UsePermission(PermissionEnum.MANAGE_PATIENTS),
+                            UseOrPermissions([
+                                PermissionEnum.PATIENTS_DELETE_ALL,
+                                PermissionEnum.PATIENTS_DELETE_DEPARTMENT,
+                                PermissionEnum.PATIENTS_DELETE_ASSIGNED,
+                            ]),
                         ],
                     },
                 },
@@ -131,18 +150,30 @@ const guards = [GqlAuthGuard, PermissionGuard];
                             { field: 'id', direction: SortDirection.DESC },
                         ],
                         decorators: [
-                            UsePermission(PermissionEnum.VIEW_PATIENTS),
+                            UseOrPermissions([
+                                PermissionEnum.PATIENTS_VIEW_ALL,
+                                PermissionEnum.PATIENTS_VIEW_DEPARTMENT,
+                                PermissionEnum.PATIENTS_VIEW_ASSIGNED,
+                            ]),
                         ],
                     },
                     create: { disabled: true },
                     update: {
                         decorators: [
-                            UsePermission(PermissionEnum.MANAGE_PATIENTS),
+                            UseOrPermissions([
+                                PermissionEnum.PATIENTS_EDIT_ALL,
+                                PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
+                                PermissionEnum.PATIENTS_EDIT_ASSIGNED,
+                            ]),
                         ],
                     },
                     delete: {
                         decorators: [
-                            UsePermission(PermissionEnum.MANAGE_PATIENTS),
+                            UseOrPermissions([
+                                PermissionEnum.PATIENTS_EDIT_ALL,
+                                PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
+                                PermissionEnum.PATIENTS_EDIT_ASSIGNED,
+                            ]),
                         ],
                     },
                 },
@@ -160,12 +191,12 @@ const guards = [GqlAuthGuard, PermissionGuard];
                     },
                     update: {
                         decorators: [
-                            UsePermission(PermissionEnum.MANAGE_SETTINGS),
+                            UsePermission(PermissionEnum.SETTINGS_EDIT_ALL),
                         ],
                     },
                     delete: {
                         decorators: [
-                            UsePermission(PermissionEnum.MANAGE_SETTINGS),
+                            UsePermission(PermissionEnum.SETTINGS_EDIT_ALL),
                         ],
                     },
                 },

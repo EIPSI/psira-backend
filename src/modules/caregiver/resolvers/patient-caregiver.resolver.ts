@@ -21,7 +21,7 @@ export class PatientCaregiverResolver {
     ) { }
 
     @Mutation(() => PatientCaregiver)
-    @UsePermission(PermissionEnum.MANAGE_CAREGIVERS)
+    @UsePermission(PermissionEnum.CAREGIVERS_EDIT_DEPARTMENT)
     async createOnePatientCaregiver(
         @Args('input', { type: () => CreateOnePatientCaregiverInput }) input: CreateOnePatientCaregiverInput,
     ): Promise<PatientCaregiver> {
