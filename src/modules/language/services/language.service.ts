@@ -149,10 +149,20 @@ export class LanguageService implements OnModuleInit {
     }
 
     private async seedDefaults(): Promise<void> {
+        await this.languageRepository.delete({ code: 'sq' });
+        await this.languageRepository.delete({ code: 'sw' });
+
         for (const defaultLanguage of defaultLanguages) {
             const existing = await this.languageRepository.findOne({ code: defaultLanguage.code });
             if (!existing) {
                 await this.languageRepository.save(this.languageRepository.create(defaultLanguage));
+            } else {
+                existing.name = defaultLanguage.name;
+                existing.nativeName = defaultLanguage.nativeName;
+                existing.active = defaultLanguage.active;
+                existing.isDefault = defaultLanguage.isDefault;
+                existing.fallbackCode = defaultLanguage.fallbackCode;
+                await this.languageRepository.save(existing);
             }
         }
 

@@ -51,11 +51,11 @@ export class LanguageTranslations1790300000000 implements MigrationInterface {
             VALUES
                 ('en', 'English', 'English', true, true, NULL),
                 ('es', 'Spanish', 'Español', true, false, 'en'),
-                ('de', 'German', 'Deutsch', false, false, 'en'),
-                ('sq', 'Albanian', 'Shqip', false, false, 'en'),
-                ('sw', 'Swahili', 'Kiswahili', false, false, 'en')
+                ('de', 'German', 'Deutsch', true, false, 'en'),
+                ('nl', 'Dutch', 'Dutch', true, false, 'en')
             ON CONFLICT ("code") DO NOTHING
         `);
+        await queryRunner.query(`DELETE FROM "language" WHERE "code" IN ('sq', 'sw')`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {

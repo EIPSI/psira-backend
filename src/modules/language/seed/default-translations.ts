@@ -8,9 +8,8 @@ export const defaultLanguages: {
 }[] = [
     { code: 'en', name: 'English', nativeName: 'English', active: true, isDefault: true },
     { code: 'es', name: 'Spanish', nativeName: 'Español', active: true, isDefault: false, fallbackCode: 'en' },
-    { code: 'de', name: 'German', nativeName: 'Deutsch', active: false, isDefault: false, fallbackCode: 'en' },
-    { code: 'sq', name: 'Albanian', nativeName: 'Shqip', active: false, isDefault: false, fallbackCode: 'en' },
-    { code: 'sw', name: 'Swahili', nativeName: 'Kiswahili', active: false, isDefault: false, fallbackCode: 'en' },
+    { code: 'de', name: 'German', nativeName: 'Deutsch', active: true, isDefault: false, fallbackCode: 'en' },
+    { code: 'nl', name: 'Dutch', nativeName: 'Dutch', active: true, isDefault: false, fallbackCode: 'en' },
 ];
 
 export type DefaultTranslationSeed = {
