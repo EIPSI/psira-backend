@@ -19,6 +19,9 @@ export class CalendarEventFilterInput {
     @Field(() => Int, { nullable: true })
     supervisorId?: number;
 
+    @Field(() => [Int], { nullable: true })
+    departmentIds?: number[];
+
     @Field(() => [CalendarEventType], { nullable: true })
     types?: CalendarEventType[];
 
@@ -27,4 +30,13 @@ export class CalendarEventFilterInput {
 
     @Field(() => Boolean, { nullable: true })
     includeCancelled?: boolean;
+
+    @Field(() => Boolean, { nullable: true })
+    includeOwnEvents?: boolean;
+
+    @Field(() => Boolean, { nullable: true })
+    includeManagedEvents?: boolean;
+
+    @Field(() => Boolean, { nullable: true })
+    includePermittedEvents?: boolean;
 }

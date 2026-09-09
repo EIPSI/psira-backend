@@ -2,6 +2,7 @@ import { NestjsQueryGraphQLModule } from '@nestjs-query/query-graphql';
 import { NestjsQueryTypeOrmModule } from '@nestjs-query/query-typeorm';
 import { Module } from '@nestjs/common';
 import { GqlAuthGuard } from '../auth/auth.guard';
+import { PermissionModule } from '../permission/permission.module';
 import { PermissionGuard } from '../permission/guards/permission.guard';
 import { AssessmentModule } from '../assessment/assessment.module';
 import { Assessment } from '../assessment/models/assessment.model';
@@ -25,6 +26,7 @@ const guards = [GqlAuthGuard, PermissionGuard];
 @Module({
     imports: [
         AssessmentModule,
+        PermissionModule,
         SettingModule,
         NestjsQueryGraphQLModule.forFeature({
             imports: [

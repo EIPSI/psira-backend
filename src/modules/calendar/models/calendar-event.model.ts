@@ -4,6 +4,9 @@ import { ClinicalSessionCancellationLabel } from 'src/modules/clinical-session/e
 import { ClinicalSessionCancellationType } from 'src/modules/clinical-session/enums/clinical-session-cancellation-type.enum';
 import { ClinicalSessionKind } from 'src/modules/clinical-session/enums/clinical-session-kind.enum';
 import { ClinicalSessionModality } from 'src/modules/clinical-session/enums/clinical-session-modality.enum';
+import { Department } from 'src/modules/department/models/department.model';
+import { Patient } from 'src/modules/patient/models/patient.model';
+import { User } from 'src/modules/user/models/user.model';
 import { CalendarOccurrenceStatus } from '../enums/calendar-occurrence-status.enum';
 import { CalendarOccurrenceType } from '../enums/calendar-occurrence-type.enum';
 import { CalendarEventType } from '../enums/calendar-event-type.enum';
@@ -90,4 +93,22 @@ export class CalendarEvent {
 
     @Field(() => AssessmentOrigin, { nullable: true })
     assessmentOrigin?: AssessmentOrigin;
+
+    @Field(() => Patient, { nullable: true })
+    patient?: Patient;
+
+    @Field(() => User, { nullable: true })
+    therapist?: User;
+
+    @Field(() => User, { nullable: true })
+    supervisor?: User;
+
+    @Field(() => User, { nullable: true })
+    targetUser?: User;
+
+    @Field(() => User, { nullable: true })
+    responderUser?: User;
+
+    @Field(() => [Department], { nullable: true })
+    departments?: Department[];
 }

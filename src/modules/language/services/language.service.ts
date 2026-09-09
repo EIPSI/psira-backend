@@ -18,6 +18,7 @@ import { defaultLanguages, DefaultTranslationSeed } from '../seed/default-transl
 export class LanguageService implements OnModuleInit {
     private readonly logger = new Logger(LanguageService.name);
     private seedInitialized = false;
+    private seedPromise?: Promise<void>;
 
     constructor(
         @InjectRepository(Language)
@@ -168,22 +169,24 @@ export class LanguageService implements OnModuleInit {
 
         const seed = this.loadDefaultTranslationSeed();
         if (!seed) return;
+        const seedKeySet = new Set(seed.keys.map(item => item.key));
 
+        const existingKeys = await this.keyRepository.findByIds(seed.keys.map(item => item.key));
+        const existingKeyByName = new Map(existingKeys.map(key => [key.key, key]));
+        const keysToSave: TranslationKey[] = [];
         for (const item of seed.keys) {
-            const existing = await this.keyRepository.findOne(item.key);
+            const existing = existingKeyByName.get(item.key);
             const description = item.description || this.describeTranslationKey(item.key, item.namespace);
             const variables = item.variables || this.extractVariables(item.defaultText || '');
             if (!existing) {
-                await this.keyRepository.save(
-                    this.keyRepository.create({
-                        key: item.key,
-                        namespace: item.namespace,
-                        defaultText: item.defaultText,
-                        description,
-                        variables,
-                        isSystem: true,
-                    }),
-                );
+                keysToSave.push(this.keyRepository.create({
+                    key: item.key,
+                    namespace: item.namespace,
+                    defaultText: item.defaultText,
+                    description,
+                    variables,
+                    isSystem: true,
+                }));
             } else if (
                 existing.namespace !== item.namespace ||
                 existing.defaultText !== item.defaultText ||
@@ -195,43 +198,61 @@ export class LanguageService implements OnModuleInit {
                 existing.description = existing.description || description;
                 existing.variables = variables;
                 existing.isSystem = true;
-                await this.keyRepository.save(existing);
+                keysToSave.push(existing);
             }
         }
+        await this.saveInChunks(this.keyRepository, keysToSave);
 
         const englishDefaults = this.flatten(seed.values.en || {});
         for (const language of await this.languageRepository.find()) {
             const languageDefaults = this.flatten(seed.values[language.code] || {});
             const flatValues = { ...englishDefaults, ...languageDefaults };
-            for (const key of Object.keys(flatValues)) {
-                const existing = await this.valueRepository.findOne({ languageId: language.id, key });
+            const existingValues = await this.valueRepository.find({ where: { languageId: language.id } });
+            const existingValueByKey = new Map(existingValues.map(value => [value.key, value]));
+            const valuesToSave: TranslationValue[] = [];
+            for (const key of Object.keys(flatValues).filter(item => seedKeySet.has(item))) {
+                const existing = existingValueByKey.get(key);
                 if (!existing) {
-                    await this.valueRepository.save(
-                        this.valueRepository.create({
-                            languageId: language.id,
-                            languageCode: language.code,
-                            key,
-                            value: String(flatValues[key] ?? ''),
-                        }),
-                    );
-                } else if (!existing.value) {
+                    valuesToSave.push(this.valueRepository.create({
+                        languageId: language.id,
+                        languageCode: language.code,
+                        key,
+                        value: String(flatValues[key] ?? ''),
+                    }));
+                } else if (!existing.value || existing.value === key) {
                     existing.value = String(flatValues[key] ?? '');
                     existing.languageCode = language.code;
-                    await this.valueRepository.save(existing);
+                    valuesToSave.push(existing);
                 }
             }
+            await this.saveInChunks(this.valueRepository, valuesToSave);
         }
     }
 
     private async ensureSeeded(throwOnError = true): Promise<void> {
         if (this.seedInitialized) return;
+        if (!this.seedPromise) {
+            this.seedPromise = this.seedDefaults()
+                .then(() => {
+                    this.seedInitialized = true;
+                })
+                .catch(error => {
+                    this.seedPromise = undefined;
+                    throw error;
+                });
+        }
         try {
-            await this.seedDefaults();
-            this.seedInitialized = true;
+            await this.seedPromise;
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             this.logger.warn(`Unable to seed language translations yet: ${message}`);
             if (throwOnError) throw error;
+        }
+    }
+
+    private async saveInChunks<T>(repository: Repository<T>, rows: T[], chunkSize = 300): Promise<void> {
+        for (let index = 0; index < rows.length; index += chunkSize) {
+            await repository.save(rows.slice(index, index + chunkSize) as any);
         }
     }
 
