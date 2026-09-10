@@ -11,11 +11,11 @@ export class ReportInput {
     @Field(() => Boolean, { nullable: true })
     anonymus?: boolean;
 
-    @Field(() => String)
-    name: string;
+    @Field(() => String, { nullable: true })
+    name?: string;
 
-    @Field(() => String)
-    description: string;
+    @Field(() => String, { nullable: true })
+    description?: string;
 
     @Field(() => Boolean, { nullable: true })
     status?: boolean;
@@ -29,11 +29,11 @@ export class ReportInput {
     @Field(() => String, { nullable: true })
     url?: string;
 
-    @Field(() => String)
-    resources: string;
+    @Field(() => String, { nullable: true })
+    resources?: string;
 
-    @Field(() => [Int])
-    roles: number[];
+    @Field(() => [Int], { nullable: true })
+    roles?: number[];
 }
 
 @InputType()

@@ -1,4 +1,3 @@
-import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Assessment } from 'src/modules/assessment/models/assessment.model';
@@ -18,6 +17,7 @@ import { NotificationLogStatus } from '../enums/notification-log-status.enum';
 import { NotificationLog } from '../models/notification-log.model';
 import { NotificationConfigurationService } from './notification-configuration.service';
 import { NotificationPreferenceService } from './notification-preference.service';
+import { MailerService } from 'src/shared/mail/mailer.service';
 
 @Injectable()
 export class NotificationDispatchService {

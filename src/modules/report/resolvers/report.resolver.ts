@@ -7,6 +7,7 @@ import {
     ObjectType,
     PartialType,
     Int,
+    GraphQLISODateTime,
 } from '@nestjs/graphql';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
 
@@ -74,19 +75,48 @@ export class ReportResolver {
         @Args('reportId', { type: () => Int }) reportId: number,
         @Args('patientId', { type: () => Int, nullable: true })
         patientId: number,
+        @Args('contextType', { type: () => String, nullable: true })
+        contextType: string,
+        @Args('contextParams', { type: () => String, nullable: true })
+        contextParams: string,
         @CurrentUser() currentUser: User,
     ): Promise<ReportSession> {
         return this.reportService.startReportSession(
             reportId,
             currentUser,
             patientId,
+            contextType,
+            contextParams,
         );
     }
 
     @Query(() => [ReportSession])
     @UsePermission(PermissionEnum.REPORTS_EDIT_DEPARTMENT)
-    async reportSessions(): Promise<ReportSession[]> {
-        return this.reportService.getReportSessions();
+    async reportSessions(
+        @Args('reportId', { type: () => Int, nullable: true })
+        reportId?: number,
+        @Args('userId', { type: () => Int, nullable: true })
+        userId?: number,
+        @Args('patientId', { type: () => Int, nullable: true })
+        patientId?: number,
+        @Args('contextType', { type: () => String, nullable: true })
+        contextType?: string,
+        @Args('active', { type: () => Boolean, nullable: true })
+        active?: boolean,
+        @Args('from', { type: () => GraphQLISODateTime, nullable: true })
+        from?: Date,
+        @Args('to', { type: () => GraphQLISODateTime, nullable: true })
+        to?: Date,
+    ): Promise<ReportSession[]> {
+        return this.reportService.getReportSessions({
+            reportId,
+            userId,
+            patientId,
+            contextType,
+            active,
+            from,
+            to,
+        });
     }
 
     @Mutation(() => ReportSession, { nullable: true })

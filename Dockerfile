@@ -5,10 +5,9 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install argon2 --ignore-scripts
+RUN npm install -g npm@8
+RUN npm ci --legacy-peer-deps --ignore-scripts
 RUN npx node-pre-gyp rebuild -C ./node_modules/argon2
-
-RUN npm ci
 
 COPY . .
 
@@ -16,13 +15,13 @@ COPY . .
 RUN npm run build
 
 # Preprare node_modules with only production dependencies
-RUN npm ci --only=production
+RUN npm ci --omit=dev --legacy-peer-deps --ignore-scripts
+RUN npx node-pre-gyp rebuild -C ./node_modules/argon2
 
 
 ### Production container build #####################################
-FROM node:14-alpine AS production
+FROM node:14 AS production
 
-RUN apk add --no-cache bash
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}

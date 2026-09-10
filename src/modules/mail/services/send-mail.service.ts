@@ -1,4 +1,3 @@
-import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -21,6 +20,7 @@ import { NotificationConfigurationService } from 'src/modules/notification/servi
 import { SettingKey } from 'src/modules/setting/enums/setting-name.enum';
 import { SettingService } from 'src/modules/setting/providers/setting.service';
 import * as momentTimezone from 'moment-timezone';
+import { MailerService } from 'src/shared/mail/mailer.service';
 
 @Injectable()
 export class SendMailService {

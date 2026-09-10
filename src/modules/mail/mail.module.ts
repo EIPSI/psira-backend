@@ -28,6 +28,7 @@ import { SettingModule } from '../setting/setting.module';
 import { User } from '../user/models/user.model';
 import { PermissionModule } from '../permission/permission.module';
 import { NotificationModule } from '../notification/notification.module';
+import { MailerService } from 'src/shared/mail/mailer.service';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { NotificationModule } from '../notification/notification.module';
     MailResolver,
     MailTemplateService,
     SendMailService,
+    MailerService,
     QuestionnaireAssessmentService,
     QuestionnaireBundleResolutionService,
   ],

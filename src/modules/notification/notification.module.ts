@@ -1,3 +1,4 @@
+import { MasterExportNotificationLogResolver } from './resolvers/master-export-notification-log.resolver';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Department } from '../department/models/department.model';
@@ -16,6 +17,7 @@ import { NotificationDispatchService } from './services/notification-dispatch.se
 import { NotificationPeriodicService } from './services/notification-periodic.service';
 import { NotificationPreferenceService } from './services/notification-preference.service';
 import { NotificationLogRetentionService } from './services/notification-log-retention.service';
+import { MailerService } from 'src/shared/mail/mailer.service';
 
 @Module({
     imports: [
@@ -33,10 +35,12 @@ import { NotificationLogRetentionService } from './services/notification-log-ret
         ]),
     ],
     providers: [
+        MasterExportNotificationLogResolver,
         NotificationConfigurationResolver,
         NotificationConfigurationService,
         NotificationPreferenceService,
         NotificationDispatchService,
+        MailerService,
         NotificationPeriodicService,
         NotificationLogRetentionService,
     ],

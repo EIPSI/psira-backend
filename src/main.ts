@@ -8,6 +8,7 @@ import { GqlUnauthorizedHandler } from './shared/exception/gql-unauthorized.hand
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
+    app.getHttpAdapter().getInstance().disable('x-powered-by');
 
     const port = configService.getPort();
     const logger = new Logger('bootstrap');
@@ -15,7 +16,7 @@ async function bootstrap() {
     app.enableCors(corsConfig);
     app.useGlobalFilters(new GqlBadRequestHandler());
     app.useGlobalFilters(new GqlUnauthorizedHandler());
-    app.useGlobalPipes(new ValidationPipe());
+    app.useGlobalPipes(new ValidationPipe({ forbidUnknownValues: false }));
 
     await app.listen(port);
     logger.log(`Application started on port ${port}`);

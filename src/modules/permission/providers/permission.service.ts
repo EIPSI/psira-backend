@@ -102,14 +102,18 @@ export class PermissionService implements OnModuleInit {
         // Seed generic super admin user if non exists
         if (superAdminRole.users.length === 0) {
             this.logger.log(
-                'No Super Admin found in DB. System seeding a generic super admin: user: admin, first time password: admin',
+                'No Super Admin found in DB. System seeding the configured super admin user.',
             );
 
             const configSuperAdminPassword = !!process.env.SUPERADMIN_PASSWORD ? String(process.env.SUPERADMIN_PASSWORD) : null;
             const configSuperAdminUsername = !!process.env.SUPERADMIN_USERNAME ? String(process.env.SUPERADMIN_USERNAME) : null;
 
-            const password = configSuperAdminPassword?.length ? configSuperAdminPassword : 'superadmin';
-            const username = configSuperAdminUsername?.length ? configSuperAdminUsername : 'superadmin';
+            if (!configSuperAdminUsername?.length || !configSuperAdminPassword?.length) {
+                throw new Error('SUPERADMIN_USERNAME and SUPERADMIN_PASSWORD must be configured before seeding a Super Admin user.');
+            }
+
+            const password = configSuperAdminPassword;
+            const username = configSuperAdminUsername;
 
             const superAdminUser = new User();
             superAdminUser.firstName = 'Super';
@@ -119,7 +123,7 @@ export class PermissionService implements OnModuleInit {
             superAdminUser.isSuperUser = true;
             superAdminUser.roles = [superAdminRole];
 
-            this.logger.verbose(`User ${username} created with default password=${password}`);
+            this.logger.verbose(`User ${username} created as configured Super Admin.`);
 
             await superAdminUser.save();
         }

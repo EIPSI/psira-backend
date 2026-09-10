@@ -4,6 +4,7 @@ import { join } from 'path';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './modules/user/user.module';
 import { configService } from './config/config.service';
+import { corsConfig } from './config/cors.config';
 import { AuthModule } from './modules/auth/auth.module';
 import { SharedModule } from './shared/shared.module';
 import { PermissionModule } from './modules/permission/permission.module';
@@ -18,8 +19,6 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { CaregiverModule } from './modules/caregiver/caregiver.module';
 import { ReportModule } from './modules/report/report.module';
 import { DisclaimerModule } from './modules/disclaimer/disclaimer.module';
-import { MailerModule } from '@nestjs-modules/mailer';
-import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { MailModule } from './modules/mail/mail.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CalendarModule } from './modules/calendar/calendar.module';
@@ -35,12 +34,12 @@ import { LanguageModule } from './modules/language/language.module';
 @Module({
     imports: [
         ScheduleModule.forRoot(),
-        MailerModule.forRoot(configService.getMailerConfig()),
         MongooseModule.forRoot(configService.getMongoConnectionString(), {
             useFindAndModify: false,
         }),
         TypeOrmModule.forRoot(configService.getTypeOrmConfig()),
         GraphQLModule.forRoot({
+            cors: corsConfig,
             introspection: configService.isGraphqlPlaygroundEnabled(),
             playground: configService.isGraphqlPlaygroundEnabled(),
             autoSchemaFile: join(process.cwd(), 'src/schema/schema.gql'),
