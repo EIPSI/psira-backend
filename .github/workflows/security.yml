@@ -12,20 +12,6 @@ permissions:
   actions: read
 
 jobs:
-  dependency-review:
-    name: Dependency review
-    if: github.event_name == 'pull_request'
-    continue-on-error: true
-    runs-on: ubuntu-latest
-    steps:
-      - name: Copy repository
-        uses: actions/checkout@v4
-
-      - name: Review dependency changes
-        uses: actions/dependency-review-action@v4
-        with:
-          fail-on-severity: high
-
   dependency-audit:
     name: Dependency audit
     continue-on-error: true
