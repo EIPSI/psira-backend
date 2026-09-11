@@ -18,6 +18,7 @@ import { NotificationLog } from '../models/notification-log.model';
 import { NotificationConfigurationService } from './notification-configuration.service';
 import { NotificationPreferenceService } from './notification-preference.service';
 import { MailerService } from 'src/shared/mail/mailer.service';
+import { formatEmailAddress } from 'src/shared';
 
 @Injectable()
 export class NotificationDispatchService {
@@ -391,12 +392,8 @@ export class NotificationDispatchService {
     }
 
     private resolveSender(template?: { senderName?: string }): string {
-        const senderMail = configService.getSenderMail();
-        const senderName = (template?.senderName || '').trim();
-        if (!senderName) return senderMail;
-        return `"${senderName.replace(/"/g, '\\"')}" <${senderMail}>`;
+        return formatEmailAddress(configService.getSenderMail(), template?.senderName);
     }
-
     private async buildTemplateData(
         assessment: Assessment,
         recipient: User,

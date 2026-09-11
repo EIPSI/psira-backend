@@ -75,9 +75,7 @@ export class ChangePasswordService {
          * 1 character
          * atleast 8 characters long
          */
-        const complexity = new RegExp(
-            /^(?=.{8,})(?=.*[a-z])(?=.*[A-Z])(?=.*[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]).*$/,
-        );
+        const complexity = /^(?=.{8,})(?=.*[a-z])(?=.*[A-Z])(?=.*[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]).*$/;
 
         const isStrongPassword =
             typeof input.newPassword === 'string' &&

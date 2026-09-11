@@ -21,6 +21,7 @@ import { SettingKey } from 'src/modules/setting/enums/setting-name.enum';
 import { SettingService } from 'src/modules/setting/providers/setting.service';
 import * as momentTimezone from 'moment-timezone';
 import { MailerService } from 'src/shared/mail/mailer.service';
+import { formatEmailAddress } from 'src/shared';
 
 @Injectable()
 export class SendMailService {
@@ -455,12 +456,8 @@ export class SendMailService {
     }
 
     private resolveSender(template?: { senderName?: string }): string {
-        const senderMail = configService.getSenderMail();
-        const senderName = (template?.senderName || '').trim();
-        if (!senderName) return senderMail;
-        return `"${senderName.replace(/"/g, '\\"')}" <${senderMail}>`;
+        return formatEmailAddress(configService.getSenderMail(), template?.senderName);
     }
-
     /**
      * Send credentials to new users through the central notification configuration.
      */
