@@ -9,7 +9,8 @@ export class ReportFormTextCleanup1790600002000 implements MigrationInterface {
             VALUES
                 ('core.on', 'core', 'On', 'Enabled option label used in switches and radio controls.', '', true),
                 ('core.off', 'core', 'Off', 'Disabled option label used in switches and radio controls.', '', true),
-                ('reports.rolesRequiredValidation', 'reports', 'Select at least one role that can access this report.', 'Validation message shown when a report is saved without allowed roles.', '', true)
+                ('reports.rolesRequiredValidation', 'reports', 'Select at least one role that can access this report.', 'Validation message shown when a report is saved without allowed roles.', '', true),
+                ('forms.createReportForm.repositoryLinkDescription', 'forms', 'Optional technical reference, such as the Git repository, documentation, script, or internal folder where this report is maintained.', 'Help text shown below the repository link field in the report form.', '', true)
             ON CONFLICT ("key") DO UPDATE SET
                 "namespace" = EXCLUDED."namespace",
                 "defaultText" = EXCLUDED."defaultText",
@@ -49,11 +50,11 @@ export class ReportFormTextCleanup1790600002000 implements MigrationInterface {
     public async down(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`
             DELETE FROM "translation_value"
-            WHERE "key" IN ('core.on', 'core.off', 'reports.rolesRequiredValidation')
+            WHERE "key" IN ('core.on', 'core.off', 'reports.rolesRequiredValidation', 'forms.createReportForm.repositoryLinkDescription')
         `);
         await queryRunner.query(`
             DELETE FROM "translation_key"
-            WHERE "key" IN ('core.on', 'core.off', 'reports.rolesRequiredValidation')
+            WHERE "key" IN ('core.on', 'core.off', 'reports.rolesRequiredValidation', 'forms.createReportForm.repositoryLinkDescription')
         `);
     }
 }
