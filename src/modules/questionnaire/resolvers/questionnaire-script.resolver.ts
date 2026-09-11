@@ -39,7 +39,7 @@ export class QuestionnaireScriptsResolver {
     ) {}
 
     @Query(() => QuestionnaireScriptConnection)
-    @UsePermission(PermissionEnum.VIEW_QUESTIONNAIRES)
+    @UsePermission(PermissionEnum.QUESTIONNAIRES_VIEW_DEPARTMENT)
     scripts(
         @Args({ type: () => QuestionnaireScriptQuery })
         query: QuestionnaireScriptQuery,
@@ -52,7 +52,7 @@ export class QuestionnaireScriptsResolver {
     }
 
     @Mutation(() => QuestionnaireScript)
-    @UsePermission(PermissionEnum.MANAGE_QUESTIONNAIRES)
+    @UsePermission(PermissionEnum.QUESTIONNAIRES_EDIT_DEPARTMENT)
     createNewQuestionnaireScript(
         @Args('input') input: CreateQuestionnaireScriptInput,
     ): any {
@@ -60,7 +60,7 @@ export class QuestionnaireScriptsResolver {
     }
 
     @Mutation(() => QuestionnaireScript)
-    @UsePermission(PermissionEnum.MANAGE_QUESTIONNAIRES)
+    @UsePermission(PermissionEnum.QUESTIONNAIRES_EDIT_DEPARTMENT)
     updateOneQuestionnaireScript(
         @Args('input') input: UpdateQuestionnaireScriptInput,
     ): Promise<QuestionnaireScript> {
@@ -70,7 +70,7 @@ export class QuestionnaireScriptsResolver {
     }
 
     @Mutation(() => QuestionnaireScriptDeleteResponse)
-    @UsePermission(PermissionEnum.MANAGE_QUESTIONNAIRES)
+    @UsePermission(PermissionEnum.QUESTIONNAIRES_EDIT_DEPARTMENT)
     deleteOneQuestionnaireScript(
         @Args('input') input: DeleteQuestionnaireScriptInput,
     ): Promise<any> {

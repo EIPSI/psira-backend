@@ -16,6 +16,7 @@ import { TherapistSupervisionResolver } from './resolvers/therapist-supervision.
 import { MailModule } from '../mail/mail.module';
 import { Patient } from '../patient/models/patient.model';
 import { Caregiver } from '../caregiver/models/caregiver.model';
+import { UserPreviousPasswordRetentionService } from './services/user-previous-password-retention.service';
 
 @Injectable()
 export class UserAuthorizer implements Authorizer<User> {
@@ -49,9 +50,10 @@ export class UserAuthorizer implements Authorizer<User> {
         UserAuthorizer,
         UserDepartmentAccessService,
         UserAccountProvisioningService,
+        UserPreviousPasswordRetentionService,
         TherapistSupervisionService,
         TherapistSupervisionResolver,
     ],
-    exports: [UserCrudService, UserAccountProvisioningService],
+    exports: [UserCrudService, UserAccountProvisioningService, UserDepartmentAccessService],
 })
 export class UserModule { }

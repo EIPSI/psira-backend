@@ -27,6 +27,18 @@ class ConfigService {
         return this.getValue('APP_URL') ?? 'http://localhost:3000/';
     }
 
+    public getGoogleClientId(throwOnMissing = true) {
+        return this.getValue('GOOGLE_CLIENT_ID', throwOnMissing);
+    }
+
+    public getGoogleClientSecret(throwOnMissing = true) {
+        return this.getValue('GOOGLE_CLIENT_SECRET', throwOnMissing);
+    }
+
+    public getGoogleRedirectUri(throwOnMissing = true) {
+        return this.getValue('GOOGLE_REDIRECT_URI', throwOnMissing);
+    }
+
     public getPort() {
         return this.getValue('SERVER_PORT', true);
     }
@@ -69,6 +81,12 @@ class ConfigService {
         const migrationsDir: string[] = [
             __dirname + this.getValue('TYPEORM_MIGRATIONS_DIR'),
         ];
+        const isCompiled = __dirname.includes('/dist/');
+        const migrations = [
+            isCompiled
+                ? __dirname + '/../migrations/*.js'
+                : __dirname + '/../migrations/*.ts',
+        ];
         return {
             type: this.getValue('TYPEORM_CONNECTION') as 'postgres',
             host: this.getValue('TYPEORM_HOST'),
@@ -83,7 +101,8 @@ class ConfigService {
                 migrationsDir,
             },
             migrationsRun: this.getValue('TYPEORM_MIGRATIONS_RUN') === 'true',
-            migrations: ['../dist/migrations/*.{js}'],
+            migrationsTransactionMode: 'each',
+            migrations,
         };
     }
 

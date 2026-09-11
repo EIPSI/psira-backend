@@ -3,17 +3,19 @@ import { isValidObjectId, Model, Types } from 'mongoose';
 import { AnswerAssessmentInput } from '../dtos/assessment.input';
 import { Answer } from '../models/answer.schema';
 import { QuestionnaireAssessment } from '../models/questionnaire-assessment.schema';
-import {
-    QuestionnaireStatus,
-    Questionnaire,
-} from '../models/questionnaire.schema';
+import { Questionnaire, QuestionnaireStatus } from '../models/questionnaire.schema';
 import { QuestionValidatorFactory } from '../helpers/question-validator.factory';
 import { AssessmentStatus } from '../enums/assessment-status.enum';
 import { UserInputError } from 'apollo-server-express';
+import { BadRequestException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Assessment } from 'src/modules/assessment/models/assessment.model';
 import { Repository } from 'typeorm';
 import { QuestionnaireBundle } from '../models/questionnaire-bundle.schema';
+import { QuestionnaireBundleResolutionService } from './questionnaire-bundle-resolution.service';
+import { RandomizationResolutionService } from 'src/modules/randomization/services/randomization-resolution.service';
+import { NotificationDispatchService } from 'src/modules/notification/services/notification-dispatch.service';
+import { NotificationEvent } from 'src/modules/notification/enums/notification-event.enum';
 
 export class QuestionnaireAssessmentService {
     constructor(
@@ -25,36 +27,29 @@ export class QuestionnaireAssessmentService {
         private questionnaireModel: Model<Questionnaire>,
         @InjectRepository(Assessment)
         private assessmentRepository: Repository<Assessment>,
+        private questionnaireBundleResolutionService: QuestionnaireBundleResolutionService,
+        @Optional()
+        private notificationDispatchService: NotificationDispatchService,
+        @Optional()
+        private randomizationResolutionService?: RandomizationResolutionService,
     ) {}
 
     async createNewAssessment(
         questionnaires: Types.ObjectId[],
         questionnaireBundles?: Types.ObjectId[],
+        randomizationRuleIds?: number[],
     ) {
-        await Promise.all(
-            questionnaires.map(async versionId => {
-                const questionnaireVersion = await this.questionnaireModel.findById(
-                    versionId,
-                );
-
-                if (
-                    ![
-                        QuestionnaireStatus.PRIVATE,
-                        QuestionnaireStatus.PUBLISHED,
-                    ].includes(questionnaireVersion.status)
-                ) {
-                    throw new Error(
-                        `${questionnaireVersion.name} has status ${questionnaireVersion.status} and cannot be added to assessment.`,
-                    );
-                }
-
-                return questionnaireVersion;
-            }),
+        const resolvedSequence = await this.resolveQuestionnaires(
+            questionnaires || [],
+            questionnaireBundles || [],
+            randomizationRuleIds || [],
         );
 
         return this.assessmentModel.create({
-            questionnaires,
-            questionnaireBundles,
+            questionnaires: resolvedSequence.questionnaireIds,
+            questionnaireBundles: resolvedSequence.questionnaireBundleIds,
+            randomizationRuleIds: randomizationRuleIds || [],
+            resolvedQuestionnaires: resolvedSequence.resolvedQuestionnaires,
         });
     }
 
@@ -91,8 +86,8 @@ export class QuestionnaireAssessmentService {
 
         if (
             !questionnaire ||
-            !(foundAssessment.questionnaires as Types.ObjectId[]).includes(
-                questionnaire._id,
+            !(foundAssessment.questionnaires as Types.ObjectId[]).some(
+                questionnaireId => questionnaireId.toString() === questionnaire._id.toString(),
             ) ||
             ![
                 QuestionnaireStatus.PUBLISHED,
@@ -117,12 +112,15 @@ export class QuestionnaireAssessmentService {
         }
 
         const answerExisting = foundAssessment.answers.find(
-            item => item.question === assessmentAnswerInput.question,
+            item =>
+                item.question?.toString() === assessmentAnswerInput.question?.toString() &&
+                (item.occurrenceId || null) === (assessmentAnswerInput.occurrenceId || null),
         );
 
         const answer = answerExisting ?? new this.answerModel();
 
         answer.question = assessmentAnswerInput.question;
+        answer.occurrenceId = assessmentAnswerInput.occurrenceId;
         answer.multipleChoiceValue = assessmentAnswerInput.multipleChoiceValue;
         answer.booleanValue = assessmentAnswerInput.booleanValue;
         answer.textValue = assessmentAnswerInput.textValue;
@@ -172,10 +170,11 @@ export class QuestionnaireAssessmentService {
             where: { questionnaireAssessmentId: assessmentId },
         });
 
-        if (
+        const completedNow =
             assessmentModel.status !== AssessmentStatus.COMPLETED &&
-            status === AssessmentStatus.COMPLETED
-        ) {
+            status === AssessmentStatus.COMPLETED;
+
+        if (completedNow && assessment) {
             assessment.submissionDate = new Date();
         }
 
@@ -185,7 +184,16 @@ export class QuestionnaireAssessmentService {
         }
 
         assessmentModel.status = status;
-        return assessmentModel.save();
+        const savedAssessmentModel = await assessmentModel.save();
+
+        if (completedNow && assessment && this.notificationDispatchService) {
+            await this.notificationDispatchService.dispatchAssessmentEvent(
+                NotificationEvent.ASSESSMENT_ANSWERED,
+                assessment.id,
+            );
+        }
+
+        return savedAssessmentModel;
     }
 
     async deleteAssessment(_id: Types.ObjectId, archive = true) {
@@ -228,6 +236,8 @@ export class QuestionnaireAssessmentService {
     async updateAssessment(
         assessmentId: Types.ObjectId | QuestionnaireAssessment,
         questionnaires: Types.ObjectId[],
+        questionnaireBundles?: Types.ObjectId[],
+        randomizationRuleIds?: number[],
     ) {
         let questionnaireAssessment: QuestionnaireAssessment;
 
@@ -240,7 +250,63 @@ export class QuestionnaireAssessmentService {
             questionnaireAssessment = assessmentId as QuestionnaireAssessment;
         }
 
-        questionnaireAssessment.questionnaires = questionnaires;
+        const resolvedSequence = await this.resolveQuestionnaires(
+            questionnaires || [],
+            questionnaireBundles || [],
+            randomizationRuleIds || [],
+        );
+
+        questionnaireAssessment.questionnaires = resolvedSequence.questionnaireIds;
+        questionnaireAssessment.questionnaireBundles = resolvedSequence.questionnaireBundleIds;
+        questionnaireAssessment.randomizationRuleIds = randomizationRuleIds || [];
+        questionnaireAssessment.resolvedQuestionnaires = resolvedSequence.resolvedQuestionnaires;
         return questionnaireAssessment.save();
+    }
+
+    private async resolveQuestionnaires(
+        questionnaires: Types.ObjectId[],
+        questionnaireBundles: Types.ObjectId[],
+        randomizationRuleIds: number[],
+    ) {
+        const baseSequence = await this.questionnaireBundleResolutionService.resolveQuestionnaireSequence(
+            questionnaires || [],
+            questionnaireBundles || [],
+        );
+
+        if (!randomizationRuleIds?.length) {
+            return {
+                questionnaireIds: baseSequence.questionnaireIds,
+                questionnaireBundleIds: questionnaireBundles || [],
+                resolvedQuestionnaires: baseSequence.resolvedQuestionnaires,
+            };
+        }
+
+        if (!this.randomizationResolutionService) {
+            throw new BadRequestException('Randomization resolution is not available');
+        }
+
+        const randomizationSequence = await this.randomizationResolutionService.resolveLowLevelRules(
+            randomizationRuleIds,
+        );
+        const resolvedQuestionnaires = [...baseSequence.resolvedQuestionnaires];
+
+        resolvedQuestionnaires.push(
+            ...randomizationSequence.resolvedQuestionnaires.map(questionnaire => ({
+                ...questionnaire,
+                orderIndex: resolvedQuestionnaires.length + questionnaire.orderIndex,
+            })),
+        );
+
+        return {
+            questionnaireIds: [
+                ...baseSequence.questionnaireIds,
+                ...randomizationSequence.questionnaireIds,
+            ],
+            questionnaireBundleIds: [
+                ...(questionnaireBundles || []),
+                ...randomizationSequence.questionnaireBundleIds,
+            ],
+            resolvedQuestionnaires,
+        };
     }
 }

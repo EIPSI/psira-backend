@@ -33,7 +33,7 @@ export class AssessmentTypeResolver {
     ) {}
 
     @Query(() => AssessmentTypeConnection)
-    // @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    // @UsePermission(PermissionEnum.ASSESSMENTS_VIEW_DEPARTMENT)
     async assessmentTypes(
         @Args({ type: () => AssessmentTypeQuery }) query: AssessmentTypeQuery,
     ): Promise<ConnectionType<AssessmentType>> {
@@ -41,13 +41,13 @@ export class AssessmentTypeResolver {
     }
 
     @Query(() => [AssessmentType])
-    // @UsePermission(PermissionEnum.VIEW_ASSESSMENTS)
+    // @UsePermission(PermissionEnum.ASSESSMENTS_VIEW_DEPARTMENT)
     async activeAssessmentTypes(): Promise<AssessmentType[]> {
         return this.assessmentTypeService.getActiveAssessmentTypes();
     }
 
     @Mutation(() => AssessmentType)
-    // @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    // @UsePermission(PermissionEnum.ASSESSMENTS_EDIT_DEPARTMENT)
     createNewAssessmentType(
         @Args('assessmentType') assessmentTypeInput: CreateAssessmentTypeInput,
     ) {
@@ -57,7 +57,7 @@ export class AssessmentTypeResolver {
     }
 
     @Mutation(() => AssessmentType)
-    // @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    // @UsePermission(PermissionEnum.ASSESSMENTS_EDIT_DEPARTMENT)
     updateAssessmentType(
         @Args('assessmentType') assessmentTypeInput: UpdateAssessmentTypeInput,
     ) {
@@ -67,7 +67,7 @@ export class AssessmentTypeResolver {
     }
 
     @Mutation(() => Boolean)
-    // @UsePermission(PermissionEnum.MANAGE_ASSESSMENTS)
+    // @UsePermission(PermissionEnum.ASSESSMENTS_EDIT_DEPARTMENT)
     deleteAssessmentType(@Args('id') assessmentTypeId: number) {
         return this.assessmentTypeService.deleteAssessmentType(
             assessmentTypeId,

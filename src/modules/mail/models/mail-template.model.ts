@@ -14,7 +14,7 @@ import {
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
-import { TemplateModuleEnum } from '../enums/template-module.enum';
+import { MailTemplatePurposeEnum } from '../enums/mail-template-purpose.enum';
 
 @ObjectType()
 @FilterableUnPagedRelation('departments', () => Department)
@@ -33,6 +33,10 @@ export class MailTemplate extends BaseEntity {
     @Column()
     subject: string;
 
+    @FilterableField(() => String, { nullable: true })
+    @Column({ nullable: true })
+    senderName?: string;
+
     @Field(() => String)
     @Column()
     body: string;
@@ -41,9 +45,13 @@ export class MailTemplate extends BaseEntity {
     @Column({ default: AssessmentTypeEnum.ACTIVE })
     status: AssessmentTypeEnum;
 
-    @FilterableField()
-    @Column()
-    module: TemplateModuleEnum;
+    @FilterableField(() => MailTemplatePurposeEnum)
+    @Column({
+        type: 'enum',
+        enum: MailTemplatePurposeEnum,
+        default: MailTemplatePurposeEnum.NOTIFICATION,
+    })
+    purpose: MailTemplatePurposeEnum;
 
     @FilterableField()
     @CreateDateColumn()
@@ -62,7 +70,7 @@ export class MailTemplate extends BaseEntity {
     isPublic: boolean;
 
     @ManyToMany(() => Department, department => department.mailTemplates)
-    departments: Department;
+    departments: Department[];
 
     @OneToMany(() => Assessment, assessment => assessment.mailTemplate)
     assessments: Assessment[]

@@ -11,6 +11,8 @@ import { ReportResolver } from './resolvers/report.resolver';
 import { ReportInput } from './dtos/report-input';
 import { Role } from '../permission/models/role.model';
 import { ReportEmbedController } from './controllers/report-embed.controller';
+import { MasterExportService } from './services/master-export.service';
+import { MasterExportResolver } from './resolvers/master-export.resolver';
 
 const guards = [GqlAuthGuard, PermissionGuard];
 @Module({
@@ -34,7 +36,7 @@ const guards = [GqlAuthGuard, PermissionGuard];
         }),
     ],
     controllers: [ReportEmbedController],
-    providers: [ReportService, ReportResolver],
-    exports: [ReportService],
+    providers: [ReportService, ReportResolver, MasterExportService, MasterExportResolver],
+    exports: [ReportService, MasterExportService],
 })
 export class ReportModule {}

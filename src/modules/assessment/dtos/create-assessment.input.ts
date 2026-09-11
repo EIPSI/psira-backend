@@ -1,6 +1,5 @@
 import { FilterableField } from '@nestjs-query/query-graphql';
 import { Field, GraphQLISODateTime, InputType, Int } from '@nestjs/graphql';
-import { ArrayNotEmpty } from 'class-validator';
 import { Types } from 'mongoose';
 
 @InputType()
@@ -31,10 +30,19 @@ export class Dates {
 
     @Field(() => GraphQLISODateTime, { nullable: true })
     deliveryDate: Date;
+
+    @Field(() => [Int], { nullable: true })
+    reminderMinutes?: number[];
+
+    @Field(() => String, { nullable: true })
+    reminderUnit?: string;
 }
 
 @InputType()
 export class CreateFullAssessmentInput {
+    @Field(() => String, { nullable: true })
+    name?: string;
+
     @Field(() => Int)
     assessmentTypeId: number;
 
@@ -45,10 +53,16 @@ export class CreateFullAssessmentInput {
     targetUserId?: number;
 
     @Field(() => Int, { nullable: true })
+    treatmentCycleId?: number;
+
+    @Field(() => Int, { nullable: true })
     responderUserId?: number;
 
     @Field(() => Int)
     clinicianId: number;
+
+    @Field(() => [Int], { nullable: true })
+    responsibleUserIds?: number[];
 
     @Field(() => Int, { nullable: true })
     mailTemplateId: number;
@@ -65,12 +79,14 @@ export class CreateFullAssessmentInput {
     @Field(() => String, { nullable: true })
     informantCaregiverRelation?: string;
 
-    @Field(() => [String])
-    @ArrayNotEmpty()
+    @Field(() => [String], { nullable: true })
     questionnaires: Types.ObjectId[];
 
     @Field(() => [String], { nullable: true })
     questionnaireBundles: Types.ObjectId[];
+
+    @Field(() => [Int], { nullable: true })
+    randomizationRuleIds?: number[];
 
     @Field(() => [Dates])
     dates: Dates[]
@@ -80,6 +96,12 @@ export class CreateFullAssessmentInput {
 
     @Field(() => String, { nullable: true })
     receiverEmail: string;
+
+    @Field(() => [Int], { nullable: true })
+    reminderMinutes?: number[];
+
+    @Field(() => String, { nullable: true })
+    reminderUnit?: string;
 }
 
 @InputType()

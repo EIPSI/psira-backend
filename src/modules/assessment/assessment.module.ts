@@ -17,6 +17,11 @@ import {
     Questionnaire,
     QuestionnaireSchema,
 } from '../questionnaire/models/questionnaire.schema';
+import {
+    QuestionnaireBundle,
+    QuestionnaireBundleSchema,
+} from '../questionnaire/models/questionnaire-bundle.schema';
+import { QuestionnaireBundleResolutionService } from '../questionnaire/services/questionnaire-bundle-resolution.service';
 import { PatientModule } from '../patient/patient.module';
 import { PublicAssessmentResolver } from './resolvers/public.assesment.resolver';
 import { User } from '../user/models/user.model';
@@ -25,6 +30,12 @@ import { AssessmentTypeService } from './services/assessment-type.service';
 import { AssessmentTypeResolver } from './resolvers/assessment-type.resolver';
 import { AssessmentType } from './models/assessment-type.model';
 import { Patient } from '../patient/models/patient.model';
+import { RandomizationModule } from '../randomization/randomization.module';
+import { RandomizationRule } from '../randomization/models/randomization-rule.model';
+import { CalendarOccurrence } from '../calendar/models/calendar-occurrence.model';
+import { TreatmentCycle } from '../treatment-cycle/models/treatment-cycle.model';
+import { CaseHistoryEntry } from '../treatment-cycle/models/case-history-entry.model';
+import { NotificationModule } from '../notification/notification.module';
 
 const guards = [GqlAuthGuard, PermissionGuard];
 @Module({
@@ -39,6 +50,10 @@ const guards = [GqlAuthGuard, PermissionGuard];
                     Caregiver,
                     Patient,
                     AssessmentType,
+                    RandomizationRule,
+                    CalendarOccurrence,
+                    TreatmentCycle,
+                    CaseHistoryEntry,
                 ]),
 
                 MongooseModule.forFeature([
@@ -50,6 +65,10 @@ const guards = [GqlAuthGuard, PermissionGuard];
                     {
                         name: Questionnaire.name,
                         schema: QuestionnaireSchema,
+                    },
+                    {
+                        name: QuestionnaireBundle.name,
+                        schema: QuestionnaireBundleSchema,
                     },
                 ]),
             ],
@@ -68,6 +87,8 @@ const guards = [GqlAuthGuard, PermissionGuard];
             ],
         }),
         PatientModule,
+        RandomizationModule,
+        NotificationModule,
     ],
     providers: [
         AssessmentService,
@@ -75,7 +96,9 @@ const guards = [GqlAuthGuard, PermissionGuard];
         AssessmentTypeResolver,
         AssessmentResolver,
         QuestionnaireAssessmentService,
+        QuestionnaireBundleResolutionService,
         PublicAssessmentResolver,
     ],
+    exports: [AssessmentService],
 })
 export class AssessmentModule {}

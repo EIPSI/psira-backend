@@ -10,7 +10,9 @@ import { BadRequestException, Inject, UseGuards } from '@nestjs/common';
 import {
     Args,
     ArgsType,
+    Field,
     ID,
+    Int,
     InputType,
     Mutation,
     ObjectType,
@@ -20,10 +22,14 @@ import {
 } from '@nestjs/graphql';
 import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
-import { UsePermission } from 'src/modules/permission/decorators/permission.decorator';
+import {
+    UseOrPermissions,
+    UsePermission,
+} from 'src/modules/permission/decorators/permission.decorator';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { PermissionGuard } from 'src/modules/permission/guards/permission.guard';
 import { PermissionService } from 'src/modules/permission/providers/permission.service';
+import { SettingService } from 'src/modules/setting/providers/setting.service';
 import { User } from 'src/modules/user/models/user.model';
 import { PatientAuthorizer } from '../authorizers/patient.authorizer';
 import { CreatePatientInput } from '../dto/create-patient.input';
@@ -34,7 +40,6 @@ import { PatientPermissionService, PatientAccessScope } from '../services/patien
 import { PatientStatus } from '../models/patient-status.model';
 import { CreateOnePatientStatusInput } from '../dto/update-patient-status.input';
 import { PatientStatusService } from '../providers/patient-status.service';
-import { Assessment } from 'src/modules/assessment/models/assessment.model';
 import { checkIfPropertyExists } from 'src/shared/helpers/object.helper';
 
 @ArgsType()
@@ -57,6 +62,15 @@ class UpdateOnePatientInput extends UpdateOneInputType(
 @InputType()
 class DeleteOnePatientInput extends DeleteOneInputType(Patient) {}
 
+@InputType()
+class ChangePatientStatusInput {
+    @Field(() => Int)
+    patientId: number;
+
+    @Field(() => Int, { nullable: true })
+    statusId?: number;
+}
+
 @ObjectType()
 class PatientDeleteResponse extends PartialType(Patient) {}
 
@@ -68,10 +82,15 @@ export class PatientResolver {
     constructor(
         protected service: PatientQueryService,
         private readonly patientPermissionService: PatientPermissionService,
+        private readonly settingService: SettingService,
     ) {}
 
     @Query(() => PatientConnection)
-    @UsePermission(PermissionEnum.VIEW_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_VIEW_ALL,
+        PermissionEnum.PATIENTS_VIEW_DEPARTMENT,
+        PermissionEnum.PATIENTS_VIEW_ASSIGNED,
+    ])
     async patients(
         @Args({ type: () => PatientQuery }) query: PatientQuery,
         @CurrentUser() currentUser: User,
@@ -106,7 +125,11 @@ export class PatientResolver {
     }
 
     @Query(() => Patient)
-    @UsePermission(PermissionEnum.VIEW_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_VIEW_ALL,
+        PermissionEnum.PATIENTS_VIEW_DEPARTMENT,
+        PermissionEnum.PATIENTS_VIEW_ASSIGNED,
+    ])
     async patient(
         @Args('id', { type: () => ID }) patientId: number,
         @CurrentUser() currentUser: User,
@@ -116,13 +139,21 @@ export class PatientResolver {
     }
 
     @Mutation(() => Patient)
-    @UsePermission(PermissionEnum.MANAGE_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_CREATE_ALL,
+        PermissionEnum.PATIENTS_CREATE_DEPARTMENT,
+        PermissionEnum.PATIENTS_CREATE_ASSIGNED,
+    ])
     async createOnePatient(
         @Args('input', { type: () => CreateOnePatientInput })
         input: CreateOnePatientInput,
         @CurrentUser() currentUser: User,
     ): Promise<Patient> {
         const patientInput = input['patient'] as CreatePatientInput;
+
+        if (!patientInput.departmentIds || patientInput.departmentIds.length === 0) {
+            throw new BadRequestException('Please select atleast one(1) Department for patient');
+        }
 
         // Validar que los departmentIds sean del usuario
         if (patientInput.departmentIds && patientInput.departmentIds.length > 0) {
@@ -147,7 +178,7 @@ export class PatientResolver {
         // Auto-assignment for VIEW_ASSIGNED_PATIENTS
         const hasAssignedPermission = await PermissionService.userCan(
             currentUser.id,
-            PermissionEnum.VIEW_ASSIGNED_PATIENTS,
+            PermissionEnum.PATIENTS_VIEW_ASSIGNED,
         );
 
         if (hasAssignedPermission) {
@@ -155,10 +186,15 @@ export class PatientResolver {
             patientInput.caseManagerIds = [currentUser.id];
         }
 
+        await this.validateCaseManagersAssignable(
+            currentUser.id,
+            patientInput.caseManagerIds || [],
+        );
+
         // Department validation
         const canViewAllPatients = await PermissionService.userCan(
             currentUser.id,
-            PermissionEnum.VIEW_ALL_PATIENTS,
+            PermissionEnum.PATIENTS_VIEW_ALL,
         );
 
         if (!canViewAllPatients && !hasAssignedPermission) {
@@ -211,7 +247,11 @@ export class PatientResolver {
     }
 
     @Mutation(() => Patient)
-    @UsePermission(PermissionEnum.MANAGE_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_EDIT_ALL,
+        PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
+        PermissionEnum.PATIENTS_EDIT_ASSIGNED,
+    ])
     async updateOnePatient(
         @Args('input') input: UpdateOnePatientInput,
         @CurrentUser() currentUser: User,
@@ -311,6 +351,11 @@ export class PatientResolver {
                     break;
             }
 
+            await this.validateCaseManagersAssignable(
+                currentUser.id,
+                update.caseManagerIds || [],
+            );
+
             // Update case managers in database
             await this.service.updateCaseManagers(
                 Number(id),
@@ -342,8 +387,47 @@ export class PatientResolver {
         return this.service.updateOne(input.id, input.update);
     }
 
+    @Mutation(() => Patient)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_EDIT_ALL,
+        PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
+        PermissionEnum.PATIENTS_EDIT_ASSIGNED,
+    ])
+    async changePatientStatus(
+        @Args('input', { type: () => ChangePatientStatusInput })
+        input: ChangePatientStatusInput,
+        @CurrentUser() currentUser: User,
+    ): Promise<Patient> {
+        await this.service.getOnePatient(currentUser, Number(input.patientId));
+
+        if (input.statusId) {
+            const status = await PatientStatus.findOne(input.statusId);
+            if (!status) {
+                throw new BadRequestException('Patient status does not exist');
+            }
+        }
+
+        await this.service.updateOne(input.patientId, {
+            statusId: input.statusId || null,
+        } as UpdatePatientInput);
+
+        return Patient.findOneOrFail(input.patientId, {
+            relations: [
+                'emergencyContacts',
+                'informants',
+                'caseManagers',
+                'departments',
+                'status',
+            ],
+        });
+    }
+
     @Mutation(() => PatientDeleteResponse)
-    @UsePermission(PermissionEnum.DELETE_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_DELETE_ALL,
+        PermissionEnum.PATIENTS_DELETE_DEPARTMENT,
+        PermissionEnum.PATIENTS_DELETE_ASSIGNED,
+    ])
     async deleteOnePatient(
         @Args('input', { type: () => DeleteOnePatientInput })
         input: DeleteOnePatientInput,
@@ -352,14 +436,15 @@ export class PatientResolver {
         // Get patient if authorized. Throws exception if Not Found
         await this.service.getOnePatient(currentUser, Number(input.id));
 
-        const deletedPatient = await this.service.deleteOne(input.id);
-        await Assessment.delete({ patientId: Number(input.id) });
-
-        return deletedPatient;
+        return this.service.deleteOnePatientWithDependencies(Number(input.id));
     }
 
     @Mutation(() => Patient)
-    @UsePermission(PermissionEnum.MANAGE_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_ARCHIVE_ALL,
+        PermissionEnum.PATIENTS_ARCHIVE_DEPARTMENT,
+        PermissionEnum.PATIENTS_ARCHIVE_ASSIGNED,
+    ])
     async archiveOnePatient(
         @Args('id', { type: () => ID }) id: number,
         @CurrentUser() currentUser: User,
@@ -371,7 +456,11 @@ export class PatientResolver {
     }
 
     @Mutation(() => Patient)
-    @UsePermission(PermissionEnum.MANAGE_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_RESTORE_ALL,
+        PermissionEnum.PATIENTS_RESTORE_DEPARTMENT,
+        PermissionEnum.PATIENTS_RESTORE_ASSIGNED,
+    ])
     async restoreOnePatient(
         @Args('id', { type: () => ID }) id: number,
         @CurrentUser() currentUser: User,
@@ -383,7 +472,11 @@ export class PatientResolver {
     }
 
     @Query(() => PatientReport)
-    @UsePermission(PermissionEnum.VIEW_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_VIEW_ALL,
+        PermissionEnum.PATIENTS_VIEW_DEPARTMENT,
+        PermissionEnum.PATIENTS_VIEW_ASSIGNED,
+    ])
     async generatePatientReport(
         @Args('id', { type: () => ID }) id: number,
         @Args('questionnaireId', { nullable: true }) questionnaireId: string,
@@ -404,7 +497,11 @@ export class PatientResolver {
     }
 
     @Query(() => [PatientReport])
-    @UsePermission(PermissionEnum.VIEW_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_VIEW_ALL,
+        PermissionEnum.PATIENTS_VIEW_DEPARTMENT,
+        PermissionEnum.PATIENTS_VIEW_ASSIGNED,
+    ])
     async generateMultiplePatientReports(
         @Args('ids', { type: () => [ID] }) ids: number[],
         @Args('questionnaireId', { nullable: true }) questionnaireId: string,
@@ -434,11 +531,61 @@ export class PatientResolver {
     }
 
     @Mutation(() => PatientStatus)
-    @UsePermission(PermissionEnum.MANAGE_SETTINGS)
+    @UsePermission(PermissionEnum.SETTINGS_EDIT_ALL)
     async createOnePatientStatus(
         @Args('input', { type: () => CreateOnePatientStatusInput })
         input: CreateOnePatientStatusInput,
     ): Promise<PatientStatus> {
         return await this.patientStatusService.create(input);
+    }
+
+    private async validateCaseManagersAssignable(
+        assigningUserId: number,
+        caseManagerIds: number[],
+    ): Promise<void> {
+        if (!caseManagerIds.length) return;
+
+        const assigner = await User.findOne(assigningUserId, {
+            relations: ['roles'],
+        });
+        const assignerHierarchy = this.strongestHierarchy(assigner);
+        const assignableHierarchyRank = await this.getAssignableCaseManagerHierarchyRank();
+
+        const eligibleCaseManagers = await User.createQueryBuilder('user')
+            .distinct(true)
+            .innerJoinAndSelect('user.roles', 'role')
+            .where('user.id IN (:...caseManagerIds)', { caseManagerIds })
+            .getMany();
+
+        const eligibleIds = eligibleCaseManagers
+            .filter(user => {
+                const hierarchy = this.strongestHierarchy(user);
+                return hierarchy >= assignerHierarchy && hierarchy <= assignableHierarchyRank;
+            })
+            .map(user => user.id);
+        const invalidIds = caseManagerIds.filter(id => !eligibleIds.includes(id));
+
+        if (invalidIds.length) {
+            throw new BadRequestException(
+                `Only configured roles with the same or lower hierarchy can be assigned as case managers. Invalid user IDs: ${invalidIds.join(
+                    ', ',
+                )}`,
+            );
+        }
+    }
+
+    private async getAssignableCaseManagerHierarchyRank(): Promise<number> {
+        const value = await this.settingService.getKey(
+            'patientCaseManagerAssignableHierarchyRank',
+        );
+        const rank = Number(value);
+        return Number.isFinite(rank) ? rank : 0;
+    }
+
+    private strongestHierarchy(user?: User): number {
+        const hierarchies = (user?.roles || [])
+            .map(role => Number(role.hierarchy))
+            .filter(hierarchy => Number.isFinite(hierarchy));
+        return hierarchies.length ? Math.min(...hierarchies) : Number.MAX_SAFE_INTEGER;
     }
 }

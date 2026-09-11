@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Role } from 'src/modules/permission/models/role.model';
 import { In, Repository } from 'typeorm';
@@ -16,6 +16,16 @@ import { ShinyApp } from '../models/shiny-app.model';
 import { ReportQueryConnection } from '../dtos/report-args';
 import { User } from 'src/modules/user/models/user.model';
 import { jwtConstants } from 'src/modules/auth/constants';
+
+export interface ReportSessionFilters {
+    reportId?: number;
+    userId?: number;
+    patientId?: number;
+    contextType?: string;
+    active?: boolean;
+    from?: Date;
+    to?: Date;
+}
 
 @Injectable()
 export class ReportService {
@@ -57,10 +67,14 @@ export class ReportService {
     }
 
     async insert(report: ReportInput) {
+        this.validateReportInput(report);
         const { roles, ...rest } = report;
+
         const newReport = this.reportRepository.create(rest);
 
         const findRoles = await this.roleRepository.find({ id: In(roles) });
+        if (findRoles.length !== roles.length)
+            throw new NotFoundException('Role not found!');
 
         newReport.roles = findRoles;
 
@@ -71,6 +85,7 @@ export class ReportService {
 
     async update(input: UpdateOneReportInput): Promise<any> {
         const { id, update } = input;
+        this.validateReportInput(update as ReportInput);
         const { roles, ...rest } = update;
         const report = await this.reportRepository.findOne({
             relations: ['roles'],
@@ -91,6 +106,21 @@ export class ReportService {
             ...report,
             ...rest,
         });
+    }
+
+    private validateReportInput(report: ReportInput) {
+        const missingFields = [];
+
+        if (!report?.name?.trim()) missingFields.push('name');
+        if (!report?.description?.trim()) missingFields.push('description');
+        if (!report?.resources?.trim()) missingFields.push('resources');
+        if (!report?.roles?.length) missingFields.push('roles');
+
+        if (missingFields.length) {
+            throw new BadRequestException(
+                `Missing required report field(s): ${missingFields.join(', ')}.`,
+            );
+        }
     }
 
     delete(input: any) {
@@ -204,7 +234,11 @@ export class ReportService {
         reportId: number,
         currentUser: User,
         patientId?: number,
+        contextType?: string,
+        contextParams?: string,
     ): Promise<ReportSession> {
+        await this.closeStaleReportSessions();
+
         const report = await this.getReportForCurrentUser(reportId, currentUser);
         if (!report) return null;
 
@@ -217,19 +251,53 @@ export class ReportService {
             lastSeenAt: now,
             active: true,
             durationSeconds: 0,
+            contextType: contextType || this.inferContextType(patientId, contextParams),
+            contextParams: this.normalizeContextParams(contextParams),
         });
 
         return this.reportSessionRepository.save(session);
     }
 
-    async getReportSessions(): Promise<ReportSession[]> {
-        return this.reportSessionRepository.find({
-            relations: ['report'],
-            order: {
-                startedAt: 'DESC',
-            },
-            take: Number(process.env.REPORT_SESSION_QUERY_LIMIT || 5000),
-        });
+    async getReportSessions(filters: ReportSessionFilters = {}): Promise<ReportSession[]> {
+        await this.closeStaleReportSessions();
+
+        const query = this.reportSessionRepository
+            .createQueryBuilder('session')
+            .leftJoinAndSelect('session.report', 'report')
+            .leftJoinAndSelect('session.user', 'user')
+            .leftJoinAndSelect('session.patient', 'patient')
+            .orderBy('session.startedAt', 'DESC')
+            .take(Number(process.env.REPORT_SESSION_QUERY_LIMIT || 5000));
+
+        if (filters.reportId) {
+            query.andWhere('session.reportId = :reportId', { reportId: filters.reportId });
+        }
+
+        if (filters.userId) {
+            query.andWhere('session.userId = :userId', { userId: filters.userId });
+        }
+
+        if (filters.patientId) {
+            query.andWhere('session.patientId = :patientId', { patientId: filters.patientId });
+        }
+
+        if (filters.contextType) {
+            query.andWhere('session.contextType = :contextType', { contextType: filters.contextType });
+        }
+
+        if (filters.active !== undefined && filters.active !== null) {
+            query.andWhere('session.active = :active', { active: filters.active });
+        }
+
+        if (filters.from) {
+            query.andWhere('session.startedAt >= :from', { from: filters.from });
+        }
+
+        if (filters.to) {
+            query.andWhere('session.startedAt <= :to', { to: filters.to });
+        }
+
+        return query.getMany();
     }
 
     async heartbeatReportSession(
@@ -244,6 +312,16 @@ export class ReportService {
         });
 
         if (!session) return null;
+
+        if (!session.active) return session;
+
+        if (this.isStale(session)) {
+            session.active = false;
+            session.endedAt = session.lastSeenAt;
+            session.closedBy = 'STALE_TIMEOUT';
+            session.durationSeconds = this.calculateDurationSeconds(session);
+            return this.reportSessionRepository.save(session);
+        }
 
         session.lastSeenAt = new Date();
         session.durationSeconds = this.calculateDurationSeconds(session);
@@ -268,9 +346,28 @@ export class ReportService {
         session.lastSeenAt = now;
         session.endedAt = now;
         session.active = false;
+        session.closedBy = 'USER';
         session.durationSeconds = this.calculateDurationSeconds(session);
 
         return this.reportSessionRepository.save(session);
+    }
+
+    private async closeStaleReportSessions(): Promise<void> {
+        const cutoff = new Date(Date.now() - this.getReportSessionStaleMs());
+
+        await this.reportSessionRepository
+            .createQueryBuilder()
+            .update(ReportSession)
+            .set({
+                active: false,
+                endedAt: () => '"lastSeenAt"',
+                closedBy: 'STALE_TIMEOUT',
+                durationSeconds: () =>
+                    'GREATEST(0, FLOOR(EXTRACT(EPOCH FROM ("lastSeenAt" - "startedAt"))))::int',
+            })
+            .where('"active" = true')
+            .andWhere('"lastSeenAt" < :cutoff', { cutoff })
+            .execute();
     }
 
     private formatAppTitle(appName: string): string {
@@ -287,6 +384,39 @@ export class ReportService {
             0,
             Math.floor((end.getTime() - session.startedAt.getTime()) / 1000),
         );
+    }
+
+    private isStale(session: ReportSession): boolean {
+        if (!session.lastSeenAt) return false;
+        return Date.now() - session.lastSeenAt.getTime() > this.getReportSessionStaleMs();
+    }
+
+    private getReportSessionStaleMs(): number {
+        return Number(process.env.REPORT_SESSION_STALE_MINUTES || 5) * 60 * 1000;
+    }
+
+    private inferContextType(patientId?: number, contextParams?: string): string {
+        if (patientId) return 'PATIENT';
+
+        try {
+            const parsed = contextParams ? JSON.parse(contextParams) : {};
+            if (parsed?.therapist_id) return 'THERAPIST';
+            if (parsed?.supervisor_id) return 'SUPERVISOR';
+            if (parsed?.user_id) return 'USER';
+        } catch (e) {}
+
+        return 'GENERAL';
+    }
+
+    private normalizeContextParams(contextParams?: string): string {
+        if (!contextParams) return null;
+
+        try {
+            const parsed = JSON.parse(contextParams);
+            return JSON.stringify(parsed);
+        } catch (e) {
+            return contextParams;
+        }
     }
 
     private getReportUrl(report: Report): string {

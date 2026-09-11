@@ -19,16 +19,28 @@ import {
   Questionnaire,
   QuestionnaireSchema,
 } from '../questionnaire/models/questionnaire.schema';
+import {
+  QuestionnaireBundle,
+  QuestionnaireBundleSchema,
+} from '../questionnaire/models/questionnaire-bundle.schema';
+import { QuestionnaireBundleResolutionService } from '../questionnaire/services/questionnaire-bundle-resolution.service';
 import { SettingModule } from '../setting/setting.module';
+import { User } from '../user/models/user.model';
+import { PermissionModule } from '../permission/permission.module';
+import { NotificationModule } from '../notification/notification.module';
+import { MailerService } from 'src/shared/mail/mailer.service';
 
 @Module({
   imports: [
     SettingModule,
+    PermissionModule,
+    NotificationModule,
     NestjsQueryGraphQLModule.forFeature({
       imports: [
         NestjsQueryTypeOrmModule.forFeature([
           MailTemplate,
-          Assessment
+          Assessment,
+          User,
         ]),
         MongooseModule.forFeature([
           {
@@ -39,6 +51,10 @@ import { SettingModule } from '../setting/setting.module';
           {
               name: Questionnaire.name,
               schema: QuestionnaireSchema,
+          },
+          {
+              name: QuestionnaireBundle.name,
+              schema: QuestionnaireBundleSchema,
           },
         ]),
       ],
@@ -55,7 +71,14 @@ import { SettingModule } from '../setting/setting.module';
       ],
     }),
   ],
-  providers: [MailResolver, MailTemplateService, SendMailService, QuestionnaireAssessmentService],
+  providers: [
+    MailResolver,
+    MailTemplateService,
+    SendMailService,
+    MailerService,
+    QuestionnaireAssessmentService,
+    QuestionnaireBundleResolutionService,
+  ],
   exports: [SendMailService]
 })
 export class MailModule {}

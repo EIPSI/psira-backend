@@ -44,10 +44,55 @@ export class SettingDto {
     passwordReUseCutoffInDays?: number;
 
     @IsOptional()
-    @Field({ nullable: true, defaultValue: true })
-    sendWelcomeEmails?: boolean;
+    @Max(365 * 10)
+    @Min(1)
+    @Field(() => Int, { nullable: true })
+    notificationLogRetentionDays?: number;
 
     @IsOptional()
+    @Max(365 * 5)
+    @Min(1)
     @Field(() => Int, { nullable: true })
-    welcomeEmailTemplateId?: number;
+    accessTokenRetentionDays?: number;
+
+    @IsOptional()
+    @Max(365 * 10)
+    @Min(1)
+    @Field(() => Int, { nullable: true })
+    evaluationAutomationRunRetentionDays?: number;
+
+    @IsOptional()
+    @Max(365 * 5)
+    @Min(1)
+    @Field(() => Int, { nullable: true })
+    treatmentFinalizationUndoWindowDays?: number;
+
+    @IsOptional()
+    @Min(0)
+    @Field(() => Int, { nullable: true })
+    patientCaseManagerAssignableHierarchyRank?: number;
+
+    @IsOptional()
+    @Field({ nullable: true, defaultValue: false })
+    googleCalendarEnabled?: boolean;
+
+    @IsOptional()
+    @Field({ nullable: true, defaultValue: true })
+    notificationsEnabled?: boolean;
+
+    @IsOptional()
+    @Field({ nullable: true, defaultValue: true })
+    informedConsentEnabled?: boolean;
+
+    @IsOptional()
+    @Field({ nullable: true })
+    googleCalendarClientId?: string;
+
+    @IsOptional()
+    @Field({ nullable: true })
+    googleCalendarClientSecret?: string;
+
+    @IsOptional()
+    @Field({ nullable: true })
+    googleCalendarRedirectUri?: string;
 }

@@ -24,13 +24,13 @@ export class PermissionGuard implements CanActivate {
         // Return failure on first missing permission
         const permissions = this.getPermissions(context, 'permissions');
         for (const permission of permissions) {
-            if (permissionGrants.find(p => p.name === permission)) continue;
+            if (PermissionService.hasPermission(permissionGrants, permission)) continue;
             throw new ForbiddenError(`Forbidden! Permission '${permission}' required to access this resource`);
         }
 
         // Check if one of the or_permissions is available on User
         const orPermissions = this.getPermissions(context, 'or_permissions');
-        if (orPermissions.length && !orPermissions.some(p => permissionGrants.find(pg => pg.name === p))) {
+        if (orPermissions.length && !orPermissions.some(p => PermissionService.hasPermission(permissionGrants, p))) {
             throw new ForbiddenError(`Forbidden! At least one of the permissions '${orPermissions.join(', ')}' is required to access this resource`);
         }
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { RoleCode } from 'src/modules/permission/enums/role-code.enum';
 import { User } from '../models/user.model';
 import { UserCrudService } from '../providers/user-crud.service';
@@ -12,6 +12,7 @@ export interface ProvisionPersonUserInput {
     roleCode: RoleCode;
     departmentIds?: number[];
     fallbackUsername?: string;
+    skippedAutomationIds?: number[];
 }
 
 export interface ProvisionedUserAccount {
@@ -21,7 +22,10 @@ export interface ProvisionedUserAccount {
 
 @Injectable()
 export class UserAccountProvisioningService {
-    constructor(private readonly userCrudService: UserCrudService) {}
+    constructor(
+        @Inject(forwardRef(() => UserCrudService))
+        private readonly userCrudService: UserCrudService,
+    ) {}
 
     async createPersonUser(input: ProvisionPersonUserInput): Promise<ProvisionedUserAccount | null> {
         const username = this.buildUsername(input);
@@ -43,18 +47,15 @@ export class UserAccountProvisioningService {
             active: true,
             departmentIds: input.departmentIds,
             roleCodes: [input.roleCode],
+            skippedAutomationIds: input.skippedAutomationIds,
+            skipCaregiverProfileSync: input.roleCode === RoleCode.CAREGIVER,
         });
 
         return { user, tempPassword };
     }
 
     private buildUsername(input: ProvisionPersonUserInput): string | null {
-        const rawUsername =
-            input.email ||
-            input.phone ||
-            input.fallbackUsername;
-
-        return rawUsername ? rawUsername.trim().toLowerCase() : null;
+        return input.email ? input.email.trim().toLowerCase() : null;
     }
 
     private generateRandomPassword(): string {

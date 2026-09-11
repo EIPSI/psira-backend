@@ -1,4 +1,5 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
+import { SettingService } from "src/modules/setting/providers/setting.service";
 import { UserConnectionDto } from "src/modules/user/dto/user-connection.model";
 import { User } from "src/modules/user/models/user.model";
 import { applySearchQuery } from "src/shared/helpers/search.helper";
@@ -9,11 +10,17 @@ import { CaseManagerFilter } from "../dto/case-manager.filter";
 
 @Injectable()
 export class CaseManagerService {
+    constructor(private readonly settingService: SettingService) {}
 
-    getPatientCaseManagers(caseManagerFilter: CaseManagerFilter): Promise<UserConnectionDto> {
+    async getPatientCaseManagers(caseManagerFilter: CaseManagerFilter): Promise<UserConnectionDto> {
+        const assignableHierarchyRank = await this.getAssignableCaseManagerHierarchyRank();
 
         const query = User
-            .createQueryBuilder('caseManager');
+            .createQueryBuilder('caseManager')
+            .distinct(true)
+            .innerJoin('caseManager.roles', 'role', 'role.hierarchy <= :assignableHierarchyRank', {
+                assignableHierarchyRank,
+            });
 
         // apply global search
         if (caseManagerFilter.searchKeyword) {
@@ -61,7 +68,12 @@ export class CaseManagerService {
         return result.affected > 0;
     }
 
-    async assignPatientCaseManager(patientId: number, userId: number): Promise<boolean> {
+    async assignPatientCaseManager(
+        patientId: number,
+        userId: number,
+        assigningUserId: number,
+    ): Promise<boolean> {
+        await this.validateCaseManagerAssignable(userId, assigningUserId);
 
         const caseManager = await getManager()
             .createQueryBuilder()
@@ -84,4 +96,45 @@ export class CaseManagerService {
         return result ? true : false;
     }
 
+    private async validateCaseManagerAssignable(
+        userId: number,
+        assigningUserId: number,
+    ): Promise<void> {
+        const assigner = await User.findOne(assigningUserId, {
+            relations: ['roles'],
+        });
+        const assignerHierarchy = this.strongestHierarchy(assigner);
+        const assignableHierarchyRank = await this.getAssignableCaseManagerHierarchyRank();
+
+        const caseManager = await User.createQueryBuilder('user')
+            .innerJoinAndSelect('user.roles', 'role')
+            .where('user.id = :userId', { userId })
+            .getOne();
+
+        const caseManagerHierarchy = this.strongestHierarchy(caseManager);
+        if (
+            !caseManager ||
+            caseManagerHierarchy < assignerHierarchy ||
+            caseManagerHierarchy > assignableHierarchyRank
+        ) {
+            throw new BadRequestException(
+                'Only users at or below the configured hierarchy rank and at the same or lower hierarchy than the assigner can be assigned as case managers',
+            );
+        }
+    }
+
+    private async getAssignableCaseManagerHierarchyRank(): Promise<number> {
+        const value = await this.settingService.getKey(
+            'patientCaseManagerAssignableHierarchyRank',
+        );
+        const rank = Number(value);
+        return Number.isFinite(rank) ? rank : 0;
+    }
+
+    private strongestHierarchy(user?: User): number {
+        const hierarchies = (user?.roles || [])
+            .map(role => Number(role.hierarchy))
+            .filter(hierarchy => Number.isFinite(hierarchy));
+        return hierarchies.length ? Math.min(...hierarchies) : Number.MAX_SAFE_INTEGER;
+    }
 }

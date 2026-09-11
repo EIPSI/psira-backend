@@ -27,7 +27,7 @@ export class QuestionnaireBundleResolver {
     ) {}
 
     @Query(() => QuestionnaireBundle)
-    @UsePermission(PermissionEnum.VIEW_QUESTIONNAIRE_BUNDLES)
+    @UsePermission(PermissionEnum.QUESTIONNAIRE_BUNDLES_VIEW_DEPARTMENT)
     getQuestionnaireBundle(
         @Args('_id', { type: () => String })
         questionnaireBundleId: Types.ObjectId,
@@ -36,25 +36,26 @@ export class QuestionnaireBundleResolver {
     }
 
     @Query(() => QuestionnaireBundleConnection)
-    @UsePermission(PermissionEnum.VIEW_QUESTIONNAIRE_BUNDLES)
+    @UsePermission(PermissionEnum.QUESTIONNAIRE_BUNDLES_VIEW_DEPARTMENT)
     async getQuestionnaireBundles(
         @Args() query: QuestionniareBundleQuery,
         @Args('departmentIds', { type: () => [Number], nullable: true })
         departmentIds: number[],
+        @CurrentUser() currentUser: User,
     ) {
         query.sorting = query.sorting?.length
             ? query.sorting
             : [{ field: '_id', direction: SortDirection.DESC }];
 
         const result = await QuestionnaireBundleConnection.createFromPromise(
-            q => this.questionnaireBundleService.list(q, departmentIds),
+            q => this.questionnaireBundleService.list(q, departmentIds, currentUser),
             query,
         );
         return result;
     }
 
     @Mutation(() => QuestionnaireBundle)
-    @UsePermission(PermissionEnum.MANAGE_QUESTIONNAIRE_BUNDLES)
+    @UsePermission(PermissionEnum.QUESTIONNAIRE_BUNDLES_EDIT_DEPARTMENT)
     createQuestionnaireBundle(
         @Args('input') input: CreateQuestionnaireBundleInput,
         @CurrentUser() currentUser: User,
@@ -66,14 +67,17 @@ export class QuestionnaireBundleResolver {
     }
 
     @Mutation(() => QuestionnaireBundle)
-    @UsePermission(PermissionEnum.DELETE_QUESTIONNAIRE_BUNDLES)
+    @UsePermission(PermissionEnum.QUESTIONNAIRE_BUNDLES_DELETE_DEPARTMENT)
     deleteQuestionnaireBundle(@Args('_id', { type: () => String }) id: string) {
         return this.questionnaireBundleService.deleteQuestionnaireBundle(id);
     }
 
     @Mutation(() => QuestionnaireBundle)
-    @UsePermission(PermissionEnum.MANAGE_QUESTIONNAIRES)
-    updateQuestionnaireBundle(@Args('input') input: UpdateQuestionnaireBundleInput) {
-        return this.questionnaireBundleService.updateQuestionnaireBundle(input)
+    @UsePermission(PermissionEnum.QUESTIONNAIRES_EDIT_DEPARTMENT)
+    updateQuestionnaireBundle(
+        @Args('input') input: UpdateQuestionnaireBundleInput,
+        @CurrentUser() currentUser: User,
+    ) {
+        return this.questionnaireBundleService.updateQuestionnaireBundle(input, currentUser)
     }
 }

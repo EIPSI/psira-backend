@@ -15,6 +15,8 @@ import { PatientCaregiverResolver } from './resolvers/patient-caregiver.resolver
 import { PatientCaregiverService } from './services/patient.caregiver.service';
 import { PatientCaregiverInput } from './dtos/patient.caregiver.input';
 import { UserModule } from '../user/user.module';
+import { Patient } from '../patient/models/patient.model';
+import { EmergencyContact } from '../patient/models/emergency-contact.model';
 
 const guards = [GqlAuthGuard, PermissionGuard];
 @Module({
@@ -23,7 +25,9 @@ const guards = [GqlAuthGuard, PermissionGuard];
         NestjsQueryGraphQLModule.forFeature({
             imports: [NestjsQueryTypeOrmModule.forFeature([
                 Caregiver,
-                PatientCaregiver
+                PatientCaregiver,
+                Patient,
+                EmergencyContact
             ])],
             resolvers: [
                 {
@@ -35,7 +39,7 @@ const guards = [GqlAuthGuard, PermissionGuard];
                         defaultSort: [{ field: 'id', direction: SortDirection.DESC }],
                     },
                     create: { disabled: true },
-                    update: { decorators: [UsePermission(PermissionEnum.MANAGE_CAREGIVERS)] },
+                    update: { decorators: [UsePermission(PermissionEnum.CAREGIVERS_EDIT_DEPARTMENT)] },
                     delete: { disabled: true },
                 },
                 {
@@ -45,11 +49,11 @@ const guards = [GqlAuthGuard, PermissionGuard];
                     guards: guards,
                     read: {
                         defaultSort: [{ field: 'id', direction: SortDirection.DESC }],
-                        decorators: [UsePermission(PermissionEnum.VIEW_ALL_CAREGIVERS)],
+                        decorators: [UsePermission(PermissionEnum.CAREGIVERS_VIEW_ALL)],
                     },
                     create: { disabled: true },
-                    update: { decorators: [UsePermission(PermissionEnum.MANAGE_CAREGIVERS)] },
-                    delete: { decorators: [UsePermission(PermissionEnum.DELETE_CAREGIVERS)] },
+                    update: { decorators: [UsePermission(PermissionEnum.CAREGIVERS_EDIT_DEPARTMENT)] },
+                    delete: { decorators: [UsePermission(PermissionEnum.CAREGIVERS_DELETE_DEPARTMENT)] },
                 },
             ],
         }),

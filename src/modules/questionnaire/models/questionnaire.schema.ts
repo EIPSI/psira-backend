@@ -73,6 +73,10 @@ export class Questionnaire extends Document {
     @Prop()
     abbreviation: string;
 
+    @Field(() => [Number], { nullable: true })
+    @Prop({ type: [Number], default: [] })
+    departmentIds: number[];
+
     @Field(() => String, { nullable: true })
     @Prop()
     description: string;

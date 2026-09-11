@@ -7,6 +7,51 @@ import { AssessmentStatus } from '../enums/assessment-status.enum';
 import { QuestionnaireBundle } from './questionnaire-bundle.schema';
 
 @ObjectType()
+export class ResolvedQuestionnaire {
+    @Field(() => String)
+    occurrenceId: string;
+
+    @Field(() => String)
+    questionnaireId: Types.ObjectId | string;
+
+    @Field(() => String, { nullable: true })
+    sourceBundleId?: Types.ObjectId | string;
+
+    @Field(() => [String], { nullable: true })
+    path?: string[];
+
+    @Field(() => String, { nullable: true })
+    screenId?: string;
+
+    @Field(() => String, { nullable: true })
+    screenLabel?: string;
+
+    @Field(() => String, { nullable: true })
+    screenHeaderHtml?: string;
+
+    @Field(() => String, { nullable: true })
+    screenFooterHtml?: string;
+
+    @Field(() => String, { nullable: true })
+    bundleHeaderHtml?: string;
+
+    @Field(() => String, { nullable: true })
+    bundleNoticeHtml?: string;
+
+    @Field(() => String, { nullable: true })
+    questionnaireDisplayTitle?: string;
+
+    @Field(() => Boolean, { nullable: true })
+    showQuestionnaireTitle?: boolean;
+
+    @Field(() => Number, { nullable: true })
+    screenIndex?: number;
+
+    @Field(() => Number)
+    orderIndex: number;
+}
+
+@ObjectType()
 @Schema({ collection: 'assessments', timestamps: true })
 export class QuestionnaireAssessment extends Document {
     @Field(() => String)
@@ -31,6 +76,14 @@ export class QuestionnaireAssessment extends Document {
     @Field(() => [QuestionnaireBundle])
     @Prop({ type: [Types.ObjectId], ref: QuestionnaireBundle.name })
     questionnaireBundles: Types.ObjectId[] | QuestionnaireBundle[];
+
+    @Field(() => [Number], { nullable: true })
+    @Prop({ type: [Number], default: [] })
+    randomizationRuleIds: number[];
+
+    @Field(() => [ResolvedQuestionnaire], { nullable: true })
+    @Prop({ type: [Object], default: [] })
+    resolvedQuestionnaires: ResolvedQuestionnaire[];
 
     @Field(() => [Answer])
     @Prop({ type: [AnswerSchema] })

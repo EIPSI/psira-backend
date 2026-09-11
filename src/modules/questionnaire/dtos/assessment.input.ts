@@ -25,6 +25,9 @@ export class AnswerAssessmentInput {
     question: Types.ObjectId;
 
     @Field(() => String, { nullable: true })
+    occurrenceId?: string;
+
+    @Field(() => String, { nullable: true })
     textValue?: string;
 
     @Field({ nullable: true })

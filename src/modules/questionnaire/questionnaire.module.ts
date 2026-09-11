@@ -37,6 +37,9 @@ import {
 } from './models/questionnaire-bundle.schema';
 import { QuestionnaireBundleResolver } from './resolvers/questionnaire-bundle.resolver';
 import { QuestionnaireBundleService } from './services/questionnaire-bundle.service';
+import { QuestionnaireBundleResolutionService } from './services/questionnaire-bundle-resolution.service';
+import { UserModule } from '../user/user.module';
+import { NotificationModule } from '../notification/notification.module';
 
 const guards = [GqlAuthGuard, PermissionGuard]; 
 
@@ -100,6 +103,8 @@ const guards = [GqlAuthGuard, PermissionGuard];
                 },
             ],
         }),
+        UserModule,
+        NotificationModule,
     ],
     providers: [
         QuestionnaireService,
@@ -110,6 +115,7 @@ const guards = [GqlAuthGuard, PermissionGuard];
         AssessmentResolver,
         QuestionnaireBundleResolver,
         QuestionnaireBundleService,
+        QuestionnaireBundleResolutionService,
     ],
     exports: [QuestionnaireScriptService],
 })

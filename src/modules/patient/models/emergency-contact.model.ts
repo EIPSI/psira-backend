@@ -11,6 +11,7 @@ import {
     UpdateDateColumn,
 } from "typeorm";
 import { Patient } from "./patient.model";
+import { Caregiver } from "src/modules/caregiver/models/caregiver.model";
 
 @ObjectType()
 @KeySet(['id'])
@@ -52,6 +53,10 @@ export class EmergencyContact extends BaseEntity {
     @Column({ nullable: true })
     email: string;
 
+    @FilterableField(() => Int, { nullable: true })
+    @Column({ nullable: true, type: 'int' })
+    caregiverId?: number;
+
     @FilterableField()
     @CreateDateColumn()
     createdAt: Date;
@@ -66,5 +71,8 @@ export class EmergencyContact extends BaseEntity {
 
     @ManyToOne(() => Patient, patient => patient.emergencyContacts, { onDelete: 'CASCADE' })
     patient: Patient;
+
+    @ManyToOne(() => Caregiver, { nullable: true, onDelete: 'SET NULL' })
+    caregiver?: Caregiver;
 
 }

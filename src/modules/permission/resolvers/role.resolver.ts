@@ -33,10 +33,10 @@ export class RoleResolver extends CRUDResolver(Role, {
         defaultSort: [{ field: 'id', direction: SortDirection.DESC }],
         decorators: [
             UseOrPermissions([
-                PermissionEnum.VIEW_ROLES_PERMISSIONS,
-                PermissionEnum.MANAGE_ROLES_PERMISSIONS,
-                PermissionEnum.VIEW_USERS,
-                PermissionEnum.MANAGE_USERS,
+                PermissionEnum.ROLES_VIEW_ALL,
+                PermissionEnum.ROLES_EDIT_ALL,
+                PermissionEnum.USERS_VIEW_DEPARTMENT,
+                PermissionEnum.USERS_EDIT_DEPARTMENT,
             ]),
         ],
     },
@@ -49,7 +49,7 @@ export class RoleResolver extends CRUDResolver(Role, {
     }
 
     @Mutation(() => Role)
-    @UsePermission(PermissionEnum.MANAGE_ROLES_PERMISSIONS)
+    @UsePermission(PermissionEnum.ROLES_EDIT_ALL)
     async createOneRole(
         @Args('input', { type: () => CreateOneRoleInput })
         input: CreateOneRoleInput,
@@ -83,7 +83,7 @@ export class RoleResolver extends CRUDResolver(Role, {
     }
 
     @Mutation(() => Role)
-    @UsePermission(PermissionEnum.MANAGE_ROLES_PERMISSIONS)
+    @UsePermission(PermissionEnum.ROLES_EDIT_ALL)
     async updateOneRole(
         @Args('input', { type: () => UpdateOneRoleInput })
         input: UpdateOneRoleInput,
@@ -110,7 +110,7 @@ export class RoleResolver extends CRUDResolver(Role, {
     }
 
     @Mutation(() => Role)
-    @UsePermission(PermissionEnum.MANAGE_ROLES_PERMISSIONS)
+    @UsePermission(PermissionEnum.ROLES_EDIT_ALL)
     async deleteOneRole(
         @Args('input', { type: () => DeleteOneRoleInput })
         input: DeleteOneRoleInput,
@@ -125,7 +125,7 @@ export class RoleResolver extends CRUDResolver(Role, {
     }
 
     @Mutation(() => Role)
-    @UsePermission(PermissionEnum.MANAGE_ROLES_PERMISSIONS)
+    @UsePermission(PermissionEnum.ROLES_EDIT_ALL)
     async removePermissionsFromRole(
         @Args('input', { type: () => RemovePermissionsFromRoleInput })
         input: RemovePermissionsFromRoleInput,
@@ -149,7 +149,7 @@ export class RoleResolver extends CRUDResolver(Role, {
     }
 
     @Mutation(() => Role)
-    @UsePermission(PermissionEnum.MANAGE_ROLES_PERMISSIONS)
+    @UsePermission(PermissionEnum.ROLES_EDIT_ALL)
     async addPermissionsToRole(
         @Args('input', { type: () => AddPermissionsToRoleInput })
         input: AddPermissionsToRoleInput,

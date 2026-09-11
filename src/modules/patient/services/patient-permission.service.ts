@@ -23,7 +23,7 @@ export class PatientPermissionService {
      * Get the user's patient access scope
      */
     async getUserAccessScope(userId: number): Promise<UserAccessScope> {
-        if (await this.permissionService.userCan(userId, PermissionEnum.VIEW_ALL_PATIENTS)) {
+        if (await this.permissionService.userCan(userId, PermissionEnum.PATIENTS_VIEW_ALL)) {
             return { type: PatientAccessScope.ALL };
         }
 
@@ -33,15 +33,15 @@ export class PatientPermissionService {
         });
         const departmentIds = user ? user.departments.map(d => d.id) : [];
 
-        if (await this.permissionService.userCan(userId, PermissionEnum.VIEW_DEPARTMENT_PATIENTS)) {
+        if (await this.permissionService.userCan(userId, PermissionEnum.PATIENTS_VIEW_DEPARTMENT)) {
             return { type: PatientAccessScope.DEPARTMENT, departmentIds };
         }
 
-        if (await this.permissionService.userCan(userId, PermissionEnum.VIEW_ASSIGNED_PATIENTS)) {
+        if (await this.permissionService.userCan(userId, PermissionEnum.PATIENTS_VIEW_ASSIGNED)) {
             return { type: PatientAccessScope.ASSIGNED, userId, departmentIds };
         }
 
-        // Default: fall back to department access (VIEW_PATIENTS)
+        // Default: fall back to department access.
         return { type: PatientAccessScope.DEPARTMENT, departmentIds };
     }
 

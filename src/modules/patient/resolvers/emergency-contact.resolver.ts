@@ -5,7 +5,10 @@ import { PermissionGuard } from 'src/modules/permission/guards/permission.guard'
 import { EmergencyContact } from '../models/emergency-contact.model';
 import { QueryService, InjectQueryService } from '@nestjs-query/core';
 import { CreateOneInputType, CreateManyInputType } from '@nestjs-query/query-graphql';
-import { UseOrPermissions, UsePermission } from 'src/modules/permission/decorators/permission.decorator';
+import {
+    UseOrPermissions,
+    UsePermission,
+} from 'src/modules/permission/decorators/permission.decorator';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { EmergencyContactInput } from '../dto/emergency-contact.input';
 
@@ -18,7 +21,11 @@ export class CreateManyEmergencyContactsInput extends CreateManyInputType('emerg
 
 @Resolver(() => EmergencyContact)
 @UseGuards(GqlAuthGuard, PermissionGuard)
-@UseOrPermissions([PermissionEnum.VIEW_PATIENTS, PermissionEnum.VIEW_PATIENTS])
+@UseOrPermissions([
+    PermissionEnum.PATIENTS_VIEW_ALL,
+    PermissionEnum.PATIENTS_VIEW_DEPARTMENT,
+    PermissionEnum.PATIENTS_VIEW_ASSIGNED,
+])
 export class EmergencyContactResolver {
 
     constructor(
@@ -26,7 +33,11 @@ export class EmergencyContactResolver {
     ) { }
 
     @Mutation(() => EmergencyContact)
-    @UsePermission(PermissionEnum.MANAGE_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_EDIT_ALL,
+        PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
+        PermissionEnum.PATIENTS_EDIT_ASSIGNED,
+    ])
     async createOneEmergencyContact(@Args('input', { type: () => CreateOneEmergencyContactInput }) input: CreateOneEmergencyContactInput): Promise<EmergencyContact> {
 
         // delegate further actions to service
@@ -34,7 +45,11 @@ export class EmergencyContactResolver {
     }
 
     @Mutation(() => [EmergencyContact])
-    @UsePermission(PermissionEnum.MANAGE_PATIENTS)
+    @UseOrPermissions([
+        PermissionEnum.PATIENTS_EDIT_ALL,
+        PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
+        PermissionEnum.PATIENTS_EDIT_ASSIGNED,
+    ])
     async createManyEmergencyContacts(@Args('input', { type: () => CreateManyEmergencyContactsInput }) input: CreateManyEmergencyContactsInput): Promise<EmergencyContact[]> {
 
         // delegate further actions to service

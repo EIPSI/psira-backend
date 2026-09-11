@@ -4,6 +4,7 @@ import { join } from 'path';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './modules/user/user.module';
 import { configService } from './config/config.service';
+import { corsConfig } from './config/cors.config';
 import { AuthModule } from './modules/auth/auth.module';
 import { SharedModule } from './shared/shared.module';
 import { PermissionModule } from './modules/permission/permission.module';
@@ -18,20 +19,27 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { CaregiverModule } from './modules/caregiver/caregiver.module';
 import { ReportModule } from './modules/report/report.module';
 import { DisclaimerModule } from './modules/disclaimer/disclaimer.module';
-import { MailerModule } from '@nestjs-modules/mailer';
-import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { MailModule } from './modules/mail/mail.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { CalendarModule } from './modules/calendar/calendar.module';
+import { ClinicalSessionModule } from './modules/clinical-session/clinical-session.module';
+import { EvaluationSchemeModule } from './modules/evaluation-scheme/evaluation-scheme.module';
+import { RandomizationModule } from './modules/randomization/randomization.module';
+import { EvaluationAutomationModule } from './modules/evaluation-automation/evaluation-automation.module';
+import { TreatmentCycleModule } from './modules/treatment-cycle/treatment-cycle.module';
+import { NotificationModule } from './modules/notification/notification.module';
+import { InformedConsentModule } from './modules/informed-consent/informed-consent.module';
+import { LanguageModule } from './modules/language/language.module';
 
 @Module({
     imports: [
         ScheduleModule.forRoot(),
-        MailerModule.forRoot(configService.getMailerConfig()),
         MongooseModule.forRoot(configService.getMongoConnectionString(), {
             useFindAndModify: false,
         }),
         TypeOrmModule.forRoot(configService.getTypeOrmConfig()),
         GraphQLModule.forRoot({
+            cors: corsConfig,
             introspection: configService.isGraphqlPlaygroundEnabled(),
             playground: configService.isGraphqlPlaygroundEnabled(),
             autoSchemaFile: join(process.cwd(), 'src/schema/schema.gql'),
@@ -74,6 +82,15 @@ import { ScheduleModule } from '@nestjs/schedule';
         ReportModule,
         DisclaimerModule,
         MailModule,
+        CalendarModule,
+        ClinicalSessionModule,
+        EvaluationSchemeModule,
+        RandomizationModule,
+        EvaluationAutomationModule,
+        TreatmentCycleModule,
+        NotificationModule,
+        InformedConsentModule,
+        LanguageModule,
     ],
     controllers: [],
     providers: [],

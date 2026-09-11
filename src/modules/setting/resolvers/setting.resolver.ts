@@ -16,11 +16,17 @@ export class SettingResolver {
 
     @Query(() => SettingDto)
     async settings(): Promise<SettingDto> {
-        return this.settingService.get();
+        const settings = await this.settingService.get();
+        return {
+            ...settings,
+            googleCalendarClientSecret: settings.googleCalendarClientSecret
+                ? '********'
+                : '',
+        };
     }
 
     @Mutation(() => Boolean)
-    @UsePermission(PermissionEnum.MANAGE_SYSCONFIG)
+    @UsePermission(PermissionEnum.SYSTEM_EDIT_ALL)
     async updateSettings(
         @Args('input') input: UpdateSettingInput,
     ): Promise<boolean> {

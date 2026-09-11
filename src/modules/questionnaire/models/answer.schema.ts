@@ -6,9 +6,9 @@ import { AnsweredQuestions } from './questionnaire.schema';
 @ObjectType()
 @Schema({ timestamps: true })
 export class Answer extends Document {
-    @Field(() => String)
+    @Field(() => String, { nullable: true })
     @Prop()
-    _id: Types.ObjectId;
+    _id?: Types.ObjectId;
 
     @Field(() => String)
     @Prop({
@@ -16,6 +16,10 @@ export class Answer extends Document {
         ref: 'questionnaire_versions.questionGroups.questions',
     })
     question: Types.ObjectId;
+
+    @Field(() => String, { nullable: true })
+    @Prop()
+    occurrenceId?: string;
 
     @Field(() => Boolean, { nullable: true })
     @Prop()

@@ -9,6 +9,7 @@ import { PermissionGuard } from './guards/permission.guard';
 import { Permission } from './models/permission.model';
 import { Role } from './models/role.model';
 import { PermissionService } from './providers/permission.service';
+import { AuthorizationPolicyService } from './providers/authorization-policy.service';
 import { RoleCrudService } from './providers/role-crud.service';
 import { RoleResolver } from './resolvers/role.resolver';
 
@@ -42,7 +43,7 @@ export class RoleAuthorizer implements Authorizer<Role> {
                     guards: [GqlAuthGuard, PermissionGuard],
                     read: {
                         defaultSort: [{ field: 'id', direction: SortDirection.DESC }],
-                        decorators: [UsePermission(PermissionEnum.VIEW_ROLES_PERMISSIONS)]
+                        decorators: [UsePermission(PermissionEnum.ROLES_VIEW_ALL)]
                     },
                     create: { disabled: true },
                     update: { disabled: true },
@@ -54,6 +55,7 @@ export class RoleAuthorizer implements Authorizer<Role> {
     providers: [
         PermissionGuard,
         PermissionService,
+        AuthorizationPolicyService,
         RoleResolver,
         RoleCrudService,
         RoleAuthorizer,
@@ -61,6 +63,7 @@ export class RoleAuthorizer implements Authorizer<Role> {
     exports: [
         PermissionGuard,
         PermissionService,
+        AuthorizationPolicyService,
     ]
 })
 export class PermissionModule { }

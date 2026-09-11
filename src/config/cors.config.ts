@@ -16,7 +16,7 @@ export const corsConfig = {
 
         // local development
         'http://localhost',
-        /^(http\:\/\/localhost\:)/,
+        /^http:\/\/localhost:/,
     ],
 
     methods: [
