@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Assessment } from 'src/modules/assessment/models/assessment.model';
@@ -15,8 +16,7 @@ import { CalendarExternalEvent } from '../models/calendar-external-event.model';
 import { CalendarOccurrence } from '../models/calendar-occurrence.model';
 import { GoogleCalendarConnection } from '../models/google-calendar-connection.model';
 import { GoogleCalendarHttpService } from './google-calendar-http.service';
-
-const CryptoJS = require('crypto-js');
+import * as CryptoJS from 'crypto-js';
 
 interface GoogleTokenResponse {
     access_token: string;

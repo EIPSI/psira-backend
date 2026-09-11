@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { configService } from 'src/config/config.service';
-
-const nodemailer = require('nodemailer');
+import * as nodemailer from 'nodemailer';
 
 export interface SendMailOptions {
     to: string;
