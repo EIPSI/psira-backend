@@ -55,7 +55,7 @@ export class RoleResolver extends CRUDResolver(Role, {
         input: CreateOneRoleInput,
         @CurrentUser() currentUser: User,
     ): Promise<Role> {
-        const roleInput = input['role'] as RoleInput;
+        const roleInput = this.normalizeRoleInput(this.extractRoleInput(input));
 
         const exists = await Role.findOne({ name: roleInput.name });
 
@@ -79,7 +79,7 @@ export class RoleResolver extends CRUDResolver(Role, {
             );
         }
 
-        return this.service.createOne(input['role']);
+        return this.service.createOne(roleInput);
     }
 
     @Mutation(() => Role)
@@ -226,6 +226,29 @@ export class RoleResolver extends CRUDResolver(Role, {
         }
 
         return { role, permissions };
+    }
+
+    private extractRoleInput(input: CreateOneRoleInput | any): RoleInput {
+        return input?.role || input?.input?.role || input?.input || input;
+    }
+
+    private normalizeRoleInput(roleInput?: RoleInput): RoleInput {
+        const name = roleInput?.name?.trim();
+        const hierarchy = Number(roleInput?.hierarchy);
+
+        if (!name) {
+            throw new BadRequestException('Role name is required');
+        }
+
+        if (!Number.isFinite(hierarchy)) {
+            throw new BadRequestException('Role hierarchy is required');
+        }
+
+        return {
+            ...roleInput,
+            name,
+            hierarchy,
+        };
     }
 
     /**

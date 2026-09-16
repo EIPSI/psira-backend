@@ -4858,6 +4858,61 @@ export const defaultTranslationSeed = {
       "defaultText": "Welcome, {{name}}!"
     },
     {
+      "key": "departments.appliesToRoles",
+      "namespace": "departments",
+      "defaultText": "Applies to roles"
+    },
+    {
+      "key": "departments.createDepartment",
+      "namespace": "departments",
+      "defaultText": "Create department"
+    },
+    {
+      "key": "departments.defaultForRoles",
+      "namespace": "departments",
+      "defaultText": "Default for roles"
+    },
+    {
+      "key": "departments.departmentNameDescription",
+      "namespace": "departments",
+      "defaultText": "Department name"
+    },
+    {
+      "key": "departments.departmentNameValidation",
+      "namespace": "departments",
+      "defaultText": "Department name is required."
+    },
+    {
+      "key": "departments.rolesValidation",
+      "namespace": "departments",
+      "defaultText": "Select at least one role."
+    },
+    {
+      "key": "departments.selectRoles",
+      "namespace": "departments",
+      "defaultText": "Select roles"
+    },
+    {
+      "key": "patientStatuses.descriptionHelp",
+      "namespace": "patientStatuses",
+      "defaultText": "Optional description"
+    },
+    {
+      "key": "patientStatuses.duplicatePatientStatus",
+      "namespace": "patientStatuses",
+      "defaultText": "Duplicate patient status"
+    },
+    {
+      "key": "patientStatuses.nameDescription",
+      "namespace": "patientStatuses",
+      "defaultText": "Patient status name"
+    },
+    {
+      "key": "patientStatuses.nameValidation",
+      "namespace": "patientStatuses",
+      "defaultText": "Patient status name is required."
+    },
+    {
       "key": "patientStatuses.createPatientStatus",
       "namespace": "patientStatuses",
       "defaultText": "Create patient status"
@@ -7493,6 +7548,46 @@ export const defaultTranslationSeed = {
       "defaultText": "Updating report"
     },
     {
+      "key": "roles.createRole",
+      "namespace": "roles",
+      "defaultText": "Create role"
+    },
+    {
+      "key": "roles.duplicateRole",
+      "namespace": "roles",
+      "defaultText": "Duplicate role"
+    },
+    {
+      "key": "roles.hierarchyDescription",
+      "namespace": "roles",
+      "defaultText": "Role hierarchy"
+    },
+    {
+      "key": "roles.hierarchyValidation",
+      "namespace": "roles",
+      "defaultText": "Role hierarchy is required."
+    },
+    {
+      "key": "roles.nameDescription",
+      "namespace": "roles",
+      "defaultText": "Role name"
+    },
+    {
+      "key": "roles.nameValidation",
+      "namespace": "roles",
+      "defaultText": "Role name is required."
+    },
+    {
+      "key": "roles.saveRole",
+      "namespace": "roles",
+      "defaultText": "Save role"
+    },
+    {
+      "key": "roles.updateRole",
+      "namespace": "roles",
+      "defaultText": "Update role"
+    },
+    {
       "key": "roles.caregiver",
       "namespace": "roles",
       "defaultText": "Caregiver"
@@ -7501,6 +7596,16 @@ export const defaultTranslationSeed = {
       "key": "roles.creatingRole",
       "namespace": "roles",
       "defaultText": "Creating role"
+    },
+    {
+      "key": "roles.deleteRole",
+      "namespace": "roles",
+      "defaultText": "Delete role"
+    },
+    {
+      "key": "roles.editRole",
+      "namespace": "roles",
+      "defaultText": "Edit role"
     },
     {
       "key": "roles.deleteRoleConfirm",
@@ -9384,6 +9489,7 @@ export const defaultTranslationSeed = {
           "value": "value {{index}}"
         },
         "patientStatuses": {
+        "duplicatePatientStatus": "Duplicate patient status",
           "description": "Beschreibung",
           "name": "Patientenstatus",
           "nameDescription": "Enter the patient status name.",
@@ -10166,6 +10272,13 @@ export const defaultTranslationSeed = {
           "status": "Status"
         },
         "departments": {
+        "createDepartment": "Create department",
+        "departmentNameDescription": "Department name",
+        "departmentNameValidation": "Department name is required.",
+        "appliesToRoles": "Applies to roles",
+        "defaultForRoles": "Default for roles",
+        "selectRoles": "Select roles",
+        "rolesValidation": "Select at least one role.",
           "createdAt": "Erstellungsdatum",
           "description": "Beschreibung",
           "name": "Name"
@@ -10464,6 +10577,16 @@ export const defaultTranslationSeed = {
         "unableDeleteDepartment": "Unable to delete department"
       },
       "roles": {
+        "createRole": "Create role",
+        "editRole": "Edit role",
+        "deleteRole": "Delete role",
+        "duplicateRole": "Duplicate role",
+        "saveRole": "Save role",
+        "nameDescription": "Role name",
+        "nameValidation": "Role name is required.",
+        "hierarchyDescription": "Role hierarchy",
+        "hierarchyValidation": "Role hierarchy is required.",
+        "updateRole": "Update role",
         "patient": "Patient",
         "caregiver": "Caregiver",
         "therapist": "Therapist",
@@ -10957,6 +11080,7 @@ export const defaultTranslationSeed = {
         "unableSaveAssessmentType": "Unable to save assessment type"
       },
       "patientStatuses": {
+        "duplicatePatientStatus": "Duplicate patient status",
         "createPatientStatus": "Create patient status",
         "updatePatientStatus": "Update patient status",
         "submitPatientStatus": "Save patient status",
@@ -11445,6 +11569,13 @@ export const defaultTranslationSeed = {
         "unableLoadRandomizations": "Unable to load randomizations"
       },
       "departments": {
+        "createDepartment": "Create department",
+        "departmentNameDescription": "Department name",
+        "departmentNameValidation": "Department name is required.",
+        "appliesToRoles": "Applies to roles",
+        "defaultForRoles": "Default for roles",
+        "selectRoles": "Select roles",
+        "rolesValidation": "Select at least one role.",
         "departments": "Departments",
         "editDepartment": "Edit Department",
         "deleteDepartment": "Delete Department",
@@ -11458,6 +11589,16 @@ export const defaultTranslationSeed = {
         "unableLoadParticularDepartment": "Unable to load default Particular department"
       },
       "roles": {
+        "createRole": "Create role",
+        "editRole": "Edit role",
+        "deleteRole": "Delete role",
+        "duplicateRole": "Duplicate role",
+        "saveRole": "Save role",
+        "nameDescription": "Role name",
+        "nameValidation": "Role name is required.",
+        "hierarchyDescription": "Role hierarchy",
+        "hierarchyValidation": "Role hierarchy is required.",
+        "updateRole": "Update role",
         "roles": "Roles",
         "patient": "Patient",
         "caregiver": "Caregiver",
@@ -12861,6 +13002,7 @@ export const defaultTranslationSeed = {
         "unableSaveAssessmentType": "No se pudo guardar el tipo de evaluación"
       },
       "patientStatuses": {
+        "duplicatePatientStatus": "Duplicar estado de paciente",
         "createPatientStatus": "Crear estado de paciente",
         "updatePatientStatus": "Actualizar estado de paciente",
         "submitPatientStatus": "Guardar estado de paciente",
@@ -13349,6 +13491,13 @@ export const defaultTranslationSeed = {
         "unableLoadRandomizations": "No se pudieron cargar las randomizaciones"
       },
       "departments": {
+        "createDepartment": "Crear departamento",
+        "departmentNameDescription": "Nombre del departamento",
+        "departmentNameValidation": "El nombre del departamento es obligatorio.",
+        "appliesToRoles": "Aplica a roles",
+        "defaultForRoles": "Predeterminado para roles",
+        "selectRoles": "Seleccionar roles",
+        "rolesValidation": "Seleccioná al menos un rol.",
         "departments": "Departamentos",
         "editDepartment": "Editar Departamento",
         "deleteDepartment": "Eliminar Departamento",
@@ -13362,6 +13511,16 @@ export const defaultTranslationSeed = {
         "unableLoadParticularDepartment": "No se pudo cargar el departamento Particular por defecto"
       },
       "roles": {
+        "createRole": "Crear rol",
+        "editRole": "Editar rol",
+        "deleteRole": "Eliminar rol",
+        "duplicateRole": "Duplicar rol",
+        "saveRole": "Guardar rol",
+        "nameDescription": "Nombre del rol",
+        "nameValidation": "El nombre del rol es obligatorio.",
+        "hierarchyDescription": "Jerarquía del rol",
+        "hierarchyValidation": "La jerarquía del rol es obligatoria.",
+        "updateRole": "Actualizar rol",
         "roles": "Roles",
         "patient": "Paciente",
         "caregiver": "Cuidador",
@@ -15099,6 +15258,7 @@ export const defaultTranslationSeed = {
           "value": "value {{index}}"
         },
         "patientStatuses": {
+        "duplicatePatientStatus": "Duplicate patient status",
           "description": "Description",
           "name": "Patient Status Name",
           "nameDescription": "Enter the patient status name.",
@@ -15879,6 +16039,13 @@ export const defaultTranslationSeed = {
           "status": "Status"
         },
         "departments": {
+        "createDepartment": "Create department",
+        "departmentNameDescription": "Department name",
+        "departmentNameValidation": "Department name is required.",
+        "appliesToRoles": "Applies to roles",
+        "defaultForRoles": "Default for roles",
+        "selectRoles": "Select roles",
+        "rolesValidation": "Select at least one role.",
           "createdAt": "Created At",
           "description": "Description",
           "name": "Name"
@@ -16177,6 +16344,16 @@ export const defaultTranslationSeed = {
         "unableDeleteDepartment": "Unable to delete department"
       },
       "roles": {
+        "createRole": "Create role",
+        "editRole": "Edit role",
+        "deleteRole": "Delete role",
+        "duplicateRole": "Duplicate role",
+        "saveRole": "Save role",
+        "nameDescription": "Role name",
+        "nameValidation": "Role name is required.",
+        "hierarchyDescription": "Role hierarchy",
+        "hierarchyValidation": "Role hierarchy is required.",
+        "updateRole": "Update role",
         "patient": "Patient",
         "caregiver": "Caregiver",
         "therapist": "Therapist",
