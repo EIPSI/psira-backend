@@ -7,6 +7,7 @@ import { IsOptional, IsPhoneNumber } from 'src/shared';
 @InputType()
 export class CreateUserInput {
 
+  @IsOptional()
   @IsLowercase()
   @Field({ nullable: true })
   username?: string;

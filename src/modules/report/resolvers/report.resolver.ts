@@ -158,8 +158,8 @@ export class ReportResolver {
         @Args('input', { type: () => CreateOneReportInput })
         input: CreateOneReportInput,
     ): Promise<any> {
-        const caregiverInput = input['report'] as ReportInput;
-        return this.reportService.insert(caregiverInput);
+        const reportInput = this.extractReportInput(input);
+        return this.reportService.insert(reportInput);
     }
 
     @Mutation(() => Report)
@@ -168,7 +168,15 @@ export class ReportResolver {
         @Args('input', { type: () => UpdateOneReportInput })
         input: UpdateOneReportInput,
     ): Promise<any> {
-        return this.reportService.update(input);
+        return this.reportService.update(this.extractUpdateReportInput(input));
+    }
+
+    private extractReportInput(input: CreateOneReportInput | any): ReportInput {
+        return input?.report || input?.input?.report || input?.input || input;
+    }
+
+    private extractUpdateReportInput(input: UpdateOneReportInput | any): UpdateOneReportInput {
+        return input?.id || input?.update ? input : input?.input || input;
     }
 
     @Mutation(() => ReportDeleteResponse)

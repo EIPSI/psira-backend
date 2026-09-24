@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
@@ -27,6 +27,7 @@ import {
 
 @Injectable()
 export class QuestionnaireService {
+    private questionnaireIndexesReady: Promise<void>;
     constructor(
         @InjectModel(Questionnaire.name)
         private questionnaireModel: Model<Questionnaire>,
@@ -37,33 +38,48 @@ export class QuestionnaireService {
         private userDepartmentAccessService: UserDepartmentAccessService,
     ) {}
 
-    public async create(xlsForm: CreateQuestionnaireInput, currentUser: User) {
-        await this.validateDepartmentAccess(currentUser, xlsForm.departmentIds || []);
+    public async create(xlsForm: CreateQuestionnaireInput | any, currentUser: User) {
+        await this.ensureQuestionnaireVersionIndexes();
+        const questionnaireInput = this.extractQuestionnaireInput(xlsForm);
+        await this.validateDepartmentAccess(currentUser, questionnaireInput.departmentIds || []);
         const fileData: FileData[] = await this.readFileUpload(
-            await xlsForm.excelFile,
+            await this.extractQuestionnaireUpload(questionnaireInput),
         );
 
-        return this.createQuestionnaireFromFileData(fileData, xlsForm);
+        const questionnaire = await this.createQuestionnaireFromFileData(fileData, questionnaireInput);
+        questionnaire.versionRootId = questionnaire._id.toString();
+        questionnaire.versionNumber = 1;
+        questionnaire.replacedById = null;
+        return questionnaire.save();
     }
 
     public async updateOne(
         _id: Types.ObjectId,
-        xlsForm: UpdateQuestionnaireInput,
+        xlsForm: UpdateQuestionnaireInput | any,
         currentUser: User,
     ) {
-        await this.validateDepartmentAccess(currentUser, xlsForm.departmentIds || []);
-        const version = await this.questionnaireModel.findById(_id)
+        await this.ensureQuestionnaireVersionIndexes();
+        const questionnaireInput = this.extractQuestionnaireInput(xlsForm) as UpdateQuestionnaireInput;
+        await this.validateDepartmentAccess(currentUser, questionnaireInput.departmentIds || []);
+        const version = await this.questionnaireModel.findById(_id);
 
-        Object.entries(xlsForm).forEach(
+        if (!version) {
+            throw new NotFoundException('Questionnaire not found');
+        }
+
+        const excelFile = await this.extractOptionalQuestionnaireUpload(questionnaireInput);
+        if (excelFile) {
+            return this.createNewVersionFromUpload(version, questionnaireInput, excelFile);
+        }
+
+        const { excelFile: ignoredFile, ...metadata } = questionnaireInput as any;
+        Object.entries(metadata).forEach(
             ([key, value]) => (version[key] = value),
         );
+        if (!version.versionRootId) version.versionRootId = version._id.toString();
+        if (!version.versionNumber) version.versionNumber = 1;
 
-        return (await version.save())
-            .populate({
-                path: 'questionnaire',
-                model: Questionnaire.name,
-            })
-            .execPopulate();
+        return version.save();
     }
 
     public async getById(questionnaireId: Types.ObjectId) {
@@ -136,6 +152,15 @@ export class QuestionnaireService {
                 departmentIds: {
                     $last: '$departmentIds'
                 },
+                versionRootId: {
+                    $last: '$versionRootId'
+                },
+                versionNumber: {
+                    $last: '$versionNumber'
+                },
+                replacedById: {
+                    $last: '$replacedById'
+                },
                 zombie: {
                     $last: '$zombie'
                 }
@@ -173,11 +198,12 @@ export class QuestionnaireService {
     private async createQuestionnaireFromFileData(
         fileData: FileData[],
         questionnaireInput: CreateQuestionnaireInput,
+        options: { skipUniqueCheck?: boolean; deferSave?: boolean } = {},
     ) {
         const xlsFormParsed: XLSForm = new XLSForm(fileData);
         const settings = xlsFormParsed.getSettings();
 
-        if (
+        if (!options.skipUniqueCheck &&
             await this.findUniqueQuestionnaire(
                 questionnaireInput.language,
                 settings.form_id,
@@ -235,7 +261,89 @@ export class QuestionnaireService {
             }
         }
 
-        return createdQuestionnaire.save();
+        return options.deferSave ? createdQuestionnaire : createdQuestionnaire.save();
+    }
+
+    private async createNewVersionFromUpload(
+        currentVersion: Questionnaire,
+        questionnaireInput: UpdateQuestionnaireInput,
+        excelFile: FileUpload,
+    ): Promise<Questionnaire> {
+        if (currentVersion.zombie) {
+            throw new BadRequestException('Cannot create a new version from an old questionnaire version');
+        }
+
+        const fileData = await this.readFileUpload(excelFile);
+        const xlsFormParsed = new XLSForm(fileData);
+        const settings = xlsFormParsed.getSettings();
+        const language = questionnaireInput.language || currentVersion.language;
+
+        if (settings.form_id !== currentVersion.abbreviation || language !== currentVersion.language) {
+            throw new BadRequestException(
+                'New questionnaire versions must keep the same language and XLS form_id.',
+            );
+        }
+
+        const rootId = currentVersion.versionRootId || currentVersion._id.toString();
+        const latestVersion = await this.questionnaireModel
+            .findOne({ versionRootId: rootId })
+            .sort({ versionNumber: -1 })
+            .exec();
+        const nextVersionNumber = (latestVersion?.versionNumber || currentVersion.versionNumber || 1) + 1;
+
+        const newVersion = await this.createQuestionnaireFromFileData(
+            fileData,
+            {
+                ...questionnaireInput,
+                language,
+                status: questionnaireInput.status || currentVersion.status,
+            } as CreateQuestionnaireInput,
+            { skipUniqueCheck: true, deferSave: true },
+        );
+        newVersion.versionRootId = rootId;
+        newVersion.versionNumber = nextVersionNumber;
+        newVersion.replacedById = null;
+        newVersion.zombie = false;
+
+        currentVersion.zombie = true;
+        currentVersion.replacedById = newVersion._id.toString();
+        if (!currentVersion.versionRootId) currentVersion.versionRootId = rootId;
+        if (!currentVersion.versionNumber) currentVersion.versionNumber = 1;
+        await currentVersion.save();
+
+        try {
+            return await newVersion.save();
+        } catch (error) {
+            currentVersion.zombie = false;
+            currentVersion.replacedById = null;
+            await currentVersion.save();
+            throw error;
+        }
+    }
+
+    private async ensureQuestionnaireVersionIndexes(): Promise<void> {
+        if (!this.questionnaireIndexesReady) {
+            this.questionnaireIndexesReady = (async () => {
+                try {
+                    await this.questionnaireModel.collection.dropIndex('language_1_abbreviation_1');
+                } catch (error) {
+                    if (error?.codeName !== 'IndexNotFound') throw error;
+                }
+                await this.questionnaireModel.collection.createIndex(
+                    { language: 1, abbreviation: 1 },
+                    {
+                        unique: true,
+                        partialFilterExpression: { zombie: false },
+                        name: 'language_1_abbreviation_1',
+                    },
+                );
+                await this.questionnaireModel.collection.createIndex(
+                    { versionRootId: 1, versionNumber: -1 },
+                    { name: 'versionRootId_1_versionNumber_-1' },
+                );
+            })();
+        }
+        return this.questionnaireIndexesReady;
     }
 
     private async validateDepartmentAccess(
@@ -261,17 +369,40 @@ export class QuestionnaireService {
         }
     }
 
+    private extractQuestionnaireInput(input: CreateQuestionnaireInput | any): CreateQuestionnaireInput {
+        return input?.xlsForm || input?.input?.xlsForm || input?.input || input;
+    }
+
+    private async extractQuestionnaireUpload(input: CreateQuestionnaireInput | any): Promise<FileUpload> {
+        return input?.excelFile || input?.xlsForm || input?.file || input;
+    }
+
+    private async extractOptionalQuestionnaireUpload(input: CreateQuestionnaireInput | any): Promise<FileUpload | undefined> {
+        const upload = input?.excelFile || input?.file;
+        if (!upload) return undefined;
+        return upload;
+    }
+
     private readFileUpload(xlsForm: FileUpload): Promise<FileData[]> {
-        return new Promise(resolve => {
+        if (!xlsForm || typeof xlsForm.createReadStream !== 'function') {
+            throw new Error('Questionnaire file is required');
+        }
+
+        return new Promise((resolve, reject) => {
             const stream = xlsForm.createReadStream();
             const chunks = [];
 
             stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+            stream.on('error', reject);
             stream.on('end', () => {
-                const fileData = xlsx.parse(Buffer.concat(chunks), {
-                    type: 'buffer',
-                }) as FileData[];
-                resolve(fileData);
+                try {
+                    const fileData = xlsx.parse(Buffer.concat(chunks), {
+                        type: 'buffer',
+                    }) as FileData[];
+                    resolve(fileData);
+                } catch (error) {
+                    reject(error);
+                }
             });
         });
     }

@@ -149,7 +149,7 @@ export class PatientResolver {
         input: CreateOnePatientInput,
         @CurrentUser() currentUser: User,
     ): Promise<Patient> {
-        const patientInput = input['patient'] as CreatePatientInput;
+        const patientInput = this.extractPatientInput(input);
 
         if (!patientInput.departmentIds || patientInput.departmentIds.length === 0) {
             throw new BadRequestException('Please select atleast one(1) Department for patient');
@@ -244,6 +244,10 @@ export class PatientResolver {
         }
 
         return this.service.createOne(patientInput);
+    }
+
+    private extractPatientInput(input: CreateOnePatientInput | any): CreatePatientInput {
+        return input?.patient || input?.input?.patient || input?.input || input;
     }
 
     @Mutation(() => Patient)

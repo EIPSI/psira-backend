@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { join } from 'path';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -10,7 +10,6 @@ import { SharedModule } from './shared/shared.module';
 import { PermissionModule } from './modules/permission/permission.module';
 import { PatientModule } from './modules/patient/patient.module';
 import { GraphQLError } from 'graphql';
-import { graphqlUploadExpress } from 'graphql-upload';
 import { QuestionnaireModule } from './modules/questionnaire/questionnaire.module';
 import { AssessmentModule } from './modules/assessment/assessment.module';
 import { SettingModule } from './modules/setting/setting.module';
@@ -95,8 +94,4 @@ import { LanguageModule } from './modules/language/language.module';
     controllers: [],
     providers: [],
 })
-export class AppModule implements NestModule {
-    configure(consumer: MiddlewareConsumer) {
-        consumer.apply(graphqlUploadExpress()).forRoutes('graphql');
-    }
-}
+export class AppModule {}

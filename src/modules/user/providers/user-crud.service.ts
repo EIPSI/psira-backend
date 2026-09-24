@@ -22,7 +22,8 @@ export class UserCrudService extends TypeOrmQueryService<User> {
     private readonly logger = new Logger('UserCrudService');
 
     constructor(
-        @InjectRepository(User) repo: Repository<User>,
+        @InjectRepository(User)
+        private readonly userRepository: Repository<User>,
         @InjectRepository(Patient)
         private readonly patientRepository: Repository<Patient>,
         @InjectRepository(Caregiver)
@@ -31,7 +32,7 @@ export class UserCrudService extends TypeOrmQueryService<User> {
         private readonly moduleRef: ModuleRef,
     ) {
         // pass the use soft delete option to the service.
-        super(repo);
+        super(userRepository);
     }
 
     async createOne(input: CreateUserInput): Promise<User> {
@@ -41,6 +42,7 @@ export class UserCrudService extends TypeOrmQueryService<User> {
 
         input.email = input.email.trim().toLowerCase();
         input.username = input.email;
+        await this.releaseSoftDeletedUsername(input.username);
 
         // Check duplicate username exists
         const exists = await super.query({
@@ -103,6 +105,7 @@ export class UserCrudService extends TypeOrmQueryService<User> {
         if (update.email) {
             update.email = update.email.trim().toLowerCase();
             update.username = update.email;
+            await this.releaseSoftDeletedUsername(update.username, Number(id));
         }
 
         if (!!update.username) {
@@ -185,14 +188,61 @@ export class UserCrudService extends TypeOrmQueryService<User> {
             );
         }
 
-        const user = await super.deleteOne(id)
-        return !!user;
+        return this.userRepository.manager.transaction(async manager => {
+            const user = await manager.getRepository(User).findOne(id);
+            if (user?.username) {
+                await manager.getRepository(User).update(id, {
+                    username: this.buildDeletedUsername(id),
+                });
+            }
+
+            const userResult = await manager.getRepository(User).softDelete(id);
+
+            await manager.getRepository(Patient).update(
+                { userId: id },
+                { active: false, deleted: true },
+            );
+            await manager.getRepository(Patient).softDelete({ userId: id });
+            await manager.getRepository(Caregiver).softDelete({ userId: id });
+
+            return !!userResult.affected;
+        });
     }
 
     passwordChangeRequired(user: User): boolean {
         return user.passwordExpiresAt
             ? moment().isSameOrAfter(user.passwordExpiresAt)
             : true;
+    }
+
+
+    private async releaseSoftDeletedUsername(username: string, excludeUserId?: number): Promise<void> {
+        if (!username) {
+            return;
+        }
+
+        const query = this.userRepository
+            .createQueryBuilder('user')
+            .withDeleted()
+            .where('LOWER(user.username) = LOWER(:username)', { username })
+            .andWhere('user.deletedAt IS NOT NULL');
+
+        if (excludeUserId) {
+            query.andWhere('user.id != :excludeUserId', { excludeUserId });
+        }
+
+        const deletedUser = await query.getOne();
+        if (!deletedUser) {
+            return;
+        }
+
+        await this.userRepository.update(deletedUser.id, {
+            username: this.buildDeletedUsername(deletedUser.id),
+        });
+    }
+
+    private buildDeletedUsername(userId: number): string {
+        return `deleted-user-${userId}-${Date.now()}`;
     }
 
     private async syncPersonProfilesForRoles(user: User, options: { skipCaregiver?: boolean } = {}): Promise<void> {

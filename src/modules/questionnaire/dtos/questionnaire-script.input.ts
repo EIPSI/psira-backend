@@ -3,7 +3,6 @@ import {
     UpdateOneInputType,
 } from '@nestjs-query/query-graphql';
 import { Field, InputType, Int, OmitType } from '@nestjs/graphql';
-import { Exclude } from 'class-transformer';
 import { GraphQLUpload, FileUpload } from 'graphql-upload';
 import { QuestionnaireScript } from '../models/questionnaire-script.model';
 
@@ -15,9 +14,8 @@ export class CreateQuestionnaireScriptInput {
     @Field(() => String)
     name: string;
 
-    @Field(() => GraphQLUpload)
-    @Exclude()
-    scriptText: Promise<FileUpload>;
+    @Field(() => GraphQLUpload, { nullable: true })
+    scriptText?: FileUpload;
 
     @Field(() => String, { nullable: true })
     creator: string;
@@ -38,8 +36,7 @@ export class UpdateQuestionnaireScriptFields {
     name?: string;
 
     @Field(() => GraphQLUpload, { nullable: true })
-    @Exclude()
-    scriptText?: Promise<FileUpload>;
+    scriptText?: FileUpload;
 
     @Field(() => String, { nullable: true })
     creator?: string;
