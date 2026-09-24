@@ -25,6 +25,7 @@ import {
 } from '../dtos/questionnaire-scripts.args';
 import { QuestionnaireScript } from '../models/questionnaire-script.model';
 import { QuestionnaireScriptService } from '../services/questionnaire-script.service';
+import { GraphQLUpload, FileUpload } from 'graphql-upload';
 
 @ObjectType()
 class QuestionnaireScriptDeleteResponse extends PartialType(
@@ -55,17 +56,21 @@ export class QuestionnaireScriptsResolver {
     @UsePermission(PermissionEnum.QUESTIONNAIRES_EDIT_DEPARTMENT)
     createNewQuestionnaireScript(
         @Args('input') input: CreateQuestionnaireScriptInput,
+        @Args('scriptText', { type: () => GraphQLUpload })
+        scriptText: FileUpload,
     ): any {
-        return this.questionnaireScriptService.createNewScript(input);
+        return this.questionnaireScriptService.createNewScript({ ...input, scriptText });
     }
 
     @Mutation(() => QuestionnaireScript)
     @UsePermission(PermissionEnum.QUESTIONNAIRES_EDIT_DEPARTMENT)
     updateOneQuestionnaireScript(
         @Args('input') input: UpdateQuestionnaireScriptInput,
+        @Args('scriptText', { type: () => GraphQLUpload, nullable: true })
+        scriptText?: FileUpload,
     ): Promise<QuestionnaireScript> {
         return this.questionnaireScriptService.updateQuestionnaireScripts(
-            input,
+            scriptText ? { ...input, update: { ...input.update, scriptText } } : input,
         );
     }
 

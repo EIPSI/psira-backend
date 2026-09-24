@@ -16,6 +16,7 @@ import { QueryArgsType } from '@nestjs-query/query-graphql';
 import { SortDirection } from '@nestjs-query/core';
 import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
 import { User } from 'src/modules/user/models/user.model';
+import { GraphQLUpload, FileUpload } from 'graphql-upload';
 
 @ArgsType()
 export class QuestionniareQuery extends QueryArgsType(Questionnaire) {}
@@ -66,9 +67,11 @@ export class QuestionnaireResolver {
     async createQuestionnaire(
         @Args('xlsForm', { type: () => CreateQuestionnaireInput })
         xlsForm: CreateQuestionnaireInput,
+        @Args('excelFile', { type: () => GraphQLUpload, nullable: true })
+        excelFile: FileUpload,
         @CurrentUser() currentUser: User,
     ): Promise<Questionnaire> {
-        return this.questionnaireService.create(xlsForm, currentUser);
+        return this.questionnaireService.create({ ...xlsForm, excelFile }, currentUser);
     }
 
     @Mutation(() => Questionnaire)
@@ -79,9 +82,11 @@ export class QuestionnaireResolver {
 
         @Args('xlsForm', { type: () => UpdateQuestionnaireInput })
         xlsForm: UpdateQuestionnaireInput,
+        @Args('excelFile', { type: () => GraphQLUpload, nullable: true })
+        excelFile: FileUpload,
         @CurrentUser() currentUser: User,
     ): Promise<Questionnaire> {
-        return this.questionnaireService.updateOne(id, xlsForm, currentUser);
+        return this.questionnaireService.updateOne(id, { ...xlsForm, excelFile }, currentUser);
     }
 
     @Mutation(() => Questionnaire)

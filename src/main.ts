@@ -5,6 +5,7 @@ import { corsConfig } from './config/cors.config';
 import { GqlBadRequestHandler } from './shared/exception/gql-bad-request.handler';
 import { configService } from './config/config.service';
 import { GqlUnauthorizedHandler } from './shared/exception/gql-unauthorized.handler';
+import { graphqlUploadExpress } from 'graphql-upload';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
@@ -14,6 +15,7 @@ async function bootstrap() {
     const logger = new Logger('bootstrap');
 
     app.enableCors(corsConfig);
+    app.use('/graphql', graphqlUploadExpress());
     app.useGlobalFilters(new GqlBadRequestHandler());
     app.useGlobalFilters(new GqlUnauthorizedHandler());
     app.useGlobalPipes(new ValidationPipe({ forbidUnknownValues: false }));

@@ -88,7 +88,10 @@ export class UserCrudResolver extends CRUDResolver(User, {
             };
         }
 
-        query.filter = mergeFilter(query.filter, departmentFilter);
+        query.filter = mergeFilter(
+            mergeFilter(query.filter, departmentFilter),
+            { deletedAt: { is: null } },
+        );
 
         return UserConnection.createFromPromise(
             q => this.service.query(q),
@@ -123,7 +126,14 @@ export class UserCrudResolver extends CRUDResolver(User, {
             }
         }
 
-        const [user] = await this.service.query({ filter: { id: { eq: Number(id) } } });
+        const [user] = await this.service.query({
+            filter: {
+                and: [
+                    { id: { eq: Number(id) } },
+                    { deletedAt: { is: null } },
+                ],
+            },
+        });
         return user;
     }
 
@@ -139,7 +149,7 @@ export class UserCrudResolver extends CRUDResolver(User, {
         @CurrentUser() currentUser: User,
     ): Promise<User> {
         // Validar departamentos si se proporcionan
-        const userInput = input['user'] as any;
+        const userInput = this.extractUserInput(input);
         if (userInput.departmentIds && userInput.departmentIds.length > 0) {
             const canAccess = await this.userDepartmentAccessService.canAccessDepartments(
                 currentUser.id,
@@ -154,7 +164,11 @@ export class UserCrudResolver extends CRUDResolver(User, {
         }
 
         // delegate to service
-        return this.service.createOne(input['user']);
+        return this.service.createOne(userInput);
+    }
+
+    private extractUserInput(input: CreateOneUserInput | any): CreateUserInput {
+        return input?.user || input?.input?.user || input?.input || input;
     }
 
     @Mutation(() => User)

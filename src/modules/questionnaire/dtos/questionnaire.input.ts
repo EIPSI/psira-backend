@@ -1,5 +1,4 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { Exclude } from 'class-transformer';
 import { GraphQLUpload, FileUpload } from 'graphql-upload';
 import { QuestionnaireStatus } from '../models/questionnaire.schema';
 
@@ -40,6 +39,9 @@ class SharedQuestionnaireInput {
 export class UpdateQuestionnaireInput extends SharedQuestionnaireInput {
     @Field(() => String, { nullable: false })
     name: string;
+
+    @Field(() => GraphQLUpload, { nullable: true })
+    excelFile?: FileUpload;
 }
 
 @InputType()
@@ -47,7 +49,6 @@ export class CreateQuestionnaireInput extends SharedQuestionnaireInput {
     @Field(() => String, { nullable: true })
     name: string;
 
-    @Field(() => GraphQLUpload)
-    @Exclude()
-    excelFile: Promise<FileUpload>;
+    @Field(() => GraphQLUpload, { nullable: true })
+    excelFile?: FileUpload;
 }

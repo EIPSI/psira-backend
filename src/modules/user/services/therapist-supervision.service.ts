@@ -17,7 +17,8 @@ export class TherapistSupervisionService {
             .innerJoin('therapist.roles', 'role', 'role.code = :roleCode', { roleCode: RoleCode.THERAPIST })
             .leftJoinAndSelect('therapist.roles', 'roles')
             .leftJoinAndSelect('therapist.departments', 'departments')
-            .leftJoinAndSelect('therapist.permissions', 'permissions');
+            .leftJoinAndSelect('therapist.permissions', 'permissions')
+            .andWhere('therapist.deletedAt IS NULL');
 
         if (filter.searchKeyword) {
             applySearchQuery(query, filter.searchKeyword, User.searchable);
@@ -48,7 +49,8 @@ export class TherapistSupervisionService {
             .innerJoin('supervisor.roles', 'role', 'role.code = :roleCode', { roleCode: RoleCode.SUPERVISOR })
             .leftJoinAndSelect('supervisor.roles', 'roles')
             .leftJoinAndSelect('supervisor.departments', 'departments')
-            .leftJoinAndSelect('supervisor.permissions', 'permissions');
+            .leftJoinAndSelect('supervisor.permissions', 'permissions')
+            .andWhere('supervisor.deletedAt IS NULL');
 
         if (filter.searchKeyword) {
             applySearchQuery(query, filter.searchKeyword, User.searchable);

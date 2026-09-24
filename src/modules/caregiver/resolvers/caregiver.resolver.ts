@@ -1,4 +1,4 @@
-import { CreateOneInputType, QueryArgsType } from "@nestjs-query/query-graphql";
+import { CreateOneInputType, DeleteOneInputType, QueryArgsType } from "@nestjs-query/query-graphql";
 import { UseGuards } from "@nestjs/common";
 import { Args, ArgsType, Resolver, Query, InputType, Mutation } from "@nestjs/graphql";
 import { GqlAuthGuard } from "src/modules/auth/auth.guard";
@@ -7,7 +7,7 @@ import { Caregiver } from "../models/caregiver.model";
 import { CaregiverService } from "../services/caregiver.service";
 import { SortDirection } from '@nestjs-query/core';
 import { PermissionEnum } from "src/modules/permission/enums/permission.enum";
-import { UsePermission } from "src/modules/permission/decorators/permission.decorator";
+import { UseOrPermissions, UsePermission } from "src/modules/permission/decorators/permission.decorator";
 import { CaregiverInput } from "../dtos/caregiver.input";
 
 
@@ -17,6 +17,8 @@ class CaregiverQuery extends QueryArgsType(Caregiver) { }
 const CaregiverConnection = CaregiverQuery.ConnectionType;
 @InputType()
 export class CreateOneCaregiverInput extends CreateOneInputType('caregiver', CaregiverInput) { }
+@InputType()
+export class DeleteOneCaregiverInput extends DeleteOneInputType(Caregiver) { }
 
 @Resolver(() => Caregiver)
 @UseGuards(GqlAuthGuard, PermissionGuard)
@@ -54,5 +56,15 @@ export class CaregiverResolver {
         }
 
     }
+    @Mutation(() => Caregiver)
+    @UseOrPermissions([
+        PermissionEnum.CAREGIVERS_DELETE_ALL,
+        PermissionEnum.CAREGIVERS_DELETE_DEPARTMENT,
+        PermissionEnum.CAREGIVERS_DELETE_ASSIGNED,
+    ])
+    async deleteOneCaregiver(@Args('input', { type: () => DeleteOneCaregiverInput }) input: DeleteOneCaregiverInput): Promise<Caregiver> {
+        return this.caregiverService.deleteOne(Number(input.id));
+    }
+
 }
 

@@ -118,9 +118,11 @@ export class QuestionnaireScriptService {
         if (!questionnaireScript)
             throw new NotFoundException('Questionnaire script not found!');
 
-        const cleanedReportIds = [...new Set(reportIds)];
+        const cleanedReportIds = [...new Set(reportIds || questionnaireScript.reports?.map(report => report.id) || [])];
 
-        const reports = await Report.find({ id: In(cleanedReportIds) });
+        const reports = cleanedReportIds.length
+            ? await Report.find({ id: In(cleanedReportIds) })
+            : [];
 
         if (reports.length !== cleanedReportIds.length)
             throw new NotFoundException(
@@ -147,13 +149,42 @@ export class QuestionnaireScriptService {
 
     private async readFileUpload(fileData): Promise<any> {
         const file = await fileData;
-        return new Promise(resolve => {
+        if (!file || typeof file.createReadStream !== 'function') {
+            throw new Error('Questionnaire script file is required');
+        }
+
+        return new Promise((resolve, reject) => {
             const stream = file.createReadStream();
             const chunks = [];
             stream.on('data', (chunk: Buffer) => chunks.push(chunk));
-            stream.on('end', () =>
-                resolve(Buffer.concat(chunks).toString('utf-8')),
-            );
+            stream.on('error', reject);
+            stream.on('end', () => {
+                try {
+                    const buffer = Buffer.concat(chunks);
+                    if (this.shouldStoreAsBase64(buffer, file)) {
+                        resolve(JSON.stringify({
+                            encoding: 'base64',
+                            filename: file.filename,
+                            mimetype: file.mimetype,
+                            content: buffer.toString('base64'),
+                        }));
+                        return;
+                    }
+                    resolve(buffer.toString('utf-8'));
+                } catch (error) {
+                    reject(error);
+                }
+            });
         });
+    }
+
+    private shouldStoreAsBase64(buffer: Buffer, file: { filename?: string; mimetype?: string }): boolean {
+        const filename = file?.filename?.toLowerCase() || '';
+        const mimetype = file?.mimetype?.toLowerCase() || '';
+        return buffer.includes(0) ||
+            filename.endsWith('.xlsx') ||
+            filename.endsWith('.xls') ||
+            mimetype.includes('spreadsheet') ||
+            mimetype.includes('excel');
     }
 }

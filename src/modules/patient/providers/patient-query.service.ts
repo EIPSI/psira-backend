@@ -7,7 +7,7 @@ import { CreatePatientInput } from '../dto/create-patient.input';
 import { User } from 'src/modules/user/models/user.model';
 import { RoleCode } from 'src/modules/permission/enums/role-code.enum';
 import { PatientAuthorizer } from '../authorizers/patient.authorizer';
-import { Inject, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, NotFoundException } from '@nestjs/common';
 import { QuestionnaireAssessmentService } from 'src/modules/questionnaire/services/questionnaire-assessment.service';
 import { QuestionnaireAssessment } from 'src/modules/questionnaire/models/questionnaire-assessment.schema';
 import { IAnswerMap } from 'src/modules/questionnaire/models/answer.schema';
@@ -72,6 +72,7 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
     }
 
     async createOne(input: CreatePatientInput): Promise<Patient> {
+        this.validatePatientAccountEmail(input);
         const patient = await super.createOne(input);
 
         // Handle department assignment (existing logic)
@@ -92,9 +93,20 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
             );
         }
 
-        await this.createPatientUser(patient, input);
+        try {
+            await this.createPatientUser(patient, input);
+        } catch (error) {
+            await this.repo.delete(patient.id);
+            throw error;
+        }
 
         return patient;
+    }
+
+    private validatePatientAccountEmail(input: CreatePatientInput): void {
+        if (!input.email?.trim()) {
+            throw new BadRequestException('Patient email is required to create the linked user account.');
+        }
     }
 
     private async createPatientUser(patient: Patient, input: CreatePatientInput): Promise<void> {
@@ -118,9 +130,8 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
             await this.repo.update(patient.id, { userId: account.user.id });
             patient.userId = account.user.id;
         } catch (error) {
-            console.error(
-                'Failed to create user for patient:',
-                error,
+            throw new BadRequestException(
+                `Failed to create user for patient: ${error?.message || error}`,
             );
         }
     }
@@ -151,153 +162,19 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
         const patient = await this.repo.findOneOrFail(id);
 
         await this.repo.manager.transaction(async manager => {
-            await manager.query(
-                `
-                UPDATE clinical_session_resource resource
-                SET "assessmentId" = NULL
-                WHERE resource."assessmentId" IN (
-                    SELECT assessment.id
-                    FROM assessment
-                    WHERE assessment."patientId" = $1
-                )
-                OR resource."clinicalSessionId" IN (
-                    SELECT session.id
-                    FROM clinical_session session
-                    WHERE session."patientId" = $1
-                )
-                OR resource."schemeApplicationId" IN (
-                    SELECT application.id
-                    FROM clinical_session_scheme_application application
-                    WHERE application."patientId" = $1
-                )
-                `,
-                [id],
+            await manager.getRepository(Patient).update(
+                id,
+                { active: false, deleted: true },
+            );
+            await manager.getRepository(Patient).softDelete(id);
+            await manager.getRepository(Assessment).update(
+                { patientId: id },
+                { deleted: true },
             );
 
-            await manager.query(
-                `
-                DELETE FROM assessment
-                WHERE "patientId" = $1
-                OR "calendarOccurrenceId" IN (
-                    SELECT occurrence.id
-                    FROM calendar_occurrence occurrence
-                    WHERE occurrence."patientId" = $1
-                )
-                OR "clinicalSessionId" IN (
-                    SELECT session.id
-                    FROM clinical_session session
-                    WHERE session."patientId" = $1
-                )
-                OR "clinicalSessionResourceId" IN (
-                    SELECT resource.id
-                    FROM clinical_session_resource resource
-                    INNER JOIN clinical_session session
-                        ON session.id = resource."clinicalSessionId"
-                    WHERE session."patientId" = $1
-                )
-                OR "schemeAssignmentId" IN (
-                    SELECT assignment.id
-                    FROM evaluation_scheme_assignment assignment
-                    WHERE assignment."patientId" = $1
-                )
-                OR "schemeApplicationId" IN (
-                    SELECT application.id
-                    FROM clinical_session_scheme_application application
-                    WHERE application."patientId" = $1
-                )
-                `,
-                [id],
-            );
-
-            await manager.query(
-                `
-                DELETE FROM clinical_session_resource
-                WHERE "clinicalSessionId" IN (
-                    SELECT session.id
-                    FROM clinical_session session
-                    WHERE session."patientId" = $1
-                )
-                OR "schemeApplicationId" IN (
-                    SELECT application.id
-                    FROM clinical_session_scheme_application application
-                    WHERE application."patientId" = $1
-                )
-                `,
-                [id],
-            );
-
-            await manager.query(
-                `
-                DELETE FROM clinical_session_follow_up_version
-                WHERE "clinicalSessionId" IN (
-                    SELECT session.id
-                    FROM clinical_session session
-                    WHERE session."patientId" = $1
-                )
-                `,
-                [id],
-            );
-
-            await manager.query(
-                `
-                DELETE FROM clinical_session_scheme_application
-                WHERE "patientId" = $1
-                OR "startClinicalSessionId" IN (
-                    SELECT session.id
-                    FROM clinical_session session
-                    WHERE session."patientId" = $1
-                )
-                OR "stoppedAtClinicalSessionId" IN (
-                    SELECT session.id
-                    FROM clinical_session session
-                    WHERE session."patientId" = $1
-                )
-                `,
-                [id],
-            );
-
-            await manager.query(
-                `
-                DELETE FROM clinical_session
-                WHERE "patientId" = $1
-                OR "calendarOccurrenceId" IN (
-                    SELECT occurrence.id
-                    FROM calendar_occurrence occurrence
-                    WHERE occurrence."patientId" = $1
-                )
-                `,
-                [id],
-            );
-
-            await manager.query(
-                `
-                DELETE FROM calendar_external_event
-                WHERE "occurrenceId" IN (
-                    SELECT occurrence.id
-                    FROM calendar_occurrence occurrence
-                    WHERE occurrence."patientId" = $1
-                )
-                `,
-                [id],
-            );
-
-            await manager.query(
-                `
-                DELETE FROM calendar_occurrence
-                WHERE "patientId" = $1
-                `,
-                [id],
-            );
-
-            await manager.query(
-                `
-                DELETE FROM evaluation_scheme_assignment
-                WHERE "patientId" = $1
-                `,
-                [id],
-            );
-
-            await manager.delete(Patient, id);
+            if (patient.userId) {
+                await manager.getRepository(User).softDelete(patient.userId);
+            }
         });
 
         return patient;
@@ -329,6 +206,7 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
     }
 
     async createMany(input: CreatePatientInput[]): Promise<Patient[]> {
+        input.forEach(patientInput => this.validatePatientAccountEmail(patientInput));
         const patients = await super.createMany(input);
 
         for (let i = 0; i < patients.length; i++) {
@@ -351,7 +229,12 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
                 );
             }
 
-            await this.createPatientUser(patient, patientInput);
+            try {
+                await this.createPatientUser(patient, patientInput);
+            } catch (error) {
+                await this.repo.delete(patient.id);
+                throw error;
+            }
         }
 
         return patients;

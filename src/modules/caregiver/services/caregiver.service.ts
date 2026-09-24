@@ -9,6 +9,7 @@ import { Patient } from "src/modules/patient/models/patient.model";
 import { EmergencyContact } from "src/modules/patient/models/emergency-contact.model";
 import { RoleCode } from "src/modules/permission/enums/role-code.enum";
 import { UserAccountProvisioningService } from "src/modules/user/services/user-account-provisioning.service";
+import { User } from "src/modules/user/models/user.model";
 @Injectable()
 export class CaregiverService extends TypeOrmQueryService<Caregiver> {
 
@@ -23,6 +24,19 @@ export class CaregiverService extends TypeOrmQueryService<Caregiver> {
         private readonly userAccountProvisioningService: UserAccountProvisioningService,
     ) {
         super(repo, { useSoftDelete: true });
+    }
+
+    async deleteOne(id: number): Promise<Caregiver> {
+        const caregiver = await this.repo.findOneOrFail(id);
+
+        await this.repo.manager.transaction(async manager => {
+            if (caregiver.userId) {
+                await manager.getRepository(User).softDelete(caregiver.userId);
+            }
+            await manager.getRepository(Caregiver).softDelete(id);
+        });
+
+        return caregiver;
     }
 
     async insert(caregiver: CaregiverInput) {

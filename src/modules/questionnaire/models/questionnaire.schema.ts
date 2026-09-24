@@ -9,6 +9,7 @@ import { FilterableField } from '@nestjs-query/query-graphql';
 export enum QuestionnaireStatus {
     DRAFT = 'DRAFT',
     PUBLISHED = 'PUBLISHED',
+    ARCHIVED = 'ARCHIVED',
     PRIVATE = 'PRIVATE',
 }
 
@@ -73,6 +74,18 @@ export class Questionnaire extends Document {
     @Prop()
     abbreviation: string;
 
+    @FilterableField(() => String, { nullable: true })
+    @Prop()
+    versionRootId?: string;
+
+    @FilterableField(() => Number, { nullable: true })
+    @Prop({ default: 1 })
+    versionNumber?: number;
+
+    @FilterableField(() => String, { nullable: true })
+    @Prop()
+    replacedById?: string;
+
     @Field(() => [Number], { nullable: true })
     @Prop({ type: [Number], default: [] })
     departmentIds: number[];
@@ -96,7 +109,7 @@ export class Questionnaire extends Document {
 
 export const QuestionnaireSchema = SchemaFactory.createForClass(
     Questionnaire,
-).index({ language: 1, abbreviation: 1 }, { unique: true });
+).index({ versionRootId: 1, versionNumber: -1 });
 
 interface IQuestion {
     _id: Types.ObjectId;
