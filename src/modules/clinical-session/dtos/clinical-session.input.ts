@@ -167,6 +167,9 @@ export class UpdateClinicalSessionInput {
 
     @Field(() => ClinicalSessionModality, { nullable: true })
     modality?: ClinicalSessionModality;
+
+    @Field(() => Boolean, { nullable: true })
+    propagateFuture?: boolean;
 }
 
 @InputType()

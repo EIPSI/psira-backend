@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Assessment } from 'src/modules/assessment/models/assessment.model';
@@ -25,6 +25,8 @@ import { formatEmailAddress } from 'src/shared';
 
 @Injectable()
 export class SendMailService {
+    private readonly logger = new Logger('SendMailService');
+
     constructor(
         private questionnaireAssessmentService: QuestionnaireAssessmentService,
         private mailerService: MailerService,
@@ -463,8 +465,12 @@ export class SendMailService {
      */
     async sendWelcomeEmail(user: User, tempPassword: string): Promise<boolean> {
         try {
-            if (!await this.notificationsEnabled()) return true;
+            if (!await this.notificationsEnabled()) {
+                this.logger.warn(`Welcome email skipped for user ${user.id}: notifications are disabled.`);
+                return true;
+            }
             if (!user.email) {
+                this.logger.warn(`Welcome email skipped for user ${user.id}: user has no email.`);
                 return true;
             }
 
@@ -475,6 +481,7 @@ export class SendMailService {
             });
 
             if (!configuration?.mailTemplate) {
+                this.logger.warn(`Welcome email skipped for user ${user.id}: no active USER_CREATED mail configuration matched this user.`);
                 await this.notificationDispatchService.recordLog({
                     channel: NotificationChannel.EMAIL,
                     event: NotificationEvent.USER_CREATED,
@@ -529,6 +536,7 @@ export class SendMailService {
                 subject: mailTemplate.subject,
                 html: html,
             });
+            this.logger.log(`Welcome email sent to user ${user.id} <${user.email}>.`);
 
             await this.notificationDispatchService.recordLog({
                 channel: NotificationChannel.EMAIL,
@@ -542,6 +550,7 @@ export class SendMailService {
             });
             return true;
         } catch (error) {
+            this.logger.error(`Welcome email failed for user ${user.id} <${user.email}>: ${error?.message || error}`);
             await this.notificationDispatchService.recordLog({
                 channel: NotificationChannel.EMAIL,
                 event: NotificationEvent.USER_CREATED,

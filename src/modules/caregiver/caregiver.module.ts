@@ -6,7 +6,7 @@ import { PermissionGuard } from 'src/modules/permission/guards/permission.guard'
 import { Caregiver } from './models/caregiver.model';
 import { CaregiverService } from './services/caregiver.service';
 import { SortDirection } from '@nestjs-query/core';
-import { UsePermission } from 'src/modules/permission/decorators/permission.decorator';
+import { UseOrPermissions } from 'src/modules/permission/decorators/permission.decorator';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { PatientCaregiver } from './models/patient-caregiver.model';
 import { CaregiverResolver } from './resolvers/caregiver.resolver';
@@ -35,11 +35,9 @@ const guards = [GqlAuthGuard, PermissionGuard];
                     EntityClass: Caregiver,
                     CreateDTOClass: CaregiverInput,
                     guards: guards,
-                    read: {
-                        defaultSort: [{ field: 'id', direction: SortDirection.DESC }],
-                    },
+                    read: { disabled: true },
                     create: { disabled: true },
-                    update: { decorators: [UsePermission(PermissionEnum.CAREGIVERS_EDIT_DEPARTMENT)] },
+                    update: { decorators: [UseOrPermissions([PermissionEnum.CAREGIVERS_EDIT_DEPARTMENT, PermissionEnum.CAREGIVERS_EDIT_ASSIGNED])] },
                     delete: { disabled: true },
                 },
                 {
@@ -47,13 +45,10 @@ const guards = [GqlAuthGuard, PermissionGuard];
                     EntityClass: PatientCaregiver,
                     CreateDTOClass: PatientCaregiverInput,
                     guards: guards,
-                    read: {
-                        defaultSort: [{ field: 'id', direction: SortDirection.DESC }],
-                        decorators: [UsePermission(PermissionEnum.CAREGIVERS_VIEW_ALL)],
-                    },
+                    read: { disabled: true },
                     create: { disabled: true },
-                    update: { decorators: [UsePermission(PermissionEnum.CAREGIVERS_EDIT_DEPARTMENT)] },
-                    delete: { decorators: [UsePermission(PermissionEnum.CAREGIVERS_DELETE_DEPARTMENT)] },
+                    update: { decorators: [UseOrPermissions([PermissionEnum.CAREGIVERS_EDIT_DEPARTMENT, PermissionEnum.CAREGIVERS_EDIT_ASSIGNED])] },
+                    delete: { decorators: [UseOrPermissions([PermissionEnum.CAREGIVERS_DELETE_DEPARTMENT, PermissionEnum.CAREGIVERS_DELETE_ASSIGNED])] },
                 },
             ],
         }),

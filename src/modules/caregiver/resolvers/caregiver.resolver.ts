@@ -7,8 +7,12 @@ import { Caregiver } from "../models/caregiver.model";
 import { CaregiverService } from "../services/caregiver.service";
 import { SortDirection } from '@nestjs-query/core';
 import { PermissionEnum } from "src/modules/permission/enums/permission.enum";
-import { UseOrPermissions, UsePermission } from "src/modules/permission/decorators/permission.decorator";
+import { UseOrPermissions } from "src/modules/permission/decorators/permission.decorator";
 import { CaregiverInput } from "../dtos/caregiver.input";
+import { CurrentUser } from "src/modules/auth/auth-user.decorator";
+import { User } from "src/modules/user/models/user.model";
+import { PermissionService } from "src/modules/permission/providers/permission.service";
+import { RoleCode } from "src/modules/permission/enums/role-code.enum";
 
 
 @ArgsType()
@@ -28,24 +32,49 @@ export class CaregiverResolver {
 
     ) { }
 
-    @UsePermission(PermissionEnum.PATIENTS_VIEW_DEPARTMENT)
-    @Query(() => [CaregiverConnection])
+    @UseOrPermissions([
+        PermissionEnum.CAREGIVERS_VIEW_ALL,
+        PermissionEnum.CAREGIVERS_VIEW_DEPARTMENT,
+        PermissionEnum.CAREGIVERS_VIEW_ASSIGNED,
+    ])
+    @Query(() => CaregiverConnection)
     async caregivers(
         @Args({ type: () => CaregiverQuery }) query: CaregiverQuery,
+        @CurrentUser() currentUser: User,
     ): Promise<any> {
         query.sorting = query.sorting?.length
             ? query.sorting
             : [{ field: 'id', direction: SortDirection.DESC }];
+
+        const roleCodes = (currentUser?.roles || []).map(role => role.code);
+        const hasAdministrativeRole = roleCodes.some(roleCode =>
+            [RoleCode.SUPER_ADMIN, RoleCode.DEPARTMENT_ADMIN, RoleCode.SUPERVISOR].includes(roleCode as RoleCode),
+        );
+        const canViewBroadScope =
+            hasAdministrativeRole && (
+                await PermissionService.userCan(currentUser.id, PermissionEnum.CAREGIVERS_VIEW_ALL) ||
+                await PermissionService.userCan(currentUser.id, PermissionEnum.CAREGIVERS_VIEW_DEPARTMENT)
+            );
+
+        if (canViewBroadScope) {
+            return CaregiverConnection.createFromPromise(
+                (q) => this.caregiverService.query(q),
+                query,
+                (q) => this.caregiverService.count(q),
+
+            );
+        }
+
         return CaregiverConnection.createFromPromise(
-            (q) => this.caregiverService.query(q),
+            (q) => this.caregiverService.queryAssignedToCaseManager(q, currentUser.id),
             query,
-            (q) => this.caregiverService.count(q),
+            (q) => this.caregiverService.countAssignedToCaseManager(query.filter as any, currentUser.id),
 
         );
     }
 
     @Mutation(() => Caregiver)
-    @UsePermission(PermissionEnum.CAREGIVERS_EDIT_DEPARTMENT)
+    @UseOrPermissions([PermissionEnum.CAREGIVERS_EDIT_DEPARTMENT, PermissionEnum.CAREGIVERS_CREATE_ASSIGNED])
     async createOneCaregiver(@Args('input', { type: () => CreateOneCaregiverInput }) input: CreateOneCaregiverInput): Promise<Caregiver> {
         try {
             const caregiverInput = input['caregiver'] as CaregiverInput;

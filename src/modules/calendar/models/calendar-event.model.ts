@@ -61,6 +61,9 @@ export class CalendarEvent {
     @Field(() => [Int], { nullable: true })
     responsibleUserIds?: number[];
 
+    @Field(() => [User], { nullable: true })
+    responsibleUsers?: User[];
+
     @Field(() => Int, { nullable: true })
     clinicalSessionId?: number;
 

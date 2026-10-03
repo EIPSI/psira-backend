@@ -1,7 +1,7 @@
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
-import { UsePermission } from 'src/modules/permission/decorators/permission.decorator';
+import { UseOrPermissions, UsePermission } from 'src/modules/permission/decorators/permission.decorator';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { PermissionGuard } from 'src/modules/permission/guards/permission.guard';
 import {
@@ -19,7 +19,7 @@ export class ClinicalSessionCancellationReasonResolver {
     ) {}
 
     @Query(() => [ClinicalSessionCancellationReason])
-    @UsePermission(PermissionEnum.CLINICAL_VIEW_DEPARTMENT)
+    @UseOrPermissions([PermissionEnum.CLINICAL_VIEW_DEPARTMENT, PermissionEnum.CLINICAL_VIEW_ASSIGNED])
     clinicalSessionCancellationReasons(
         @Args('parentId', { type: () => Int, nullable: true }) parentId?: number,
         @Args('includeInactive', { type: () => Boolean, nullable: true }) includeInactive?: boolean,

@@ -159,6 +159,7 @@ export class CalendarEventService {
             therapistId: session.therapistId,
             supervisorId: session.supervisorId,
             responsibleUserIds: (session.responsibleUsers || []).map(user => user.id),
+            responsibleUsers: session.responsibleUsers || [],
             clinicalSessionId: session.id,
             sessionKind: session.sessionKind,
             sessionNumber: session.sessionNumber || session.cancelledSessionNumber,

@@ -13,4 +13,7 @@ export class CaseManagerFilter extends PaginationArgs {
     @Field(() => Int, { nullable: true })
     caseManagerId?: number;
 
+    @Field(() => [Int], { nullable: true })
+    departmentIds?: number[];
+
 }
