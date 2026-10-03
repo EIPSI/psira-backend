@@ -149,13 +149,7 @@ export class CaseManagerService {
             throw new BadRequestException('Patient must belong to at least one department to assign a case manager');
         }
 
-        const assignableRoleCodes = await this.getAssignableCaseManagerRoleCodes();
-        const allowSuperAdmin = assignableRoleCodes.includes(RoleCode.SUPER_ADMIN);
         const user = await User.findOne(userId, { relations: ['roles', 'departments'] });
-        if (allowSuperAdmin && user?.roles?.some(role => role.code === RoleCode.SUPER_ADMIN)) {
-            return;
-        }
-
         const sharedDepartment = user?.departments?.some(department => patientDepartmentIds.includes(department.id));
         if (!sharedDepartment) {
             throw new BadRequestException('Case manager must belong to one of the patient departments');

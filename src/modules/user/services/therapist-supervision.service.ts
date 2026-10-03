@@ -48,6 +48,15 @@ export class TherapistSupervisionService {
             }
         }
 
+        if (!filter.supervisorId && filter.departmentIds?.length) {
+            query.innerJoin(
+                'therapist.departments',
+                'requestedDepartment',
+                'requestedDepartment.id IN (:...requestedDepartmentIds)',
+                { requestedDepartmentIds: filter.departmentIds },
+            );
+        }
+
         return paginate(query, filter, 'therapist.id');
     }
 
@@ -79,6 +88,15 @@ export class TherapistSupervisionService {
                     departmentIds,
                 });
             }
+        }
+
+        if (!filter.therapistId && filter.departmentIds?.length) {
+            query.innerJoin(
+                'supervisor.departments',
+                'requestedDepartment',
+                'requestedDepartment.id IN (:...requestedDepartmentIds)',
+                { requestedDepartmentIds: filter.departmentIds },
+            );
         }
 
         return paginate(query, filter, 'supervisor.id');

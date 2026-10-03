@@ -21,9 +21,11 @@ export class ChangePasswordService {
         input: ChangeOwnPasswordInput,
         user: User,
     ): Promise<boolean> {
+        const targetUser = await User.findOneOrFail(user.id);
+
         const validateCurrentPassword = await Hash.compare(
             input.currentPassword,
-            user.password,
+            targetUser.password,
         );
 
         // validate current password
@@ -41,7 +43,7 @@ export class ChangePasswordService {
         }
 
         // Delegate to other operations changePasswordCore
-        return this.changePasswordCore(input, user);
+        return this.changePasswordCore(input, targetUser);
     }
 
     async changeOtherUserPassword(
@@ -119,10 +121,16 @@ export class ChangePasswordService {
             .getMany();
 
         for (const prevPassword of prevPasswords) {
-            const isSamePassword = await Hash.compare(
-                input.newPassword,
-                prevPassword.password,
-            );
+            let isSamePassword = false;
+            try {
+                isSamePassword = await Hash.compare(
+                    input.newPassword,
+                    prevPassword.password,
+                );
+            } catch (error) {
+                if (error?.message !== 'Unsupported hash algorithm for hashed value') throw error;
+                continue;
+            }
 
             // throw exception if password recently used
             if (isSamePassword) {

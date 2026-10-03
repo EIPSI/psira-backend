@@ -110,8 +110,9 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
     }
 
     private async createPatientUser(patient: Patient, input: CreatePatientInput): Promise<void> {
+        let account;
         try {
-            const account = await this.userAccountProvisioningService.createPersonUser({
+            account = await this.userAccountProvisioningService.createPersonUser({
                 email: input.email,
                 phone: input.phone,
                 firstName: input.firstName,
@@ -130,6 +131,12 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
             await this.repo.update(patient.id, { userId: account.user.id });
             patient.userId = account.user.id;
         } catch (error) {
+            if (account?.user?.id) {
+                await User.update(account.user.id, {
+                    username: `deleted-user-${account.user.id}-${Date.now()}`,
+                });
+                await this.repo.manager.getRepository(User).softDelete(account.user.id);
+            }
             throw new BadRequestException(
                 `Failed to create user for patient: ${error?.message || error}`,
             );

@@ -5,33 +5,34 @@ import { InternalServerErrorException } from '@nestjs/common';
 export class Hash {
 
     static async make(value: string, algorithm = 'argon2'): Promise<string> {
-
-        // Is bcrypt Hash
-        if (algorithm.localeCompare('argon2') === 0) {
+        if (algorithm === 'argon2') {
             return Hash.argon2Hash(value);
         }
 
-        // Is Argon2 hash
-        if (algorithm.localeCompare('bcrypt')) {
+        if (algorithm === 'bcrypt') {
             return Hash.brcryptHash(value);
         }
 
         throw new InternalServerErrorException('Unsupported hash algorithm provided. Supported: argon2, bcrypt');
     }
 
-    static async compare(value: string, hashedValue: string): Promise<boolean> {
+    static isSupportedHash(hashedValue?: string): boolean {
+        return typeof hashedValue === 'string' && (
+            hashedValue.startsWith('$argon2') ||
+            /^\$2[aby]\$/.test(hashedValue)
+        );
+    }
 
-        // Is bcrypt Hash
-        if (hashedValue.startsWith('$2a')) {
-            return Hash.brcryptVerify(value, hashedValue);
+    static async compare(value: string, hashedValue: string): Promise<boolean> {
+        if (!Hash.isSupportedHash(hashedValue)) {
+            throw new InternalServerErrorException('Unsupported hash algorithm for hashed value');
         }
 
-        // Is Argon2 hash
         if (hashedValue.startsWith('$argon2')) {
             return Hash.argon2Verify(value, hashedValue);
         }
 
-        throw new InternalServerErrorException('Unsupported hash algorithm for hashed value');
+        return Hash.brcryptVerify(value, hashedValue);
     }
 
     static async brcryptHash(value: string, saltRounds = 10): Promise<string> {
