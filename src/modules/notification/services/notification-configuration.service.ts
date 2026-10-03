@@ -125,6 +125,10 @@ export class NotificationConfigurationService {
             { group: 'Consentimiento informado', label: 'Resolución', token: '{{consent.resolution}}', description: 'Resolución final de la respuesta.' },
             { group: 'Consentimiento informado', label: 'Link de pendientes', token: '{{consent.pendingLink}}', description: 'Acceso a la pantalla de consentimientos pendientes.' },
             { group: 'Consentimiento informado', label: 'Link de respuesta', token: '{{consent.link}}', description: 'Acceso directo para responder consentimientos pendientes.' },
+            { group: 'Solicitud de asignación', label: 'Tipo', token: '{{assignment.roleLabel}}', description: 'Rol solicitado, por ejemplo administrador de caso o supervisor.' },
+            { group: 'Solicitud de asignación', label: 'Solicitante', token: '{{assignment.requesterName}}', description: 'Nombre de quien creó la solicitud.' },
+            { group: 'Solicitud de asignación', label: 'Caso o terapeuta', token: '{{assignment.targetName}}', description: 'Paciente o terapeuta asociado a la solicitud.' },
+            { group: 'Solicitud de asignación', label: 'Link', token: '{{assignment.link}}', description: 'Acceso al panel para aceptar o rechazar la solicitud.' },
         ];
     }
 

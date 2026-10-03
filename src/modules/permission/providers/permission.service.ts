@@ -187,9 +187,12 @@ export class PermissionService implements OnModuleInit {
             ],
             [RoleCode.THERAPIST]: [
                 PermissionEnum.PATIENTS_VIEW_ASSIGNED,
+                PermissionEnum.PATIENTS_CREATE_ASSIGNED,
                 PermissionEnum.PATIENTS_EDIT_ASSIGNED,
                 PermissionEnum.CAREGIVERS_VIEW_ASSIGNED,
+                PermissionEnum.CAREGIVERS_CREATE_ASSIGNED,
                 PermissionEnum.CAREGIVERS_EDIT_ASSIGNED,
+                PermissionEnum.CAREGIVERS_DELETE_ASSIGNED,
                 PermissionEnum.CLINICAL_VIEW_ASSIGNED,
                 PermissionEnum.CLINICAL_CREATE_ASSIGNED,
                 PermissionEnum.CLINICAL_EDIT_ASSIGNED,

@@ -45,6 +45,7 @@ import { PermissionModule } from '../permission/permission.module';
 import { PatientPermissionService } from './services/patient-permission.service';
 import { UserModule } from '../user/user.module';
 import { SettingModule } from '../setting/setting.module';
+import { AssignmentRequestModule } from '../assignment-request/assignment-request.module';
 
 const guards = [GqlAuthGuard, PermissionGuard];
 @Module({
@@ -52,6 +53,7 @@ const guards = [GqlAuthGuard, PermissionGuard];
         UserModule,
         PermissionModule,
         SettingModule,
+        AssignmentRequestModule,
         QuestionnaireModule,
         MailModule,
         NestjsQueryGraphQLModule.forFeature({

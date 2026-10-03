@@ -52,7 +52,7 @@ export class SettingService {
         key: K,
         value: SettingDto[K],
     ): Promise<boolean> {
-        const stringValue = value.toString();
+        const stringValue = this.stringifyValue(value);
 
         const storedSetting = await Setting.findOne({ key });
 
@@ -60,7 +60,7 @@ export class SettingService {
         if (storedSetting) {
             // Update only if value has changed
             if (storedSetting.value !== stringValue) {
-                storedSetting.value = value.toString();
+                storedSetting.value = stringValue;
                 await storedSetting.save();
             }
 
@@ -70,7 +70,7 @@ export class SettingService {
         // Create new setting entry
         const setting = new Setting();
         setting.key = key;
-        setting.value = value.toString();
+        setting.value = stringValue;
 
         await setting.save();
 
@@ -89,6 +89,19 @@ export class SettingService {
             return (Number.isNaN(parsed) ? null : parsed) as SettingDto[K];
         }
 
+        if (Array.isArray(defaultValue)) {
+            try {
+                const parsed = JSON.parse(value);
+                return (Array.isArray(parsed) ? parsed : value.split(',').filter(Boolean)) as SettingDto[K];
+            } catch (_) {
+                return value.split(',').filter(Boolean) as SettingDto[K];
+            }
+        }
+
         return value as SettingDto[K];
+    }
+
+    private stringifyValue(value: any): string {
+        return Array.isArray(value) ? JSON.stringify(value) : value.toString();
     }
 }

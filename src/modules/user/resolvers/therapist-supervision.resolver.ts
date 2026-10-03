@@ -48,8 +48,9 @@ export class TherapistSupervisionResolver {
     assignTherapistSupervisor(
         @Args({ name: 'therapistId', type: () => Int }) therapistId: number,
         @Args({ name: 'supervisorId', type: () => Int }) supervisorId: number,
+        @CurrentUser() currentUser: User,
     ): Promise<boolean> {
-        return this.therapistSupervisionService.assignTherapistSupervisor(therapistId, supervisorId);
+        return this.therapistSupervisionService.assignTherapistSupervisor(therapistId, supervisorId, currentUser.id);
     }
 
     @Mutation(() => Boolean)
@@ -76,8 +77,9 @@ export class TherapistSupervisionResolver {
         @Args({ name: 'therapistId', type: () => Int }) therapistId: number,
         @Args({ name: 'supervisorId', type: () => Int }) supervisorId: number,
         @Args({ name: 'patientId', type: () => Int }) patientId: number,
+        @CurrentUser() currentUser: User,
     ): Promise<boolean> {
-        return this.therapistSupervisionService.assignSupervisorPatientVisibility(therapistId, supervisorId, patientId);
+        return this.therapistSupervisionService.assignSupervisorPatientVisibility(therapistId, supervisorId, patientId, currentUser.id);
     }
 
     @Mutation(() => Boolean)

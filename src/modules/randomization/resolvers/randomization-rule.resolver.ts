@@ -4,7 +4,7 @@ import { QueryArgsType } from '@nestjs-query/query-graphql';
 import { SortDirection } from '@nestjs-query/core';
 import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
-import { UsePermission } from 'src/modules/permission/decorators/permission.decorator';
+import { UseOrPermissions, UsePermission } from 'src/modules/permission/decorators/permission.decorator';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { PermissionGuard } from 'src/modules/permission/guards/permission.guard';
 import {
@@ -27,7 +27,7 @@ export class RandomizationRuleResolver {
     ) {}
 
     @Query(() => RandomizationRule)
-    @UsePermission(PermissionEnum.RANDOMIZATIONS_VIEW_DEPARTMENT)
+    @UseOrPermissions([PermissionEnum.RANDOMIZATIONS_VIEW_DEPARTMENT, PermissionEnum.CLINICAL_VIEW_ASSIGNED])
     getRandomizationRule(
         @Args('id', { type: () => Int }) id: number,
     ): Promise<RandomizationRule> {
@@ -35,7 +35,7 @@ export class RandomizationRuleResolver {
     }
 
     @Query(() => RandomizationRuleConnection)
-    @UsePermission(PermissionEnum.RANDOMIZATIONS_VIEW_DEPARTMENT)
+    @UseOrPermissions([PermissionEnum.RANDOMIZATIONS_VIEW_DEPARTMENT, PermissionEnum.CLINICAL_VIEW_ASSIGNED])
     async randomizationRules(
         @Args() query: RandomizationRuleQuery,
         @Args('departmentIds', { type: () => [Int], nullable: true })

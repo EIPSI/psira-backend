@@ -1,56 +1,61 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { SettingService } from "src/modules/setting/providers/setting.service";
+import { AssignmentRequestService } from "src/modules/assignment-request/services/assignment-request.service";
 import { UserConnectionDto } from "src/modules/user/dto/user-connection.model";
 import { User } from "src/modules/user/models/user.model";
 import { applySearchQuery } from "src/shared/helpers/search.helper";
 import { paginate } from "src/shared/pagination/services/paginate";
-import { createQueryBuilder, getManager } from "typeorm";
+import { Brackets, createQueryBuilder, getManager } from "typeorm";
+import { RoleCode } from "src/modules/permission/enums/role-code.enum";
+import { Patient } from "../models/patient.model";
 import { CaseManagerFilter } from "../dto/case-manager.filter";
 
 
 @Injectable()
 export class CaseManagerService {
-    constructor(private readonly settingService: SettingService) {}
+    constructor(
+        private readonly settingService: SettingService,
+        private readonly assignmentRequestService: AssignmentRequestService,
+    ) {}
 
     async getPatientCaseManagers(caseManagerFilter: CaseManagerFilter): Promise<UserConnectionDto> {
-        const assignableHierarchyRank = await this.getAssignableCaseManagerHierarchyRank();
-
+        const assignableRoleCodes = await this.getAssignableCaseManagerRoleCodes();
+        const allowSuperAdmin = assignableRoleCodes.includes(RoleCode.SUPER_ADMIN);
         const query = User
             .createQueryBuilder('caseManager')
             .distinct(true)
-            .innerJoin('caseManager.roles', 'role', 'role.hierarchy <= :assignableHierarchyRank', {
-                assignableHierarchyRank,
-            });
+            .innerJoin('caseManager.roles', 'role', 'role.code IN (:...assignableRoleCodes)', {
+                assignableRoleCodes,
+            })
+            .leftJoinAndSelect('caseManager.roles', 'roles')
+            .leftJoinAndSelect('caseManager.departments', 'departments')
+            .where('caseManager.active = true')
+            .andWhere('caseManager.deletedAt IS NULL');
 
-        // apply global search
         if (caseManagerFilter.searchKeyword) {
-            applySearchQuery(query, caseManagerFilter.searchKeyword, User.searchable)
+            applySearchQuery(query, caseManagerFilter.searchKeyword, User.searchable);
         }
 
-        // Filter by patientId
         if (caseManagerFilter.patientId) {
             query.innerJoin(
-                "caseManager.caseManagedPatients",
-                "patient",
-                "patient.id = :patientId",
-                { patientId: caseManagerFilter.patientId });
-        }
-
-        // Filter by Case Manager Id
-        else if (caseManagerFilter.caseManagerId) {
-            query.innerJoin(
-                "caseManager.caseManagedPatients",
-                "patient",
-                "caseManager.id = :caseManagerId",
-                { caseManagerId: caseManagerFilter.caseManagerId });
-        }
-
-        // Filter all case-managers
-        else {
-            query.innerJoin(
-                "caseManager.caseManagedPatients",
-                "patient",
+                'caseManager.caseManagedPatients',
+                'assignedPatient',
+                'assignedPatient.id = :patientId',
+                { patientId: caseManagerFilter.patientId },
             );
+        } else if (caseManagerFilter.departmentIds?.length) {
+            query.andWhere(new Brackets(qb => {
+                qb.where('departments.id IN (:...departmentIds)', { departmentIds: caseManagerFilter.departmentIds });
+                if (allowSuperAdmin) {
+                    qb.orWhere('role.code = :superAdminRole', { superAdminRole: RoleCode.SUPER_ADMIN });
+                }
+            }));
+        }
+
+        if (caseManagerFilter.caseManagerId) {
+            query.andWhere('caseManager.id = :caseManagerId', {
+                caseManagerId: caseManagerFilter.caseManagerId,
+            });
         }
 
         return paginate(query, caseManagerFilter, 'caseManager.id');
@@ -73,7 +78,7 @@ export class CaseManagerService {
         userId: number,
         assigningUserId: number,
     ): Promise<boolean> {
-        await this.validateCaseManagerAssignable(userId, assigningUserId);
+        await this.validateCaseManagerAssignable(patientId, userId, assigningUserId);
 
         const caseManager = await getManager()
             .createQueryBuilder()
@@ -82,6 +87,11 @@ export class CaseManagerService {
             .getRawOne();
 
         if (caseManager) {
+            return true;
+        }
+
+        if (userId !== assigningUserId) {
+            await this.assignmentRequestService.requestCaseManagerAssignment(patientId, userId, assigningUserId);
             return true;
         }
 
@@ -97,6 +107,7 @@ export class CaseManagerService {
     }
 
     private async validateCaseManagerAssignable(
+        patientId: number,
         userId: number,
         assigningUserId: number,
     ): Promise<void> {
@@ -105,22 +116,55 @@ export class CaseManagerService {
         });
         const assignerHierarchy = this.strongestHierarchy(assigner);
         const assignableHierarchyRank = await this.getAssignableCaseManagerHierarchyRank();
+        const assignableRoleCodes = await this.getAssignableCaseManagerRoleCodes();
 
         const caseManager = await User.createQueryBuilder('user')
             .innerJoinAndSelect('user.roles', 'role')
+            .leftJoinAndSelect('user.departments', 'departments')
             .where('user.id = :userId', { userId })
+            .andWhere('user.active = true')
+            .andWhere('user.deletedAt IS NULL')
             .getOne();
 
         const caseManagerHierarchy = this.strongestHierarchy(caseManager);
+        const hasAssignableRole = caseManager?.roles?.some(role => assignableRoleCodes.includes(role.code as RoleCode));
         if (
             !caseManager ||
+            !hasAssignableRole ||
             caseManagerHierarchy < assignerHierarchy ||
             caseManagerHierarchy > assignableHierarchyRank
         ) {
             throw new BadRequestException(
-                'Only users at or below the configured hierarchy rank and at the same or lower hierarchy than the assigner can be assigned as case managers',
+                'Only active users with an assignable case-manager role at or below the configured hierarchy rank and at the same or lower hierarchy than the assigner can be assigned as case managers',
             );
         }
+
+        await this.validateCaseManagerSharesPatientDepartment(userId, patientId);
+    }
+
+    private async validateCaseManagerSharesPatientDepartment(userId: number, patientId: number): Promise<void> {
+        const patient = await Patient.findOne(patientId, { relations: ['departments'] });
+        const patientDepartmentIds = patient?.departments?.map(department => department.id) || [];
+        if (!patient || !patientDepartmentIds.length) {
+            throw new BadRequestException('Patient must belong to at least one department to assign a case manager');
+        }
+
+        const assignableRoleCodes = await this.getAssignableCaseManagerRoleCodes();
+        const allowSuperAdmin = assignableRoleCodes.includes(RoleCode.SUPER_ADMIN);
+        const user = await User.findOne(userId, { relations: ['roles', 'departments'] });
+        if (allowSuperAdmin && user?.roles?.some(role => role.code === RoleCode.SUPER_ADMIN)) {
+            return;
+        }
+
+        const sharedDepartment = user?.departments?.some(department => patientDepartmentIds.includes(department.id));
+        if (!sharedDepartment) {
+            throw new BadRequestException('Case manager must belong to one of the patient departments');
+        }
+    }
+
+    private async getAssignableCaseManagerRoleCodes(): Promise<RoleCode[]> {
+        const value = await this.settingService.getKey('patientCaseManagerRoleCodes' as any) as RoleCode[];
+        return value?.length ? value : [RoleCode.SUPER_ADMIN, RoleCode.THERAPIST];
     }
 
     private async getAssignableCaseManagerHierarchyRank(): Promise<number> {

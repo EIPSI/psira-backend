@@ -26,6 +26,7 @@ export class CaseEventReasonResolver {
     @UseOrPermissions([
         PermissionEnum.SETTINGS_VIEW_ALL,
         PermissionEnum.CLINICAL_VIEW_DEPARTMENT,
+        PermissionEnum.CLINICAL_VIEW_ASSIGNED,
         PermissionEnum.AUTOMATIONS_VIEW_DEPARTMENT,
         PermissionEnum.AUTOMATIONS_EDIT_DEPARTMENT,
         PermissionEnum.AUTOMATIONS_VIEW_ALL,
@@ -41,6 +42,7 @@ export class CaseEventReasonResolver {
     @UseOrPermissions([
         PermissionEnum.SETTINGS_VIEW_ALL,
         PermissionEnum.CLINICAL_VIEW_DEPARTMENT,
+        PermissionEnum.CLINICAL_VIEW_ASSIGNED,
         PermissionEnum.AUTOMATIONS_VIEW_DEPARTMENT,
         PermissionEnum.AUTOMATIONS_EDIT_DEPARTMENT,
         PermissionEnum.AUTOMATIONS_VIEW_ALL,

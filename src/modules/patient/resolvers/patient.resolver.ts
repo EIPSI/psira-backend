@@ -29,6 +29,7 @@ import {
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { PermissionGuard } from 'src/modules/permission/guards/permission.guard';
 import { PermissionService } from 'src/modules/permission/providers/permission.service';
+import { RoleCode } from 'src/modules/permission/enums/role-code.enum';
 import { SettingService } from 'src/modules/setting/providers/setting.service';
 import { User } from 'src/modules/user/models/user.model';
 import { PatientAuthorizer } from '../authorizers/patient.authorizer';
@@ -175,21 +176,21 @@ export class PatientResolver {
             relations: ['departments'],
         });
 
-        // Auto-assignment for VIEW_ASSIGNED_PATIENTS
         const hasAssignedPermission = await PermissionService.userCan(
             currentUser.id,
             PermissionEnum.PATIENTS_VIEW_ASSIGNED,
         );
 
-        if (hasAssignedPermission) {
-            // Force auto-assignment to creator, ignore input
-            patientInput.caseManagerIds = [currentUser.id];
+        if (!patientInput.caseManagerIds?.length) {
+            throw new BadRequestException('Patient must have at least one case manager.');
         }
 
         await this.validateCaseManagersAssignable(
             currentUser.id,
             patientInput.caseManagerIds || [],
         );
+
+        const caseManagerRoleCodes = await this.getAssignableCaseManagerRoleCodes();
 
         // Department validation
         const canViewAllPatients = await PermissionService.userCan(
@@ -206,9 +207,12 @@ export class PatientResolver {
                 // Get users who are case managers in the assigned departments
                 const departmentMembers = await User.createQueryBuilder('user')
                     .innerJoin('user.departments', 'department')
+                    .innerJoin('user.roles', 'role', 'role.code IN (:...caseManagerRoleCodes)', { caseManagerRoleCodes })
                     .where('department.id IN (:...departmentIds)', {
                         departmentIds: patientInput.departmentIds,
                     })
+                    .andWhere('user.active = true')
+                    .andWhere('user.deletedAt IS NULL')
                     .getMany();
 
                 const departmentMemberIds = departmentMembers.map(u => u.id);
@@ -297,6 +301,7 @@ export class PatientResolver {
                 case PatientAccessScope.DEPARTMENT:
                     // Validate case managers belong to patient's departments
                     if (update.caseManagerIds.length > 0) {
+                        const caseManagerRoleCodes = await this.getAssignableCaseManagerRoleCodes();
                         const patientWithDepts = await Patient.findOne({
                             where: { id: patient.id },
                             relations: ['departments'],
@@ -316,9 +321,12 @@ export class PatientResolver {
                             'user',
                         )
                             .innerJoin('user.departments', 'department')
+                            .innerJoin('user.roles', 'role', 'role.code IN (:...caseManagerRoleCodes)', { caseManagerRoleCodes })
                             .where('department.id IN (:...departmentIds)', {
                                 departmentIds,
                             })
+                            .andWhere('user.active = true')
+                            .andWhere('user.deletedAt IS NULL')
                             .getMany();
 
                         const departmentMemberIds = departmentMembers.map(
@@ -350,9 +358,14 @@ export class PatientResolver {
                         );
                     }
 
-                    // Force case manager to be themselves only
-                    update.caseManagerIds = [currentUser.id];
+                    if (!update.caseManagerIds?.length) {
+                        throw new BadRequestException('Patient must have at least one case manager.');
+                    }
                     break;
+            }
+
+            if (!update.caseManagerIds?.length) {
+                throw new BadRequestException('Patient must have at least one case manager.');
             }
 
             await this.validateCaseManagersAssignable(
@@ -554,28 +567,37 @@ export class PatientResolver {
         });
         const assignerHierarchy = this.strongestHierarchy(assigner);
         const assignableHierarchyRank = await this.getAssignableCaseManagerHierarchyRank();
+        const assignableRoleCodes = await this.getAssignableCaseManagerRoleCodes();
 
         const eligibleCaseManagers = await User.createQueryBuilder('user')
             .distinct(true)
             .innerJoinAndSelect('user.roles', 'role')
             .where('user.id IN (:...caseManagerIds)', { caseManagerIds })
+            .andWhere('user.active = true')
+            .andWhere('user.deletedAt IS NULL')
             .getMany();
 
         const eligibleIds = eligibleCaseManagers
             .filter(user => {
                 const hierarchy = this.strongestHierarchy(user);
-                return hierarchy >= assignerHierarchy && hierarchy <= assignableHierarchyRank;
+                const hasAssignableRole = user.roles?.some(role => assignableRoleCodes.includes(role.code as RoleCode));
+                return hasAssignableRole && hierarchy >= assignerHierarchy && hierarchy <= assignableHierarchyRank;
             })
             .map(user => user.id);
         const invalidIds = caseManagerIds.filter(id => !eligibleIds.includes(id));
 
         if (invalidIds.length) {
             throw new BadRequestException(
-                `Only configured roles with the same or lower hierarchy can be assigned as case managers. Invalid user IDs: ${invalidIds.join(
+                `Only active users with an assignable case-manager role and the same or lower hierarchy can be assigned as case managers. Invalid user IDs: ${invalidIds.join(
                     ', ',
                 )}`,
             );
         }
+    }
+
+    private async getAssignableCaseManagerRoleCodes(): Promise<RoleCode[]> {
+        const value = await this.settingService.getKey('patientCaseManagerRoleCodes' as any) as RoleCode[];
+        return value?.length ? value : [RoleCode.SUPER_ADMIN, RoleCode.THERAPIST];
     }
 
     private async getAssignableCaseManagerHierarchyRank(): Promise<number> {

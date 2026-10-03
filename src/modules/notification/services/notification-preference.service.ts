@@ -20,6 +20,8 @@ export class NotificationPreferenceService {
         NotificationEvent.ASSESSMENT_NOT_ANSWERED,
         NotificationEvent.ASSESSMENT_PERIODIC_SUMMARY,
         NotificationEvent.CASE_UPDATED,
+        NotificationEvent.CASE_MANAGER_ASSIGNMENT_REQUEST,
+        NotificationEvent.CASE_SUPERVISOR_ASSIGNMENT_REQUEST,
         NotificationEvent.USER_CREATED,
         NotificationEvent.FIRST_LOGIN,
         NotificationEvent.LAST_LOGIN,

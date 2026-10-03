@@ -39,6 +39,7 @@ export class EvaluationAutomationResolver {
     @UseOrPermissions([
         PermissionEnum.AUTOMATIONS_VIEW_DEPARTMENT,
         PermissionEnum.AUTOMATIONS_VIEW_ALL,
+        PermissionEnum.CLINICAL_VIEW_ASSIGNED,
     ])
     evaluationAutomation(
         @Args('id', { type: () => Int }) id: number,
@@ -51,6 +52,7 @@ export class EvaluationAutomationResolver {
     @UseOrPermissions([
         PermissionEnum.AUTOMATIONS_VIEW_DEPARTMENT,
         PermissionEnum.AUTOMATIONS_VIEW_ALL,
+        PermissionEnum.CLINICAL_VIEW_ASSIGNED,
     ])
     async evaluationAutomations(
         @Args() query: EvaluationAutomationQuery,
@@ -70,6 +72,7 @@ export class EvaluationAutomationResolver {
     @UseOrPermissions([
         PermissionEnum.AUTOMATIONS_VIEW_DEPARTMENT,
         PermissionEnum.AUTOMATIONS_VIEW_ALL,
+        PermissionEnum.CLINICAL_VIEW_ASSIGNED,
     ])
     async evaluationAutomationRuns(
         @Args() query: EvaluationAutomationRunQuery,
@@ -91,6 +94,7 @@ export class EvaluationAutomationResolver {
     @UseOrPermissions([
         PermissionEnum.AUTOMATIONS_VIEW_DEPARTMENT,
         PermissionEnum.AUTOMATIONS_VIEW_ALL,
+        PermissionEnum.CLINICAL_VIEW_ASSIGNED,
     ])
     evaluationAutomationPreview(
         @Args('input') input: EvaluationAutomationPreviewInput,

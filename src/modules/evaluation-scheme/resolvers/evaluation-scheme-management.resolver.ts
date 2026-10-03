@@ -4,7 +4,7 @@ import { QueryArgsType } from '@nestjs-query/query-graphql';
 import { SortDirection } from '@nestjs-query/core';
 import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
-import { UsePermission } from 'src/modules/permission/decorators/permission.decorator';
+import { UseOrPermissions, UsePermission } from 'src/modules/permission/decorators/permission.decorator';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { PermissionGuard } from 'src/modules/permission/guards/permission.guard';
 import {
@@ -35,7 +35,7 @@ export class EvaluationSchemeManagementResolver {
     ) {}
 
     @Query(() => EvaluationSchemeConnection)
-    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_VIEW_DEPARTMENT)
+    @UseOrPermissions([PermissionEnum.EVALUATION_SCHEMES_VIEW_DEPARTMENT, PermissionEnum.CLINICAL_VIEW_ASSIGNED])
     async evaluationSchemes(
         @Args() query: EvaluationSchemeQuery,
         @Args('departmentIds', { type: () => [Int], nullable: true })

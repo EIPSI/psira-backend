@@ -13,6 +13,8 @@ export const defaultConfig: SettingDto = {
     evaluationAutomationRunRetentionDays: 365,
     treatmentFinalizationUndoWindowDays: 30,
     patientCaseManagerAssignableHierarchyRank: 500,
+    patientCaseManagerRoleCodes: ['SUPER_ADMIN', 'THERAPIST'],
+    therapistSupervisorRoleCodes: ['SUPERVISOR'],
     maxLoginAttempts: 5,
     googleCalendarEnabled: false,
     notificationsEnabled: true,

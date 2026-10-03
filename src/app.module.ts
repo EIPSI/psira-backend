@@ -29,6 +29,7 @@ import { TreatmentCycleModule } from './modules/treatment-cycle/treatment-cycle.
 import { NotificationModule } from './modules/notification/notification.module';
 import { InformedConsentModule } from './modules/informed-consent/informed-consent.module';
 import { LanguageModule } from './modules/language/language.module';
+import { AssignmentRequestModule } from './modules/assignment-request/assignment-request.module';
 
 @Module({
     imports: [
@@ -88,6 +89,7 @@ import { LanguageModule } from './modules/language/language.module';
         EvaluationAutomationModule,
         TreatmentCycleModule,
         NotificationModule,
+        AssignmentRequestModule,
         InformedConsentModule,
         LanguageModule,
     ],

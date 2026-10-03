@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { createQueryBuilder, getManager } from 'typeorm';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { RoleCode } from 'src/modules/permission/enums/role-code.enum';
 import { PermissionService } from 'src/modules/permission/providers/permission.service';
+import { SettingService } from 'src/modules/setting/providers/setting.service';
+import { AssignmentRequestService } from 'src/modules/assignment-request/services/assignment-request.service';
 import { Patient } from 'src/modules/patient/models/patient.model';
 import { UserConnectionDto } from '../dto/user-connection.model';
 import { SupervisionFilter } from '../dto/supervision.filter';
@@ -12,6 +14,11 @@ import { paginate } from 'src/shared/pagination/services/paginate';
 
 @Injectable()
 export class TherapistSupervisionService {
+    constructor(
+        private readonly settingService: SettingService,
+        private readonly assignmentRequestService: AssignmentRequestService,
+    ) {}
+
     async getTherapists(filter: SupervisionFilter, currentUser: User): Promise<UserConnectionDto> {
         const query = User.createQueryBuilder('therapist')
             .innerJoin('therapist.roles', 'role', 'role.code = :roleCode', { roleCode: RoleCode.THERAPIST })
@@ -45,8 +52,9 @@ export class TherapistSupervisionService {
     }
 
     async getSupervisors(filter: SupervisionFilter, currentUser: User): Promise<UserConnectionDto> {
+        const supervisorRoleCodes = await this.getAssignableSupervisorRoleCodes();
         const query = User.createQueryBuilder('supervisor')
-            .innerJoin('supervisor.roles', 'role', 'role.code = :roleCode', { roleCode: RoleCode.SUPERVISOR })
+            .innerJoin('supervisor.roles', 'role', 'role.code IN (:...supervisorRoleCodes)', { supervisorRoleCodes })
             .leftJoinAndSelect('supervisor.roles', 'roles')
             .leftJoinAndSelect('supervisor.departments', 'departments')
             .leftJoinAndSelect('supervisor.permissions', 'permissions')
@@ -76,7 +84,9 @@ export class TherapistSupervisionService {
         return paginate(query, filter, 'supervisor.id');
     }
 
-    async assignTherapistSupervisor(therapistId: number, supervisorId: number): Promise<boolean> {
+    async assignTherapistSupervisor(therapistId: number, supervisorId: number, requesterId?: number): Promise<boolean> {
+        await this.validateTherapistSupervisorAssignable(therapistId, supervisorId);
+
         const existing = await getManager()
             .createQueryBuilder()
             .from('therapist_supervisor', 'therapist_supervisor')
@@ -85,6 +95,11 @@ export class TherapistSupervisionService {
 
         if (existing) return true;
 
+        if (requesterId && supervisorId !== requesterId) {
+            await this.assignmentRequestService.requestSupervisorAssignment(therapistId, supervisorId, requesterId);
+            return true;
+        }
+
         const result = await createQueryBuilder()
             .insert()
             .into('therapist_supervisor')
@@ -92,6 +107,28 @@ export class TherapistSupervisionService {
             .execute();
 
         return !!result;
+    }
+
+    private async validateTherapistSupervisorAssignable(therapistId: number, supervisorId: number): Promise<void> {
+        const therapist = await User.findOne(therapistId, { relations: ['roles', 'departments'] });
+        const supervisor = await User.findOne(supervisorId, { relations: ['roles', 'departments'] });
+
+        if (!therapist || therapist.deletedAt || therapist.active === false || !therapist.roles?.some(role => role.code === RoleCode.THERAPIST)) {
+            throw new BadRequestException('Only active therapist users can be assigned to supervisors.');
+        }
+
+        const supervisorRoleCodes = await this.getAssignableSupervisorRoleCodes();
+        if (!supervisor || supervisor.deletedAt || supervisor.active === false || !supervisor.roles?.some(role => supervisorRoleCodes.includes(role.code as RoleCode))) {
+            throw new BadRequestException('Only active users with an assignable supervisor role can supervise therapists.');
+        }
+
+        const therapistDepartmentIds = therapist.departments?.map(department => department.id) || [];
+        const supervisorDepartmentIds = supervisor.departments?.map(department => department.id) || [];
+        const sharesDepartment = therapistDepartmentIds.some(id => supervisorDepartmentIds.includes(id));
+
+        if (!sharesDepartment) {
+            throw new BadRequestException('Therapist and supervisor must share at least one department.');
+        }
     }
 
     async unassignTherapistSupervisor(therapistId: number, supervisorId: number): Promise<boolean> {
@@ -110,8 +147,8 @@ export class TherapistSupervisionService {
         return result.affected > 0;
     }
 
-    async assignSupervisorPatientVisibility(therapistId: number, supervisorId: number, patientId: number): Promise<boolean> {
-        await this.assignTherapistSupervisor(therapistId, supervisorId);
+    async assignSupervisorPatientVisibility(therapistId: number, supervisorId: number, patientId: number, requesterId?: number): Promise<boolean> {
+        await this.assignTherapistSupervisor(therapistId, supervisorId, requesterId);
 
         const existing = await getManager()
             .createQueryBuilder()
@@ -155,6 +192,11 @@ export class TherapistSupervisionService {
                 { therapistId, supervisorId },
             )
             .getMany();
+    }
+
+    private async getAssignableSupervisorRoleCodes(): Promise<RoleCode[]> {
+        const value = await this.settingService.getKey('therapistSupervisorRoleCodes' as any) as RoleCode[];
+        return value?.length ? value : [RoleCode.SUPERVISOR];
     }
 
     private async canViewAllDepartmentUsers(userId: number): Promise<boolean> {

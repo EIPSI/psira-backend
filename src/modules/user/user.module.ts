@@ -17,6 +17,7 @@ import { MailModule } from '../mail/mail.module';
 import { Patient } from '../patient/models/patient.model';
 import { Caregiver } from '../caregiver/models/caregiver.model';
 import { UserPreviousPasswordRetentionService } from './services/user-previous-password-retention.service';
+import { AssignmentRequestModule } from '../assignment-request/assignment-request.module';
 
 @Injectable()
 export class UserAuthorizer implements Authorizer<User> {
@@ -34,6 +35,7 @@ export class UserAuthorizer implements Authorizer<User> {
         SettingModule,
         PermissionModule,
         MailModule,
+        AssignmentRequestModule,
         NestjsQueryGraphQLModule.forFeature({
             // import the NestjsQueryTypeOrmModule to register the entity with typeorm
             // and provide a QueryService

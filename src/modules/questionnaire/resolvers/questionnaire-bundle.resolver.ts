@@ -5,7 +5,7 @@ import { QuestionnaireBundle } from '../models/questionnaire-bundle.schema';
 import { QuestionnaireBundleService } from '../services/questionnaire-bundle.service';
 import { SortDirection } from '@nestjs-query/core';
 import { CreateQuestionnaireBundleInput, UpdateQuestionnaireBundleInput } from '../dtos/questionnaire-bundle.input';
-import { UsePermission } from 'src/modules/permission/decorators/permission.decorator';
+import { UseOrPermissions, UsePermission } from 'src/modules/permission/decorators/permission.decorator';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
 import { User } from 'src/modules/user/models/user.model';
@@ -27,7 +27,7 @@ export class QuestionnaireBundleResolver {
     ) {}
 
     @Query(() => QuestionnaireBundle)
-    @UsePermission(PermissionEnum.QUESTIONNAIRE_BUNDLES_VIEW_DEPARTMENT)
+    @UseOrPermissions([PermissionEnum.QUESTIONNAIRE_BUNDLES_VIEW_DEPARTMENT, PermissionEnum.CLINICAL_VIEW_ASSIGNED])
     getQuestionnaireBundle(
         @Args('_id', { type: () => String })
         questionnaireBundleId: Types.ObjectId,
@@ -36,7 +36,7 @@ export class QuestionnaireBundleResolver {
     }
 
     @Query(() => QuestionnaireBundleConnection)
-    @UsePermission(PermissionEnum.QUESTIONNAIRE_BUNDLES_VIEW_DEPARTMENT)
+    @UseOrPermissions([PermissionEnum.QUESTIONNAIRE_BUNDLES_VIEW_DEPARTMENT, PermissionEnum.CLINICAL_VIEW_ASSIGNED])
     async getQuestionnaireBundles(
         @Args() query: QuestionniareBundleQuery,
         @Args('departmentIds', { type: () => [Number], nullable: true })

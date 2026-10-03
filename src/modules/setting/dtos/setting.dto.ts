@@ -72,6 +72,15 @@ export class SettingDto {
     @Field(() => Int, { nullable: true })
     patientCaseManagerAssignableHierarchyRank?: number;
 
+
+    @IsOptional()
+    @Field(() => [String], { nullable: true })
+    patientCaseManagerRoleCodes?: string[];
+
+    @IsOptional()
+    @Field(() => [String], { nullable: true })
+    therapistSupervisorRoleCodes?: string[];
+
     @IsOptional()
     @Field({ nullable: true, defaultValue: false })
     googleCalendarEnabled?: boolean;

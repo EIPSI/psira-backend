@@ -1,9 +1,10 @@
 import { TypeOrmQueryService } from "@nestjs-query/query-typeorm";
 import { BadRequestException, ConflictException, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { SelectQueryBuilder, Repository } from "typeorm";
 import { CaregiverInput } from "../dtos/caregiver.input";
 import { Caregiver } from "../models/caregiver.model";
+import { Filter, Query } from "@nestjs-query/core";
 import { PatientCaregiver } from "../models/patient-caregiver.model";
 import { Patient } from "src/modules/patient/models/patient.model";
 import { EmergencyContact } from "src/modules/patient/models/emergency-contact.model";
@@ -24,6 +25,145 @@ export class CaregiverService extends TypeOrmQueryService<Caregiver> {
         private readonly userAccountProvisioningService: UserAccountProvisioningService,
     ) {
         super(repo, { useSoftDelete: true });
+    }
+
+
+
+    async assignedCaregiverIdsForUser(userId: number): Promise<number[]> {
+        const rows = await this.patientCaregiverRepository
+            .createQueryBuilder('patient_caregiver')
+            .innerJoin('patient_caregiver.patient', 'patient')
+            .innerJoin(
+                'patient_case_manager',
+                'patient_case_manager',
+                'patient_case_manager."patientId" = patient.id AND patient_case_manager."userId" = :userId',
+                { userId },
+            )
+            .select('DISTINCT patient_caregiver."caregiverId"', 'caregiver_id')
+            .where('patient_caregiver."deletedAt" IS NULL')
+            .andWhere('patient."deletedAt" IS NULL')
+            .getRawMany();
+
+        return rows
+            .map(row => Number(row.caregiver_id))
+            .filter(id => Number.isFinite(id));
+    }
+
+
+    async queryAssignedToCaseManager(query: Query<Caregiver>, userId: number): Promise<Caregiver[]> {
+        const qb = this.assignedToCaseManagerQuery(userId);
+        this.applyCaregiverFilter(qb, query.filter as any);
+        this.applySorting(qb, query);
+        this.applyPaging(qb, query);
+        return qb.getMany();
+    }
+
+    async countAssignedToCaseManager(filter: Filter<Caregiver> | undefined, userId: number): Promise<number> {
+        const qb = this.assignedToCaseManagerQuery(userId);
+        this.applyCaregiverFilter(qb, filter as any);
+        return qb.getCount();
+    }
+
+    private assignedToCaseManagerQuery(userId: number): SelectQueryBuilder<Caregiver> {
+        return this.repo
+            .createQueryBuilder('caregiver')
+            .distinct(true)
+            .leftJoinAndSelect('caregiver.patientCaregivers', 'patient_caregivers')
+            .leftJoinAndSelect('patient_caregivers.patient', 'patient')
+            .where('caregiver."deletedAt" IS NULL')
+            .andWhere(qb => {
+                const subQuery = qb
+                    .subQuery()
+                    .select('1')
+                    .from('patient_caregiver', 'pc')
+                    .innerJoin('patient', 'p', 'p.id = pc."patientId"')
+                    .innerJoin(
+                        'patient_case_manager',
+                        'pcm',
+                        'pcm."patientId" = pc."patientId" AND pcm."userId" = :userId',
+                    )
+                    .where('pc."caregiverId" = caregiver.id')
+                    .andWhere('pc."deletedAt" IS NULL')
+                    .andWhere('p."deletedAt" IS NULL')
+                    .getQuery();
+
+                return `EXISTS ${subQuery}`;
+            }, { userId });
+    }
+
+
+    private applyCaregiverFilter(qb: SelectQueryBuilder<Caregiver>, filter?: any): void {
+        if (!filter) return;
+
+        const clauses = Array.isArray(filter.and) ? filter.and : [filter];
+        clauses.forEach((clause: any, index: number) => {
+            if (!clause || !Object.keys(clause).length) return;
+            this.applyCaregiverFilterClause(qb, clause, `filter${index}`);
+        });
+    }
+
+    private applyCaregiverFilterClause(qb: SelectQueryBuilder<Caregiver>, clause: any, prefix: string): void {
+        if (Array.isArray(clause.or) && clause.or.length) {
+            const orParts: string[] = [];
+            const params: Record<string, any> = {};
+            clause.or.forEach((item: any, index: number) => {
+                ['firstName', 'middleName', 'lastName', 'email', 'phone'].forEach(field => {
+                    const value = item?.[field]?.iLike;
+                    if (value) {
+                        const key = `${prefix}_${field}_${index}`;
+                        orParts.push(`caregiver."${field}" ILIKE :${key}`);
+                        params[key] = value;
+                    }
+                });
+            });
+            if (orParts.length) qb.andWhere(`(${orParts.join(' OR ')})`, params);
+        }
+
+        ['firstName', 'middleName', 'lastName', 'email', 'phone'].forEach(field => {
+            const eqValue = clause?.[field]?.eq;
+            const iLikeValue = clause?.[field]?.iLike;
+            if (eqValue !== undefined) qb.andWhere(`caregiver."${field}" = :${prefix}_${field}_eq`, { [`${prefix}_${field}_eq`]: eqValue });
+            if (iLikeValue !== undefined) qb.andWhere(`caregiver."${field}" ILIKE :${prefix}_${field}_ilike`, { [`${prefix}_${field}_ilike`]: iLikeValue });
+        });
+
+        const idEq = clause?.id?.eq;
+        const idIn = clause?.id?.in;
+        if (idEq !== undefined) qb.andWhere('caregiver.id = :idEq', { idEq });
+        if (Array.isArray(idIn) && idIn.length) qb.andWhere('caregiver.id IN (:...idIn)', { idIn });
+    }
+
+    private applySorting(qb: SelectQueryBuilder<Caregiver>, query: Query<Caregiver>): void {
+        const allowedFields = [
+            'id',
+            'firstName',
+            'middleName',
+            'lastName',
+            'email',
+            'phone',
+            'street',
+            'number',
+            'apartment',
+            'place',
+            'postalCode',
+            'country',
+            'createdAt',
+            'updatedAt',
+        ];
+        const sorting = query.sorting?.length ? query.sorting : [{ field: 'id', direction: 'DESC' as any }];
+        sorting.forEach((sort: any, index: number) => {
+            if (!allowedFields.includes(sort.field)) return;
+            const direction = String(sort.direction || 'ASC').toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+            const field = `caregiver."${sort.field}"`;
+            if (index === 0) qb.orderBy(field, direction as any);
+            else qb.addOrderBy(field, direction as any);
+        });
+    }
+
+    private applyPaging(qb: SelectQueryBuilder<Caregiver>, query: Query<Caregiver>): void {
+        const paging = query.paging as any;
+        if (!paging) return;
+        if (typeof paging.first === 'number') qb.take(paging.first);
+        if (typeof paging.offset === 'number') qb.skip(paging.offset);
     }
 
     async deleteOne(id: number): Promise<Caregiver> {

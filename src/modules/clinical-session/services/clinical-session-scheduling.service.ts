@@ -453,30 +453,15 @@ export class ClinicalSessionSchedulingService {
         }
 
         if (input.responsibleUserIds !== undefined) {
-            const responsibleUserIds = this.resolveSessionResponsibleUserIds({
-                sessionKind: session.sessionKind,
-                therapistId: session.therapistId,
-                supervisorId: session.supervisorId,
-                responsibleUserIds: input.responsibleUserIds,
-            });
+            const responsibleUserIds = this.uniqueIds(input.responsibleUserIds);
             if (!responsibleUserIds.length) {
                 throw new BadRequestException('At least one responsible user is required');
             }
-            await this.assertCanAssignSessionResponsibles(
-                {
-                    sessionKind: session.sessionKind,
-                    patientId: session.patientId,
-                    therapistId: session.therapistId,
-                    supervisorId: session.supervisorId,
-                    responsibleUserIds,
-                } as CreateClinicalSessionInput,
-                responsibleUserIds,
-                currentUser,
-            );
-            await this.setSessionResponsibleUsers(
+            await this.updateSessionResponsibleUsers(
                 session,
-                session.calendarOccurrence,
                 responsibleUserIds,
+                !!input.propagateFuture,
+                currentUser,
             );
             session = await this.clinicalSessionRepository.findOneOrFail(session.id, {
                 relations: ['calendarOccurrence', 'responsibleUsers', 'resources', 'resources.assessment'],
@@ -1363,6 +1348,39 @@ export class ClinicalSessionSchedulingService {
         await this.clinicalSessionRepository.save(session);
     }
 
+    private async updateSessionResponsibleUsers(
+        referenceSession: ClinicalSession,
+        responsibleUserIds: number[],
+        propagateFuture: boolean,
+        currentUser?: User,
+    ): Promise<void> {
+        const sessions = propagateFuture
+            ? await this.futureSessionsFrom(referenceSession, true)
+            : [referenceSession];
+
+        for (const session of sessions) {
+            await this.assertCanAssignSessionResponsibles(
+                {
+                    sessionKind: session.sessionKind,
+                    patientId: session.patientId,
+                    therapistId: session.therapistId,
+                    supervisorId: session.supervisorId,
+                    responsibleUserIds,
+                } as CreateClinicalSessionInput,
+                responsibleUserIds,
+                currentUser,
+            );
+        }
+
+        for (const session of sessions) {
+            await this.setSessionResponsibleUsers(
+                session,
+                session.calendarOccurrence,
+                responsibleUserIds,
+            );
+        }
+    }
+
     private async assertCanAssignSessionResponsibles(
         input: Pick<CreateClinicalSessionInput, 'sessionKind' | 'patientId' | 'therapistId' | 'targetUserId'>,
         responsibleUserIds: number[],
@@ -1698,6 +1716,11 @@ export class ClinicalSessionSchedulingService {
             });
         } else {
             query.andWhere('session."patientId" IS NULL');
+            if (referenceSession.therapistId) {
+                query.andWhere('session."therapistId" = :therapistId', {
+                    therapistId: referenceSession.therapistId,
+                });
+            }
         }
 
         return query.getMany();
