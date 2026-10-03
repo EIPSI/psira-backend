@@ -11,4 +11,7 @@ export class SupervisionFilter extends PaginationArgs {
 
     @Field(() => Int, { nullable: true })
     supervisorId?: number;
+
+    @Field(() => [Int], { nullable: true })
+    departmentIds?: number[];
 }

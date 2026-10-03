@@ -65,4 +65,6 @@ export class CreateUserInput {
   skippedAutomationIds?: number[];
 
   skipCaregiverProfileSync?: boolean;
+
+  skipPatientProfileSync?: boolean;
 }

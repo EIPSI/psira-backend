@@ -189,6 +189,10 @@ export class PatientResolver {
             currentUser.id,
             patientInput.caseManagerIds || [],
         );
+        await this.validateCaseManagersShareDepartments(
+            patientInput.caseManagerIds || [],
+            patientInput.departmentIds || [],
+        );
 
         const caseManagerRoleCodes = await this.getAssignableCaseManagerRoleCodes();
 
@@ -291,6 +295,26 @@ export class PatientResolver {
             currentUser.id,
         );
 
+        const patientWithCurrentRelations = await Patient.findOne({
+            where: { id: patient.id },
+            relations: ['departments', 'caseManagers'],
+        });
+        const finalDepartmentIds = update.departmentIds !== undefined
+            ? update.departmentIds || []
+            : patientWithCurrentRelations?.departments?.map(department => department.id) || [];
+
+        if (update.departmentIds !== undefined) {
+            const finalCaseManagerIds = update.caseManagerIds !== undefined
+                ? update.caseManagerIds || []
+                : patientWithCurrentRelations?.caseManagers?.map(caseManager => caseManager.id) || [];
+
+            if (!finalCaseManagerIds.length) {
+                throw new BadRequestException('Patient must have at least one case manager.');
+            }
+
+            await this.validateCaseManagersShareDepartments(finalCaseManagerIds, finalDepartmentIds);
+        }
+
         // Handle case manager updates if provided
         if (update.caseManagerIds !== undefined) {
             switch (scope.type) {
@@ -302,14 +326,7 @@ export class PatientResolver {
                     // Validate case managers belong to patient's departments
                     if (update.caseManagerIds.length > 0) {
                         const caseManagerRoleCodes = await this.getAssignableCaseManagerRoleCodes();
-                        const patientWithDepts = await Patient.findOne({
-                            where: { id: patient.id },
-                            relations: ['departments'],
-                        });
-
-                        const departmentIds = patientWithDepts.departments.map(
-                            d => d.id,
-                        );
+                        const departmentIds = finalDepartmentIds;
 
                         if (departmentIds.length === 0) {
                             throw new BadRequestException(
@@ -349,7 +366,7 @@ export class PatientResolver {
 
                 case PatientAccessScope.ASSIGNED:
                     // Verify user is assigned as case manager
-                    const isCaseManager = patient.caseManagers?.some(
+                    const isCaseManager = patientWithCurrentRelations?.caseManagers?.some(
                         cm => cm.id === currentUser.id,
                     );
                     if (!isCaseManager) {
@@ -371,6 +388,10 @@ export class PatientResolver {
             await this.validateCaseManagersAssignable(
                 currentUser.id,
                 update.caseManagerIds || [],
+            );
+            await this.validateCaseManagersShareDepartments(
+                update.caseManagerIds || [],
+                finalDepartmentIds,
             );
 
             // Update case managers in database
@@ -591,6 +612,36 @@ export class PatientResolver {
                 `Only active users with an assignable case-manager role and the same or lower hierarchy can be assigned as case managers. Invalid user IDs: ${invalidIds.join(
                     ', ',
                 )}`,
+            );
+        }
+    }
+
+    private async validateCaseManagersShareDepartments(
+        caseManagerIds: number[],
+        departmentIds: number[],
+    ): Promise<void> {
+        if (!caseManagerIds.length) return;
+        if (!departmentIds.length) {
+            throw new BadRequestException('Patient must belong to at least one department to assign case managers.');
+        }
+
+        const normalizedDepartmentIds = departmentIds.map(Number).filter(id => Number.isFinite(id));
+        const caseManagers = await User.createQueryBuilder('user')
+            .leftJoinAndSelect('user.departments', 'department')
+            .where('user.id IN (:...caseManagerIds)', { caseManagerIds })
+            .andWhere('user.active = true')
+            .andWhere('user.deletedAt IS NULL')
+            .getMany();
+
+        const invalidIds = caseManagerIds.filter(caseManagerId => {
+            const caseManager = caseManagers.find(user => Number(user.id) === Number(caseManagerId));
+            const caseManagerDepartmentIds = caseManager?.departments?.map(department => Number(department.id)) || [];
+            return !caseManagerDepartmentIds.some(departmentId => normalizedDepartmentIds.includes(departmentId));
+        });
+
+        if (invalidIds.length) {
+            throw new BadRequestException(
+                `Case managers must belong to at least one of the patient departments. Invalid manager IDs: ${invalidIds.join(', ')}`,
             );
         }
     }

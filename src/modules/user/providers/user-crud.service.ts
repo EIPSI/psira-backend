@@ -53,24 +53,26 @@ export class UserCrudService extends TypeOrmQueryService<User> {
             throw new BadRequestException('Username already exists');
         }
 
-        const { roleCodes, skippedAutomationIds, skipCaregiverProfileSync, ...userInput } = input as any;
+        const { roleCodes, skippedAutomationIds, skipCaregiverProfileSync, skipPatientProfileSync, ...userInput } = input as any;
         const { departmentIds: inputDepartmentIds, ...rest } = userInput;
         let departmentIds = inputDepartmentIds;
         const plainPassword = rest.password;
-        const user = await super.createOne(rest);
-
-        user.passwordExpiresAt = moment().toDate();
-        user.password = await Hash.make(user.password);
-        user.skippedAutomationIds = skippedAutomationIds || [];
-
-        if (roleCodes && roleCodes.length > 0) {
-            const roles = await Role.find({ where: { code: In(roleCodes) } });
-            user.roles = roles;
-        }
 
         departmentIds = await this.applyDefaultDepartmentsForRoles(roleCodes, departmentIds);
         this.validateRequiredDepartments(roleCodes, departmentIds);
         await this.validateDepartmentsApplyToRoles(roleCodes, departmentIds);
+
+        const user = this.userRepository.create();
+        Object.assign(user, rest);
+        user.passwordExpiresAt = moment().toDate();
+        user.password = await Hash.make(user.password);
+        user.skippedAutomationIds = skippedAutomationIds || [];
+
+        let roles: Role[] = [];
+        if (roleCodes && roleCodes.length > 0) {
+            roles = await Role.find({ where: { code: In(roleCodes) } });
+            user.roles = roles;
+        }
 
         if (departmentIds && departmentIds.length > 0) {
             const departments = await Department.find({ where: { id: In(departmentIds) } });
@@ -79,11 +81,26 @@ export class UserCrudService extends TypeOrmQueryService<User> {
 
         await user.save();
 
-        if (user.email) {
-            await this.sendMailService.sendWelcomeEmail(user, plainPassword);
+        try {
+            await this.syncPersonProfilesForRoles(user, {
+                skipCaregiver: !!skipCaregiverProfileSync,
+                skipPatient: !!skipPatientProfileSync,
+            });
+        } catch (error) {
+            await this.cleanupCreatedUser(user.id);
+            throw error;
         }
 
-        await this.syncPersonProfilesForRoles(user, { skipCaregiver: !!skipCaregiverProfileSync });
+        if (user.email) {
+            try {
+                await this.sendMailService.sendWelcomeEmail(user, plainPassword);
+            } catch (error) {
+                this.logger.error(
+                    `Unable to send welcome email to user ${user.id}: ${error?.message || error}`,
+                );
+            }
+        }
+
         await this.dispatchUserCreatedAutomation(user, skippedAutomationIds);
 
         return user;
@@ -245,10 +262,17 @@ export class UserCrudService extends TypeOrmQueryService<User> {
         return `deleted-user-${userId}-${Date.now()}`;
     }
 
-    private async syncPersonProfilesForRoles(user: User, options: { skipCaregiver?: boolean } = {}): Promise<void> {
+    private async cleanupCreatedUser(userId: number): Promise<void> {
+        await this.userRepository.update(userId, {
+            username: this.buildDeletedUsername(userId),
+        });
+        await this.userRepository.softDelete(userId);
+    }
+
+    private async syncPersonProfilesForRoles(user: User, options: { skipCaregiver?: boolean; skipPatient?: boolean } = {}): Promise<void> {
         const roleCodes = user.roles?.map(role => role.code) ?? [];
 
-        if (roleCodes.includes(RoleCode.PATIENT)) {
+        if (roleCodes.includes(RoleCode.PATIENT) && !options.skipPatient) {
             await this.ensurePatientForUser(user);
         }
 
