@@ -1,4 +1,5 @@
 jest.mock('argon2', () => ({ hash: jest.fn(), verify: jest.fn() }));
+import { ClinicalAccess } from 'src/shared/clinical-access';
 import * as moment from 'moment-timezone';
 import { EvaluationSchemeType } from '../enums/evaluation-scheme-type.enum';
 import { SchemeGenerationService } from './scheme-generation.service';
@@ -68,12 +69,14 @@ describe('Fixed scheme respondent timezone', () => {
             findOneOrFail: jest.fn().mockResolvedValue(assignment),
         };
         service.generateOccurrences = jest.fn().mockResolvedValue([]);
+        const authorize = jest.spyOn(ClinicalAccess, 'assertTarget').mockResolvedValue(undefined);
         await service.applyScheme({
             schemeId: 1, responderUserId: 2, timezone: 'America/Argentina/Buenos_Aires',
             startDate: new Date('2026-10-21T00:00:00Z'),
         }, { timezone: 'Africa/Dar_es_Salaam' });
         expect(service.assignmentRepository.create.mock.calls[0][0].timezone).toBe('Europe/Madrid');
         expect(service.userRepository.findOne).toHaveBeenCalledWith(2);
+        authorize.mockRestore();
     });
 });
 

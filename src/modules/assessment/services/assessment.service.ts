@@ -1,3 +1,4 @@
+import { ClinicalAccess } from 'src/shared/clinical-access';
 import { tableQueryBuilder } from 'src/shared/query/table-sorting';
 import { InformedConsentResponseService } from 'src/modules/informed-consent/services/informed-consent-response.service';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
@@ -131,40 +132,17 @@ export class AssessmentService {
         query: AssessmentQuery,
         currentUser: User,
     ): Promise<ConnectionType<Assessment>> {
-        let departmentFilter: any = {};
-        const targetUserFilter = { responderUserId: { eq: currentUser.id } };
-        const canViewPatients = await this.checkPermission(currentUser.id, PermissionEnum.PATIENTS_VIEW_DEPARTMENT);
-        const canViewAllPatients = await this.checkPermission(currentUser.id, PermissionEnum.PATIENTS_VIEW_ALL);
-        const canViewDepartmentPatients = await this.checkPermission(currentUser.id, PermissionEnum.PATIENTS_VIEW_DEPARTMENT);
-        const canViewAssignedPatients = await this.checkPermission(currentUser.id, PermissionEnum.PATIENTS_VIEW_ASSIGNED);
-
-        if (!canViewPatients && !canViewAllPatients && !canViewDepartmentPatients && !canViewAssignedPatients) {
-            departmentFilter = targetUserFilter;
-        } else {
-            const access = await this.patientPermissionService.getUserAccessScope(currentUser.id);
-
-            if (access.type !== PatientAccessScope.ALL) {
-                const patientAuthorizeFilter = await PatientAuthorizer.authorizePatient(currentUser?.id);
-
-                const currentUsersPatients = await this.patientQueryService.query({
-                    filter: patientAuthorizeFilter,
-                });
-
-                if (currentUsersPatients.length > 0) {
-                    departmentFilter = {
-                        or: [
-                            { patientId: { in: currentUsersPatients.map(p => p.id) } },
-                            targetUserFilter,
-                        ],
-                    };
-                } else {
-                    departmentFilter = targetUserFilter;
-                }
+        const viewer = await ClinicalAccess.viewer(currentUser.id);
+        const grants = await ClinicalAccess.grants(currentUser.id);
+        if (!ClinicalAccess.all(viewer, grants, 'assessments', 'view')) {
+            const candidates = await tableQueryBuilder(this.assessmentRepository, { ...query, paging: undefined, sorting: [] }).getMany();
+            await ClinicalAccess.loadAssessmentScopes(candidates);
+            const allowed: number[] = [];
+            for (const assessment of candidates) {
+                if (await ClinicalAccess.canAssessment(assessment, viewer, grants, 'view')) allowed.push(assessment.id);
             }
+            query.filter = mergeFilter(query.filter, { id: { in: allowed.length ? allowed : [0] } });
         }
-
-        const combinedFilter = mergeFilter(query.filter, departmentFilter);
-        query.filter = combinedFilter;
 
         // Apply default sort if not provided
         query.sorting = query.sorting?.length
@@ -240,11 +218,18 @@ export class AssessmentService {
             .addOrderBy('assessment.id', 'DESC')
             .getMany();
 
+        const viewer = await ClinicalAccess.viewer(currentUser.id);
+        const grants = await ClinicalAccess.grants(currentUser.id);
+        await ClinicalAccess.loadAssessmentScopes(assessments);
+        const visible: Assessment[] = [];
         for (const assessment of assessments) {
-            await this.changeQuestionnaireAssessmentStatus(assessment);
+            if (await ClinicalAccess.canAssessment(assessment, viewer, grants, 'view')) {
+                await this.changeQuestionnaireAssessmentStatus(assessment);
+                visible.push(assessment);
+            }
         }
 
-        return assessments;
+        return visible;
     }
 
     private async assertCanAccessPatientAssessments(
@@ -275,60 +260,14 @@ export class AssessmentService {
         assessmentId: number,
         currentUser: User,
     ): Promise<Assessment> {
-        // Check if user can access this assessment
-        const canViewAllPatients = await this.checkPermission(currentUser.id, PermissionEnum.PATIENTS_VIEW_ALL);
-        const canViewDepartmentPatients = await this.checkPermission(currentUser.id, PermissionEnum.PATIENTS_VIEW_DEPARTMENT);
-        const canViewAssignedPatients = await this.checkPermission(currentUser.id, PermissionEnum.PATIENTS_VIEW_ASSIGNED);
-
-        if (canViewAllPatients) {
-            // Can access any assessment
-            return await this.assessmentRepository.findOneOrFail(assessmentId);
+        const assessment = await this.assessmentRepository.findOneOrFail(assessmentId);
+        if (!await ClinicalAccess.canAssessment(assessment, await ClinicalAccess.viewer(currentUser.id), await ClinicalAccess.grants(currentUser.id), 'view')) {
+            throw new NotFoundException('Assessment not found');
         }
-
-        // For other users, check if they are the target user or have access via patient
-        let filter: any = { id: { eq: assessmentId } };
-
-        if (canViewDepartmentPatients || canViewAssignedPatients) {
-            const patientAuthorizeFilter = await PatientAuthorizer.authorizePatient(currentUser?.id);
-            const currentUsersPatients = await this.patientQueryService.query({
-                filter: patientAuthorizeFilter,
-            });
-
-            filter = {
-                and: [
-                    { id: { eq: assessmentId } },
-                    {
-                        or: [
-                            { patientId: { in: currentUsersPatients.map(p => p.id) } },
-                            { responderUserId: { eq: currentUser.id } },
-                        ],
-                    },
-                ],
-            };
-        } else {
-            // Default only see if they are the target
-            filter = {
-                and: [
-                    { id: { eq: assessmentId } },
-                    { responderUserId: { eq: currentUser.id } },
-                ],
-            };
-        }
-
-        const assessments = await this.assessmentQueryService.query({
-            paging: { limit: 1 },
-            filter,
-        });
-
-        const assessment = assessments?.[0];
-        if (!assessment) {
-            throw new NotFoundException();
-        }
-
         return assessment;
     }
 
-    async createNewAssessment(assessmentInput: CreateFullAssessmentInput, currentUser?: User) {
+    async createNewAssessment(assessmentInput: CreateFullAssessmentInput, currentUser?: User, source?: { automationId?: number; departmentIds?: number[] }) {
         const assessmentLength = assessmentInput.dates.length || 1;
         const assessmentArray = [];
         const responsibleUserIds = this.resolveAssessmentResponsibleUserIds(assessmentInput);
@@ -459,6 +398,8 @@ export class AssessmentService {
                     assessmentInput.dates[i].deliveryDate,
                 );
 
+                assessment.automationId = source?.automationId;
+                assessment.departmentIds = source?.departmentIds || await ClinicalAccess.assessmentDepartments(assessment);
                 await assessment.save();
                 await this.setAssessmentResponsibleUsers(
                     assessment,
@@ -511,6 +452,8 @@ export class AssessmentService {
     }
 
     async updateAssessment(assessmentInput: UpdateFullAssessmentInput, currentUser?: User) {
+        const persisted = await this.assessmentRepository.findOneOrFail(assessmentInput.assessmentId);
+        if (currentUser) await ClinicalAccess.assertAssessment(persisted, currentUser, 'edit');
         const responsibleUserIds = this.resolveAssessmentResponsibleUserIds(assessmentInput);
         if (!responsibleUserIds.length) {
             throw new BadRequestException('At least one responsible user is required');
@@ -1022,26 +965,7 @@ export class AssessmentService {
         assessment: Assessment,
         currentUser: User,
     ): Promise<void> {
-        if (
-            await this.canManageAssessmentTargetByScope(
-                currentUser,
-                assessment.patientId,
-                assessment.targetUserId,
-            )
-        ) {
-            return;
-        }
-        const responsibleUserIds = this.uniqueIds([
-            ...(assessment.responsibleUsers || []).map(user => user.id),
-            assessment.clinicianId,
-        ]);
-        await this.assertCanManageAssessmentResponsibles(
-            assessment.patientId,
-            assessment.targetUserId,
-            responsibleUserIds,
-            currentUser,
-            'edit',
-        );
+        await ClinicalAccess.assertAssessment(assessment, currentUser, 'edit');
     }
 
     private async canManageAssessmentTargetByScope(

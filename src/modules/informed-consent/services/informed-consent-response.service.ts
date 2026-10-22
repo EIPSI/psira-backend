@@ -1,3 +1,4 @@
+import { ClinicalAccess, departmentIds, intersection } from 'src/shared/clinical-access';
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RoleCode } from 'src/modules/permission/enums/role-code.enum';
@@ -53,11 +54,18 @@ export class InformedConsentResponseService {
         private readonly settingService: SettingService,
     ) {}
 
-    listResponses(): Promise<InformedConsentResponse[]> {
-        return this.responseRepository.find({
+    async listResponses(currentUser: User, patientId?: number, userId?: number): Promise<InformedConsentResponse[]> {
+        const rows = await this.responseRepository.find({
             relations: ['management', 'model', 'version', 'version.textBlocks', 'version.questions', 'version.questions.answerOptions', 'signer', 'representedUser', 'patient', 'answers', 'reviews'],
             order: { id: 'DESC' },
         });
+        const visible: InformedConsentResponse[] = [];
+        for (const response of rows) {
+            if (patientId && Number(response.patientId) !== Number(patientId) && Number(response.signerUserId) !== Number(userId)) continue;
+            if (!patientId && userId && Number(response.signerUserId) !== Number(userId) && Number(response.representedUserId) !== Number(userId)) continue;
+            if (await this.canAccessResponse(response, currentUser)) visible.push(response);
+        }
+        return visible;
     }
 
     listResponsesForUser(userId: number): Promise<InformedConsentResponse[]> {
@@ -362,6 +370,9 @@ export class InformedConsentResponseService {
             throw new BadRequestException('responseId is required to revoke an informed consent response.');
         }
         const response = await this.getResponse(responseId);
+        if (!await this.canAccessResponse(response, currentUser, true)) {
+            throw new ForbiddenException('You cannot review this informed consent response.');
+        }
         await this.createReview(
             response.id,
             currentUser.id,
@@ -464,6 +475,21 @@ export class InformedConsentResponseService {
         );
     }
 
+    async canAccessResponse(response: InformedConsentResponse, currentUser: User, review = false): Promise<boolean> {
+        const viewer = await ClinicalAccess.viewer(currentUser.id), grants = await ClinicalAccess.grants(currentUser.id);
+        const action = review ? 'review' : 'view';
+        if (ClinicalAccess.all(viewer, grants, 'informed-consent-responses', action)) return true;
+        const signer = await this.userRepository.findOne(response.signerUserId, { relations: ['departments'] });
+        const patient = response.patientId ? await this.patientRepository.findOne(response.patientId, { relations: ['departments'] })
+            : await this.patientRepository.findOne({ where: { userId: response.signerUserId }, relations: ['departments'] });
+        if (grants.includes(`informed-consent-responses.${action}.department`) &&
+            intersection(departmentIds(viewer), departmentIds(patient || signer)).length) return true;
+        if (ClinicalAccess.manages(viewer, patient?.id, response.signerUserId) &&
+            (grants.includes(review ? 'clinical.edit.assigned' : 'clinical.view.assigned') ||
+             grants.includes(`informed-consent-responses.${action}.assigned`))) return true;
+        return !review && (Number(response.signerUserId) === Number(currentUser.id) || Number(response.representedUserId) === Number(currentUser.id));
+    }
+
     private async assertCanReactivateResponse(
         response: InformedConsentResponse,
         currentUser: User,
@@ -475,31 +501,7 @@ export class InformedConsentResponseService {
             return;
         }
 
-        const user = await this.userRepository.findOne(currentUser.id, {
-            relations: ['roles', 'roles.permissions', 'permissions'],
-        });
-        if (user?.isSuperUser) return;
-        if (this.hasAnyPermission(user, [
-            PermissionEnum.INFORMED_CONSENT_RESPONSES_REVIEW_ALL,
-            PermissionEnum.INFORMED_CONSENT_RESPONSES_REVIEW_DEPARTMENT,
-            PermissionEnum.PATIENTS_EDIT_ALL,
-            PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
-            PermissionEnum.USERS_EDIT_ALL,
-            PermissionEnum.USERS_EDIT_DEPARTMENT,
-            PermissionEnum.USERS_EDIT_DEPARTMENT_HIERARCHY,
-        ])) return;
-
-        if (response.patientId) {
-            const patient = await this.patientRepository.findOne(response.patientId, {
-                relations: ['caseManagers'],
-            });
-            if ((patient?.caseManagers || []).some(manager => Number(manager.id) === Number(currentUser.id))) return;
-        } else {
-            const signer = await this.userRepository.findOne(response.signerUserId, {
-                relations: ['supervisors'],
-            });
-            if ((signer?.supervisors || []).some(supervisor => Number(supervisor.id) === Number(currentUser.id))) return;
-        }
+        if (await this.canAccessResponse(response, currentUser, true)) return;
 
         throw new ForbiddenException('You are not allowed to reactivate this informed consent response.');
     }

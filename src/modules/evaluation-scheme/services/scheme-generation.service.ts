@@ -1,3 +1,5 @@
+import { ClinicalAccess, departmentIds, intersection } from 'src/shared/clinical-access';
+import { clinicalResponders } from 'src/shared/clinical-responders';
 import { userTimezone } from 'src/shared/user-timezone';
 import * as moment from 'moment-timezone';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
@@ -88,7 +90,9 @@ export class SchemeGenerationService {
     async applyScheme(
         input: ApplyEvaluationSchemeInput,
         currentUser?: User,
+        source?: { automationId?: number; departmentIds?: number[] },
     ): Promise<EvaluationSchemeAssignment> {
+        if (currentUser) await ClinicalAccess.assertTarget(currentUser, input.patientId, input.targetUserId || input.therapistId);
         if (!!input.schemeId === !!input.randomizationRuleId) {
             throw new BadRequestException(
                 'Apply scheme requires either schemeId or randomizationRuleId',
@@ -99,8 +103,13 @@ export class SchemeGenerationService {
             ? await this.randomizationResolutionService.resolveHighLevelScheme(
                   input.randomizationRuleId,
               )
-            : await this.schemeRepository.findOne(input.schemeId);
+            : await this.schemeRepository.findOne(input.schemeId, { relations: ['departments'] });
         if (!scheme) throw new NotFoundException('Evaluation scheme not found');
+        if (currentUser && scheme.departments?.length && !currentUser.isSuperUser) {
+            const patient = input.patientId ? await this.patientRepository.findOne(input.patientId, { relations: ['departments'] }) : null;
+            const target = patient || await this.userRepository.findOne(input.targetUserId || input.therapistId, { relations: ['departments'] });
+            if (!intersection(departmentIds(target), departmentIds(scheme)).length) throw new BadRequestException('Scheme is unavailable in this case departments');
+        }
 
         // Fixed moments belong to the respondent, even when applied by a clinician.
         const responder = scheme.schemeType === EvaluationSchemeType.INDEPENDENT_EVALUATION
@@ -111,6 +120,8 @@ export class SchemeGenerationService {
         const assignment = await this.assignmentRepository.save(
             this.assignmentRepository.create({
                 schemeId: scheme.id,
+                automationId: source?.automationId,
+                departmentIds: source?.departmentIds,
                 randomizationRuleId: input.randomizationRuleId,
                 patientId: input.patientId,
                 targetUserId: input.targetUserId,
@@ -138,21 +149,22 @@ export class SchemeGenerationService {
         currentUser?: User,
         options: GenerateOccurrencesOptions = {},
     ): Promise<CalendarOccurrence[]> {
+        const assignment = await this.assignmentRepository.findOne(
+            input.assignmentId,
+            { relations: ['scheme', 'patient'] },
+        );
+        if (!assignment) throw new NotFoundException('Scheme assignment not found');
+        if (currentUser) await ClinicalAccess.assertTarget(currentUser, assignment.patientId, assignment.targetUserId || assignment.therapistId);
+        if (assignment.status !== EvaluationSchemeAssignmentStatus.ACTIVE) {
+            throw new BadRequestException('Only active assignments can generate occurrences');
+        }
+
         if (!options.ignoreExisting) {
             const existingOccurrences = await this.occurrenceRepository.find({
                 where: { schemeAssignmentId: input.assignmentId },
                 order: { startAt: 'ASC' },
             });
             if (existingOccurrences.length) return existingOccurrences;
-        }
-
-        const assignment = await this.assignmentRepository.findOne(
-            input.assignmentId,
-            { relations: ['scheme', 'patient'] },
-        );
-        if (!assignment) throw new NotFoundException('Scheme assignment not found');
-        if (assignment.status !== EvaluationSchemeAssignmentStatus.ACTIVE) {
-            throw new BadRequestException('Only active assignments can generate occurrences');
         }
 
         const scheme = assignment.scheme;
@@ -189,7 +201,9 @@ export class SchemeGenerationService {
         currentUser?: User,
     ): Promise<CalendarOccurrence[]> {
         const from = input.from ? new Date(input.from) : new Date();
-        await this.removeRegenerableFutureOccurrences(input.assignmentId, from);
+        const assignment = await this.assignmentRepository.findOneOrFail(input.assignmentId);
+        if (currentUser) await ClinicalAccess.assertTarget(currentUser, assignment.patientId, assignment.targetUserId || assignment.therapistId);
+        await this.removeRegenerableFutureOccurrences(input.assignmentId, from, currentUser);
 
         return this.generateOccurrences(
             { assignmentId: input.assignmentId },
@@ -235,7 +249,7 @@ export class SchemeGenerationService {
                 });
 
                 const session = await this.clinicalSessionSchedulingService.createClinicalSession(
-                    this.buildClinicalSessionInput(
+                    await this.buildClinicalSessionInput(
                         context,
                         sessionTemplate,
                         resourceTemplates,
@@ -278,34 +292,33 @@ export class SchemeGenerationService {
                 if (shouldLimitOccurrences && generated.length >= context.maxOccurrences) {
                     return generated;
                 }
-                const window = this.buildFixedTemplateWindow(
-                    context,
-                    baseDate,
-                    template,
-                );
-                if (window.deliveryAt > context.generationEndsAt) return generated;
-
-                generated.push(
-                    await this.createIndependentEvaluationOccurrence(
-                        context,
-                        template,
-                        window,
-                    ),
-                );
+                const responders = await clinicalResponders(template.defaultResponderRole, {
+                    ...context.assignment, responsibleUserIds: context.responsibleUserIds,
+                    sessionKind: context.assignment.supervisorId ? 'SUPERVISION' : 'CLINICAL',
+                }, context.responderUserId);
+                for (const responder of responders) {
+                    const timezone = userTimezone(responder);
+                    const localDate = moment.tz(baseDate, context.assignment.timezone).format('YYYY-MM-DD');
+                    const respondentContext = { ...context, responderUserId: responder.id, responderEmail: responder.email,
+                        assignment: { ...context.assignment, timezone } as EvaluationSchemeAssignment };
+                    const window = this.buildFixedTemplateWindow(respondentContext, moment.tz(localDate, 'YYYY-MM-DD', timezone).toDate(), template);
+                    if (window.deliveryAt > context.generationEndsAt) continue;
+                    generated.push(await this.createIndependentEvaluationOccurrence(respondentContext, template, window));
+                }
             }
         }
 
         return generated;
     }
 
-    private buildClinicalSessionInput(
+    private async buildClinicalSessionInput(
         context: GenerationContext,
         sessionTemplate: SchemeSessionTemplate,
         resourceTemplates: SchemeResourceTemplate[],
         startAt: Date,
         endAt: Date,
-    ): CreateClinicalSessionInput {
-        return {
+    ): Promise<CreateClinicalSessionInput> {
+        const input: CreateClinicalSessionInput = {
             title: sessionTemplate.title,
             sessionKind: sessionTemplate.sessionKind,
             startAt,
@@ -341,6 +354,14 @@ export class SchemeGenerationService {
                 reminderMinutes: resourceTemplate.reminderMinutes || [],
             })),
         };
+        const resources = [];
+        for (const [index, template] of resourceTemplates.entries()) {
+            const responders = await clinicalResponders(template.defaultResponderRole, input, context.responderUserId);
+            for (const responder of responders) resources.push({ ...input.resources[index], responderUserId: responder.id, receiverEmail: responder.email,
+                informantType: template.defaultResponderRole ? (responder.id === context.responderUserId ? template.informantType : 'OTHER_USER') : template.informantType });
+        }
+        input.resources = resources;
+        return input;
     }
 
     private async createIndependentEvaluationOccurrence(
@@ -393,6 +414,7 @@ export class SchemeGenerationService {
                 receiverEmail: context.responderEmail,
             } as unknown) as CreateFullAssessmentInput,
             context.currentUser,
+            { automationId: context.assignment.automationId, departmentIds: context.assignment.departmentIds },
         );
 
         assessment.calendarOccurrenceId = occurrence.id;
@@ -542,6 +564,7 @@ export class SchemeGenerationService {
     private async removeRegenerableFutureOccurrences(
         assignmentId: number,
         from: Date,
+        currentUser?: User,
     ): Promise<void> {
         const occurrences = await this.occurrenceRepository.find({
             where: {
@@ -552,6 +575,19 @@ export class SchemeGenerationService {
             order: { startAt: 'ASC' },
         });
 
+        // Authorize the complete batch before changing or deleting anything.
+        if (currentUser) {
+            const viewer = await ClinicalAccess.viewer(currentUser.id);
+            const grants = await ClinicalAccess.grants(currentUser.id);
+            for (const occurrence of occurrences.filter(item => item.startAt >= from)) {
+                if (occurrence.clinicalSession && !ClinicalAccess.canSession(
+                    await ClinicalAccess.session(occurrence.clinicalSession.id), viewer, grants, 'edit',
+                )) throw new BadRequestException('Cannot regenerate another responsible user’s session');
+                for (const assessment of occurrence.assessments || []) {
+                    await ClinicalAccess.assertAssessment(assessment, currentUser, 'edit');
+                }
+            }
+        }
         for (const occurrence of occurrences) {
             if (occurrence.startAt < from) continue;
 

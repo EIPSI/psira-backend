@@ -1,3 +1,4 @@
+import { intersection } from 'src/shared/clinical-access';
 import { SettingService } from 'src/modules/setting/providers/setting.service';
 import { SettingKey } from 'src/modules/setting/enums/setting-name.enum';
 import { userTimezone } from 'src/shared/user-timezone';
@@ -286,6 +287,11 @@ export class EvaluationAutomationEngineService {
         };
     }
 
+    private assessmentSource(automation: EvaluationAutomation, context: UserAutomationContext) {
+        const scope = (automation.departments || []).map(department => department.id);
+        return { automationId: automation.id, departmentIds: scope.length ? intersection(context.departmentIds, scope) : context.departmentIds };
+    }
+
     private async executeAutomation(
         automation: EvaluationAutomation,
         context: UserAutomationContext,
@@ -296,6 +302,7 @@ export class EvaluationAutomationEngineService {
         if (automation.automationType === EvaluationAutomationType.FIXED_SCHEME) {
             const assignment = await this.schemeGenerationService.applyScheme(
                 await this.buildSchemeAssignmentInput(automation, context, scheduledAt),
+                undefined, this.assessmentSource(automation, context),
             );
             return {
                 resourceType:
@@ -311,6 +318,7 @@ export class EvaluationAutomationEngineService {
 
         const assessment = await this.assessmentService.createNewAssessment(
             this.buildAssessmentInput(automation, context, scheduledAt),
+            undefined, this.assessmentSource(automation, context),
         );
         return {
             resourceType: EvaluationAutomationResourceType.ASSESSMENT,

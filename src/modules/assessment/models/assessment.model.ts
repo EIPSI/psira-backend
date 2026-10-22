@@ -52,6 +52,14 @@ import { SchemeResourceTemplate } from 'src/modules/evaluation-scheme/models/sch
 @FilterableRelation('schemeResourceTemplate', () => SchemeResourceTemplate, { nullable: true })
 @Entity()
 export class Assessment extends BaseEntity {
+    @Field(() => [Int], { nullable: true })
+    @Column({ type: 'simple-json', nullable: true })
+    departmentIds?: number[];
+
+    @Field(() => Int, { nullable: true })
+    @Column({ nullable: true })
+    automationId?: number;
+
     @FilterableField(() => Int)
     @PrimaryGeneratedColumn()
     id: number;

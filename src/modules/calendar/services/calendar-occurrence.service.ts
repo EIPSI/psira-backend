@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { ClinicalAccess } from 'src/shared/clinical-access';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateFullAssessmentInput } from 'src/modules/assessment/dtos/create-assessment.input';
 import { Assessment } from 'src/modules/assessment/models/assessment.model';
@@ -82,31 +83,38 @@ export class CalendarOccurrenceService {
             });
         }
 
-        query.andWhere(
-            `(
-                occurrence."therapistId" = :currentUserId
-                OR occurrence."supervisorId" = :currentUserId
-                OR therapistSupervisor.id = :currentUserId
-                OR responsibleUser.id = :currentUserId
-                OR caseManager.id = :currentUserId
-                OR patient."userId" = :currentUserId
-                OR assessment."responderUserId" = :currentUserId
-                OR assessment."clinicianId" = :currentUserId
-            )`,
-            { currentUserId: currentUser.id },
-        );
-
-        return query.orderBy('occurrence.startAt', 'ASC').getMany();
+        const occurrences = await query.orderBy('occurrence.startAt', 'ASC').getMany();
+        const viewer = await ClinicalAccess.viewer(currentUser.id), grants = await ClinicalAccess.grants(currentUser.id);
+        await ClinicalAccess.loadAssessmentScopes(occurrences.flatMap(item => item.assessments || []));
+        const visible: CalendarOccurrence[] = [];
+        for (const occurrence of occurrences) {
+            if (occurrence.clinicalSession) {
+                const session = await ClinicalAccess.session(occurrence.clinicalSession.id);
+                if (ClinicalAccess.canSession(session, viewer, grants, 'view')) visible.push(occurrence);
+            } else if (occurrence.assessments?.length) {
+                const access = await Promise.all(occurrence.assessments.map(assessment =>
+                    ClinicalAccess.canAssessment(assessment, viewer, grants, 'view')));
+                if (access.every(Boolean)) visible.push(occurrence);
+            }
+        }
+        return visible;
     }
 
     async detachAndMoveOccurrence(
         occurrenceId: number,
         startAt: Date,
         endAt: Date,
+        currentUser?: User,
     ): Promise<CalendarOccurrence> {
+        if (endAt <= startAt) throw new BadRequestException('Event end must be after its start');
         const occurrence = await this.occurrenceRepository.findOneOrFail(
-            occurrenceId,
+            occurrenceId, { relations: ['clinicalSession', 'assessments'] },
         );
+        if (currentUser) {
+            if (occurrence.clinicalSession) throw new BadRequestException('Session events must be moved through their session');
+            if (!occurrence.assessments?.length) throw new ForbiddenException('No accessible evaluation belongs to this event');
+            for (const assessment of occurrence.assessments) await ClinicalAccess.assertAssessment(assessment, currentUser, 'edit');
+        }
 
         if (!occurrence.originalStartAt) {
             occurrence.originalStartAt = occurrence.startAt;

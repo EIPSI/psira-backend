@@ -1,7 +1,8 @@
-import { QueryService, mergeFilter } from '@nestjs-query/core';
+import { DeepPartial, QueryService, UpdateOneOptions, mergeFilter } from '@nestjs-query/core';
 import { TypeOrmQueryService } from '@nestjs-query/query-typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
+import { Department } from 'src/modules/department/models/department.model';
 import { Patient, PatientReport } from '../models/patient.model';
 import { CreatePatientInput } from '../dto/create-patient.input';
 import { User } from 'src/modules/user/models/user.model';
@@ -101,6 +102,27 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
         }
 
         return patient;
+    }
+
+    async updateOne(
+        id: number | string,
+        update: DeepPartial<Patient> & { departmentIds?: number[] },
+        opts?: UpdateOneOptions<Patient>,
+    ): Promise<Patient> {
+        const { departmentIds, ...values } = update;
+        const patient = await this.getById(id, opts);
+        return this.repo.manager.transaction(async manager => {
+            const repo = manager.getRepository(Patient);
+            const entity = repo.merge(patient, values);
+            if (departmentIds !== undefined) {
+                if (!departmentIds.length) throw new BadRequestException('Patient must belong to at least one department.');
+                const ids = [...new Set(departmentIds.map(Number))];
+                const departments = await manager.getRepository(Department).find({ where: { id: In(ids), active: true } });
+                if (departments.length !== ids.length) throw new BadRequestException('Invalid patient department.');
+                entity.departments = departments;
+            }
+            return repo.save(entity);
+        });
     }
 
     private validatePatientAccountEmail(input: CreatePatientInput): void {

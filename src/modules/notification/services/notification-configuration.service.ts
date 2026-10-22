@@ -8,6 +8,7 @@ import { User } from 'src/modules/user/models/user.model';
 import { Repository } from 'typeorm';
 import {
     CreateNotificationConfigurationInput,
+    SaveNotificationConfigurationsInput,
     UpdateNotificationConfigurationInput,
 } from '../dtos/notification-configuration.input';
 import { NotificationTemplateShortcutDto } from '../dtos/notification-template-shortcut.dto';
@@ -80,9 +81,34 @@ export class NotificationConfigurationService {
         };
         await this.validateInput(next);
         await this.assertUniqueScope(next, input.id);
-        Object.assign(configuration, next);
-        await this.configurationRepository.save(configuration);
+        await this.configurationRepository.update(configuration.id, next);
         return this.get(configuration.id);
+    }
+
+    async saveScopes(input: SaveNotificationConfigurationsInput): Promise<NotificationConfiguration[]> {
+        const scopes: Array<number | null> = input.departmentIds?.length ? [...new Set(input.departmentIds.map(Number))] : [null];
+        const { id, departmentIds, departmentId: ignored, ...values } = input;
+        for (const scope of scopes) {
+            await this.validateInput({ ...values, departmentId: scope });
+            await this.assertUniqueScope({ ...values, departmentId: scope }, id);
+        }
+        const ids = await this.configurationRepository.manager.transaction(async manager => {
+            const repository = manager.getRepository(NotificationConfiguration);
+            const savedIds: number[] = [];
+            for (const [index, scope] of scopes.entries()) {
+                if (id && index === 0) {
+                    const existing = await repository.findOne(id);
+                    if (!existing) throw new NotFoundException('Notification configuration not found');
+                    await repository.update(id, { ...values, departmentId: scope });
+                    savedIds.push(id);
+                } else {
+                    const saved = await repository.save(repository.create({ ...values, departmentId: scope }));
+                    savedIds.push(saved.id);
+                }
+            }
+            return savedIds;
+        });
+        return Promise.all(ids.map(savedId => this.get(savedId)));
     }
 
     async delete(id: number): Promise<boolean> {
