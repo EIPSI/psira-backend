@@ -24,6 +24,14 @@ import { EvaluationScheme } from './evaluation-scheme.model';
 @FilterableRelation('supervisor', () => User, { nullable: true })
 @Entity()
 export class EvaluationSchemeAssignment extends BaseEntity {
+    @Field(() => [Int], { nullable: true })
+    @Column({ type: 'simple-json', nullable: true })
+    departmentIds?: number[];
+
+    @Field(() => Int, { nullable: true })
+    @Column({ nullable: true })
+    automationId?: number;
+
     @FilterableField(() => Int)
     @PrimaryGeneratedColumn()
     id: number;

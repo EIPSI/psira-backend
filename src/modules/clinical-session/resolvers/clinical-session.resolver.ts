@@ -61,8 +61,9 @@ export class ClinicalSessionResolver {
             nullable: true,
         })
         filter: ClinicalSessionListFilterInput,
+        @CurrentUser() currentUser: User,
     ): Promise<ClinicalSession[]> {
-        return this.schedulingService.getClinicalSessions(filter || {});
+        return this.schedulingService.getClinicalSessions(filter || {}, currentUser);
     }
 
     @Query(() => [ClinicalSessionSchemeApplication])
@@ -71,9 +72,11 @@ export class ClinicalSessionResolver {
         PermissionEnum.CLINICAL_VIEW_DEPARTMENT,
         PermissionEnum.CLINICAL_VIEW_ASSIGNED,
     ])
-    clinicalSessionSchemeApplications(
+    async clinicalSessionSchemeApplications(
         @Args('clinicalSessionId', { type: () => Int }) clinicalSessionId: number,
+        @CurrentUser() currentUser: User,
     ): Promise<ClinicalSessionSchemeApplication[]> {
+        await this.schedulingService.assertCanViewSession(clinicalSessionId, currentUser);
         return this.schedulingService.getActiveSchemeApplicationsForSession(clinicalSessionId);
     }
 
@@ -83,9 +86,11 @@ export class ClinicalSessionResolver {
         PermissionEnum.CLINICAL_VIEW_DEPARTMENT,
         PermissionEnum.CLINICAL_VIEW_ASSIGNED,
     ])
-    clinicalSessionFollowUpVersions(
+    async clinicalSessionFollowUpVersions(
         @Args('clinicalSessionId', { type: () => Int }) clinicalSessionId: number,
+        @CurrentUser() currentUser: User,
     ): Promise<ClinicalSessionFollowUpVersion[]> {
+        await this.schedulingService.assertCanViewSession(clinicalSessionId, currentUser);
         return this.schedulingService.getClinicalSessionFollowUpVersions(clinicalSessionId);
     }
 

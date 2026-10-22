@@ -463,6 +463,11 @@ export const defaultTranslationSeed = {
       "defaultText": "30 min"
     },
     {
+      "key": "calendar.duration45",
+      "namespace": "calendar",
+      "defaultText": "45 min"
+    },
+    {
       "key": "calendar.duration60",
       "namespace": "calendar",
       "defaultText": "60 min"
@@ -1041,6 +1046,11 @@ export const defaultTranslationSeed = {
       "key": "calendar.unableLoadSupervisors",
       "namespace": "calendar",
       "defaultText": "Unable to load supervisors"
+    },
+    {
+      "key": "calendar.unableLoadTargets",
+      "namespace": "calendar",
+      "defaultText": "Unable to load available calendar targets"
     },
     {
       "key": "calendar.unableLoadTherapistCalendar",
@@ -4928,6 +4938,16 @@ export const defaultTranslationSeed = {
       "defaultText": "You have {{count}} unanswered required question(s). Are you sure you want to finish the questionnaire?"
     },
     {
+      "key": "notifications.caseManagerAssignmentRequest",
+      "namespace": "notifications",
+      "defaultText": "Case manager assignment request"
+    },
+    {
+      "key": "notifications.caseManagerAssignmentRequestDescription",
+      "namespace": "notifications",
+      "defaultText": "Notifies a user of a request to manage a patient. They can accept or reject it from the dashboard."
+    },
+    {
       "key": "notifications.channel",
       "namespace": "notifications",
       "defaultText": "Channel"
@@ -5076,6 +5096,16 @@ export const defaultTranslationSeed = {
       "key": "notifications.recipientRoleRequired",
       "namespace": "notifications",
       "defaultText": "Select a recipient role."
+    },
+    {
+      "key": "notifications.supervisorAssignmentRequest",
+      "namespace": "notifications",
+      "defaultText": "Supervisor assignment request"
+    },
+    {
+      "key": "notifications.supervisorAssignmentRequestDescription",
+      "namespace": "notifications",
+      "defaultText": "Notifies a user of a request to supervise a therapist. They can accept or reject it from the dashboard."
     },
     {
       "key": "notifications.template",
@@ -9406,6 +9436,8 @@ export const defaultTranslationSeed = {
         "updated": "Bundle updated successfully!"
       },
       "calendar": {
+        "unableLoadTargets": "Die verfügbaren Kalenderpersonen konnten nicht geladen werden",
+        "duration45": "45 Min.",
         "createEvent": "Create Event",
         "createSession": "Create Session",
         "details": "Details",
@@ -10407,6 +10439,10 @@ export const defaultTranslationSeed = {
         "unansweredQuestionsOverview": "Sie haben {{count}} unbeantwortete Pflichtfragen. Alle Pflichtfragen müssen beantwortet werden, um den Fragebogen abschliessen zu können."
       },
       "notifications": {
+        "supervisorAssignmentRequestDescription": "Benachrichtigt über eine Anfrage zur Supervision eines Therapeuten. Die Anfrage kann im Dashboard angenommen oder abgelehnt werden.",
+        "caseManagerAssignmentRequestDescription": "Benachrichtigt über eine Anfrage zur Betreuung eines Patienten. Die Anfrage kann im Dashboard angenommen oder abgelehnt werden.",
+        "supervisorAssignmentRequest": "Anfrage zur Supervision",
+        "caseManagerAssignmentRequest": "Anfrage zur Fallverwaltung",
         "channel": "Channel",
         "configurableNotificationType": "Configurable notification type in PSIRA.",
         "configurationHelp": "Define which template is used for each event, department and recipient role.",
@@ -11812,6 +11848,10 @@ export const defaultTranslationSeed = {
         "placeholder": "Feedback works!"
       },
       "notifications": {
+        "supervisorAssignmentRequestDescription": "Notifies a user of a request to supervise a therapist. They can accept or reject it from the dashboard.",
+        "caseManagerAssignmentRequestDescription": "Notifies a user of a request to manage a patient. They can accept or reject it from the dashboard.",
+        "supervisorAssignmentRequest": "Supervisor assignment request",
+        "caseManagerAssignmentRequest": "Case manager assignment request",
         "title": "Notifications",
         "createConfiguration": "Create configuration",
         "editConfiguration": "Edit configuration",
@@ -11957,6 +11997,8 @@ export const defaultTranslationSeed = {
         "notArchivedPatients": "Show not Archived"
       },
       "calendar": {
+        "unableLoadTargets": "Unable to load available calendar targets",
+        "duration45": "45 min",
         "type": "Event type",
         "emptyDay": "No events for this day",
         "details": "Details",
@@ -13857,6 +13899,10 @@ export const defaultTranslationSeed = {
         "placeholder": "Feedback disponible."
       },
       "notifications": {
+        "supervisorAssignmentRequestDescription": "Notifica al usuario una solicitud para supervisar a un terapeuta. Puede aceptarla o rechazarla desde el Panel de control.",
+        "caseManagerAssignmentRequestDescription": "Notifica al usuario una solicitud para administrar un paciente. Puede aceptarla o rechazarla desde el Panel de control.",
+        "supervisorAssignmentRequest": "Solicitud de supervisor",
+        "caseManagerAssignmentRequest": "Solicitud de administrador de caso",
         "title": "Notificaciones",
         "createConfiguration": "Crear configuración",
         "editConfiguration": "Editar configuración",
@@ -14002,6 +14048,8 @@ export const defaultTranslationSeed = {
         "notArchivedPatients": "Mostrar Pacientes No Archivados"
       },
       "calendar": {
+        "unableLoadTargets": "No se pudieron cargar las personas disponibles para el calendario",
+        "duration45": "45 min",
         "type": "Tipo de evento",
         "emptyDay": "No hay eventos para este día",
         "details": "Detalles",
@@ -15543,6 +15591,8 @@ export const defaultTranslationSeed = {
         "updated": "Bundle updated successfully!"
       },
       "calendar": {
+        "unableLoadTargets": "Beschikbare personen voor de kalender konden niet worden geladen",
+        "duration45": "45 min",
         "createEvent": "Create Event",
         "createSession": "Create Session",
         "details": "Details",
@@ -16543,6 +16593,10 @@ export const defaultTranslationSeed = {
         "unansweredQuestionsOverview": "You have {{count}} unanswered required question(s). Are you sure you want to finish the questionnaire?"
       },
       "notifications": {
+        "supervisorAssignmentRequestDescription": "Meldt een verzoek om een therapeut te superviseren. Het verzoek kan via het dashboard worden geaccepteerd of afgewezen.",
+        "caseManagerAssignmentRequestDescription": "Meldt een verzoek om een patiënt te begeleiden. Het verzoek kan via het dashboard worden geaccepteerd of afgewezen.",
+        "supervisorAssignmentRequest": "Verzoek om supervisor te worden",
+        "caseManagerAssignmentRequest": "Verzoek om casemanager te worden",
         "channel": "Channel",
         "configurableNotificationType": "Configurable notification type in PSIRA.",
         "configurationHelp": "Define which template is used for each event, department and recipient role.",

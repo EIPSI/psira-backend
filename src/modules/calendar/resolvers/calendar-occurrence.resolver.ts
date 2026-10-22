@@ -11,7 +11,7 @@ import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
 import { CreateFullAssessmentInput } from 'src/modules/assessment/dtos/create-assessment.input';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
-import { UsePermission } from 'src/modules/permission/decorators/permission.decorator';
+import { UseOrPermissions } from 'src/modules/permission/decorators/permission.decorator';
 import { PermissionGuard } from 'src/modules/permission/guards/permission.guard';
 import { User } from 'src/modules/user/models/user.model';
 import { CalendarOccurrenceType } from '../enums/calendar-occurrence-type.enum';
@@ -48,21 +48,25 @@ export class CalendarOccurrenceResolver {
     }
 
     @Mutation(() => CalendarOccurrence)
-    @UsePermission(PermissionEnum.CLINICAL_EDIT_DEPARTMENT)
+    @UseOrPermissions([PermissionEnum.ASSESSMENTS_EDIT_ALL, PermissionEnum.ASSESSMENTS_EDIT_DEPARTMENT,
+        PermissionEnum.ASSESSMENTS_EDIT_ASSIGNED])
     moveCalendarOccurrence(
         @Args('id', { type: () => Int }) id: number,
         @Args('startAt', { type: () => GraphQLISODateTime }) startAt: Date,
         @Args('endAt', { type: () => GraphQLISODateTime }) endAt: Date,
+        @CurrentUser() currentUser: User,
     ): Promise<CalendarOccurrence> {
         return this.calendarOccurrenceService.detachAndMoveOccurrence(
             id,
             startAt,
             endAt,
+            currentUser,
         );
     }
 
     @Mutation(() => CalendarOccurrence)
-    @UsePermission(PermissionEnum.CLINICAL_EDIT_DEPARTMENT)
+    @UseOrPermissions([PermissionEnum.ASSESSMENTS_CREATE_ALL, PermissionEnum.ASSESSMENTS_CREATE_DEPARTMENT,
+        PermissionEnum.ASSESSMENTS_CREATE_ASSIGNED])
     createAssessmentOccurrence(
         @Args('assessment') assessment: CreateFullAssessmentInput,
         @CurrentUser() currentUser: User,

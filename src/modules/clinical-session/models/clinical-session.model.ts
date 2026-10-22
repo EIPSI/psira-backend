@@ -43,6 +43,9 @@ import { ClinicalSessionResource } from './clinical-session-resource.model';
 @FilterableUnPagedRelation('resources', () => ClinicalSessionResource, { nullable: true })
 @Entity()
 export class ClinicalSession extends BaseEntity {
+    @Field(() => Boolean)
+    canEdit = false;
+
     @FilterableField(() => Int)
     @PrimaryGeneratedColumn()
     id: number;

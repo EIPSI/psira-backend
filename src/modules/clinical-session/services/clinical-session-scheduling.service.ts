@@ -1,3 +1,5 @@
+import { ClinicalAccess, sessionDepartmentIds, intersection, departmentIds } from 'src/shared/clinical-access';
+import { clinicalResponders } from 'src/shared/clinical-responders';
 import * as moment from 'moment-timezone';
 import { userTimezone } from 'src/shared/user-timezone';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
@@ -223,14 +225,19 @@ export class ClinicalSessionSchedulingService {
 
     async getClinicalSessions(
         filter: ClinicalSessionListFilterInput = {},
+        currentUser?: User,
     ): Promise<ClinicalSession[]> {
         const query = this.clinicalSessionRepository
             .createQueryBuilder('session')
             .leftJoinAndSelect('session.calendarOccurrence', 'occurrence')
             .leftJoinAndSelect('session.patient', 'patient')
+            .leftJoinAndSelect('patient.departments', 'patientDepartment')
             .leftJoinAndSelect('session.therapist', 'therapist')
+            .leftJoinAndSelect('therapist.departments', 'therapistDepartment')
             .leftJoinAndSelect('session.supervisor', 'supervisor')
+            .leftJoinAndSelect('supervisor.departments', 'supervisorDepartment')
             .leftJoinAndSelect('session.responsibleUsers', 'responsibleUser')
+            .leftJoinAndSelect('responsibleUser.departments', 'responsibleUserDepartment')
             .leftJoinAndSelect('session.resources', 'resource')
             .leftJoinAndSelect('resource.assessment', 'assessment')
             .leftJoinAndSelect('assessment.assessmentType', 'assessmentType')
@@ -274,7 +281,37 @@ export class ClinicalSessionSchedulingService {
             });
         }
 
-        return query.orderBy('occurrence."startAt"', 'DESC').getMany();
+        const sessions = await query.orderBy('occurrence."startAt"', 'DESC').getMany();
+        if (!currentUser) return sessions;
+        const viewer = await ClinicalAccess.viewer(currentUser.id), grants = await ClinicalAccess.grants(currentUser.id);
+        const visible: ClinicalSession[] = [];
+        for (const session of sessions) {
+            const scoped = session;
+            if (!ClinicalAccess.canSession(scoped, viewer, grants, 'view')) continue;
+            session.canEdit = ClinicalAccess.canSession(scoped, viewer, grants, 'edit');
+            visible.push(session);
+        }
+        return visible;
+    }
+
+    private async authorizedSessionBatch(
+        sessions: ClinicalSession[], currentUser?: User, requireEvery = true,
+    ): Promise<ClinicalSession[]> {
+        if (!currentUser) return sessions;
+        const viewer = await ClinicalAccess.viewer(currentUser.id), grants = await ClinicalAccess.grants(currentUser.id);
+        const allowed: ClinicalSession[] = [];
+        for (const session of sessions) {
+            if (ClinicalAccess.canSession(await ClinicalAccess.session(session.id), viewer, grants, 'edit')) allowed.push(session);
+        }
+        if (requireEvery && allowed.length !== sessions.length) {
+            throw new BadRequestException('The operation would modify sessions belonging to another responsible user or department');
+        }
+        return allowed;
+    }
+
+    async assertCanViewSession(id: number, user: User): Promise<void> {
+        if (!ClinicalAccess.canSession(await ClinicalAccess.session(id), await ClinicalAccess.viewer(user.id),
+            await ClinicalAccess.grants(user.id), 'view')) throw new BadRequestException('Session not found');
     }
 
     async getClinicalSessionFollowUpVersions(
@@ -420,6 +457,10 @@ export class ClinicalSessionSchedulingService {
         );
 
         await this.assertCanManageSession(session, currentUser);
+        const changesFuture = input.propagateFuture ||
+            input.sessionNumber !== undefined && input.sessionNumber !== session.sessionNumber ||
+            input.modality !== undefined && input.modality !== session.modality;
+        if (changesFuture) await this.authorizedSessionBatch(await this.futureSessionsFrom(session, true), currentUser);
 
         if (input.startAt || input.endAt) {
             const startAt = input.startAt || session.calendarOccurrence.startAt;
@@ -470,7 +511,7 @@ export class ClinicalSessionSchedulingService {
             });
         }
 
-        if (input.modality !== undefined) {
+        if (input.modality !== undefined && input.modality !== session.modality) {
             await this.updateSessionModalityFrom(session, input.modality);
         }
 
@@ -609,6 +650,10 @@ export class ClinicalSessionSchedulingService {
 
         await this.assertCanManageSession(referenceSession, currentUser);
 
+        const sessions = input.propagateFuture
+            ? await this.futureSessionsFrom(referenceSession, true)
+            : [referenceSession];
+        await this.authorizedSessionBatch(sessions, currentUser);
         const applications = new Map<number, ClinicalSessionSchemeApplication>();
         for (const schemeId of schemeIds) {
             const existingApplication = await this.findActiveSchemeApplication(
@@ -621,6 +666,7 @@ export class ClinicalSessionSchedulingService {
                 );
             }
             if (existingApplication) {
+                await this.cancelPendingResourcesForApplication(existingApplication.id, referenceSession, currentUser, true);
                 await this.stopSchemeApplication(
                     existingApplication,
                     referenceSession,
@@ -629,6 +675,7 @@ export class ClinicalSessionSchedulingService {
                 await this.cancelPendingResourcesForApplication(
                     existingApplication.id,
                     referenceSession,
+                    currentUser,
                 );
             }
             applications.set(
@@ -642,9 +689,6 @@ export class ClinicalSessionSchedulingService {
             );
         }
 
-        const sessions = input.propagateFuture
-            ? await this.futureSessionsFrom(referenceSession, true)
-            : [referenceSession];
         const createdResources: ClinicalSessionResource[] = [];
 
         for (const [index, session] of sessions.entries()) {
@@ -799,8 +843,9 @@ export class ClinicalSessionSchedulingService {
             throw new BadRequestException('This evaluation scheme is not active for this session context');
         }
         await this.assertCanManageSession(referenceSession, currentUser);
+        await this.cancelPendingResourcesForApplication(application.id, referenceSession, currentUser, true);
         await this.stopSchemeApplication(application, referenceSession, status);
-        await this.cancelPendingResourcesForApplication(application.id, referenceSession);
+        await this.cancelPendingResourcesForApplication(application.id, referenceSession, currentUser);
         return this.schemeApplicationRepository.findOneOrFail(application.id, {
             relations: ['scheme', 'startSession', 'stoppedAtSession'],
         });
@@ -820,6 +865,8 @@ export class ClinicalSessionSchedulingService {
     private async cancelPendingResourcesForApplication(
         schemeApplicationId: number,
         referenceSession: ClinicalSession,
+        currentUser?: User,
+        validateOnly = false,
     ): Promise<void> {
         const occurrence = referenceSession.calendarOccurrence ||
             await this.occurrenceRepository.findOne(referenceSession.calendarOccurrenceId);
@@ -834,13 +881,15 @@ export class ClinicalSessionSchedulingService {
             ],
         });
 
-        for (const resource of resources) {
-            const resourceStartAt = resource.clinicalSession?.calendarOccurrence?.startAt;
-            if (!resourceStartAt) continue;
-            if (new Date(resourceStartAt).getTime() < new Date(occurrence.startAt).getTime()) continue;
-            if (this.resourceProtectedFromRenumber(resource)) continue;
-            await this.cancelPendingResourceAfterRenumber(resource);
-        }
+        const eligible = resources.filter(resource => {
+            const startsAt = resource.clinicalSession?.calendarOccurrence?.startAt;
+            return startsAt && new Date(startsAt).getTime() >= new Date(occurrence.startAt).getTime() &&
+                !this.resourceProtectedFromRenumber(resource);
+        });
+        const sessions = [...new Map(eligible.map(resource => [resource.clinicalSession.id, resource.clinicalSession])).values()];
+        await this.authorizedSessionBatch(sessions, currentUser);
+        if (validateOnly) return;
+        for (const resource of eligible) await this.cancelPendingResourceAfterRenumber(resource);
     }
 
     async restructureClinicalSessions(
@@ -863,6 +912,7 @@ export class ClinicalSessionSchedulingService {
         this.validateSessionWindow(input.startAt, input.endAt);
 
         const futureSessions = await this.futureSessionsFrom(referenceSession, true);
+        await this.authorizedSessionBatch(futureSessions, currentUser);
         for (const session of futureSessions) {
             if (session.id === referenceSession.id) continue;
             if (this.sessionProtectedFromRestructure(session)) continue;
@@ -921,6 +971,7 @@ export class ClinicalSessionSchedulingService {
         );
 
         await this.assertCanManageSession(session, currentUser);
+        if (input.renumberFutureSessions) await this.authorizedSessionBatch(await this.futureSessionsFrom(session, true), currentUser);
 
         const cancellationType = input.cancellationType || ClinicalSessionCancellationType.RESCHEDULED;
         const cancellationLabel = cancellationType === ClinicalSessionCancellationType.NO_SHOW
@@ -1238,32 +1289,10 @@ export class ClinicalSessionSchedulingService {
             throw new BadRequestException('Cancelled sessions cannot be edited');
         }
         if (!currentUser) return;
-        if (await this.canManageSessionByScope(session, currentUser)) {
-            return;
-        }
-        if (session.patientId) {
-            const caseManagerIds = await this.caseManagerIdsForPatient(session.patientId);
-            if (!caseManagerIds.includes(currentUser.id)) {
-                throw new BadRequestException('Only case administrators can edit this patient session');
-            }
-            return;
-        }
-
-        if (session.sessionKind === ClinicalSessionKind.SUPERVISION) {
-            const therapistId = session.therapistId || session.calendarOccurrence?.therapistId;
-            if (therapistId && !(await this.isSupervisorOfTherapist(therapistId, currentUser.id))) {
-                throw new BadRequestException('Only the assigned supervisor can edit this session');
-            }
-            return;
-        }
-
-        const responsibleUserIds = this.uniqueIds([
-            ...(session.responsibleUsers || []).map(user => user.id),
-            session.therapistId,
-            session.supervisorId,
-        ]);
-        if (responsibleUserIds.length && !responsibleUserIds.includes(currentUser.id)) {
-            throw new BadRequestException('Only the assigned therapist can edit this session');
+        const viewer = await ClinicalAccess.viewer(currentUser.id);
+        const grants = await ClinicalAccess.grants(currentUser.id);
+        if (!ClinicalAccess.canSession(await ClinicalAccess.session(session.id), viewer, grants, 'edit')) {
+            throw new BadRequestException('Only this session’s responsible users or department administrators can edit it');
         }
     }
 
@@ -1390,6 +1419,18 @@ export class ClinicalSessionSchedulingService {
     ): Promise<void> {
         if (!currentUser) return;
         if (await this.userHasPermission(currentUser.id, PermissionEnum.ASSESSMENTS_EDIT_ALL)) return;
+        const viewer = await ClinicalAccess.viewer(currentUser.id);
+        const grants = await ClinicalAccess.grants(currentUser.id);
+        if (grants.includes('clinical.create.department')) {
+            const pair = {
+                ...input,
+                patient: input.patientId ? await Patient.findOne(input.patientId, { relations: ['departments'] }) : undefined,
+                therapist: input.therapistId ? await User.findOne(input.therapistId, { relations: ['departments'] }) : undefined,
+                responsibleUsers: await ClinicalAccess.users(responsibleUserIds),
+            } as ClinicalSession;
+            if (intersection(departmentIds(viewer), sessionDepartmentIds(pair)).length) return;
+        }
+
 
         if (input.patientId) {
             const caseManagerIds = await this.caseManagerIdsForPatient(input.patientId);
@@ -1888,14 +1929,8 @@ export class ClinicalSessionSchedulingService {
 
         const existingResources = await this.resourceRepository.find({
             where: { clinicalSessionId: session.id },
+            relations: ['assessment'],
         });
-        const activeTemplateIds = existingResources
-            .filter(resource => ![
-                ClinicalSessionResourceStatus.CANCELLED,
-                ClinicalSessionResourceStatus.DETACHED,
-            ].includes(resource.status))
-            .map(resource => resource.resourceTemplateId)
-            .filter((id): id is number => !!id);
 
         const createdResources: ClinicalSessionResource[] = [];
         for (const resourceInput of desiredResourceInputs) {
@@ -1904,7 +1939,8 @@ export class ClinicalSessionSchedulingService {
                 : undefined;
             if (
                 resourceInput.resourceTemplateId &&
-                activeTemplateIds.includes(resourceInput.resourceTemplateId)
+                existingResources.some(resource => resource.resourceTemplateId === resourceInput.resourceTemplateId &&
+                    ![ClinicalSessionResourceStatus.CANCELLED, ClinicalSessionResourceStatus.DETACHED].includes(resource.status) && resource.assessment?.responderUserId === resourceInput.responderUserId)
             ) {
                 continue;
             }
@@ -2044,7 +2080,7 @@ export class ClinicalSessionSchedulingService {
         const applications = await this.activeSchemeApplicationsForSessionContext(referenceSession);
         if (!applications.length) return;
 
-        const sessions = await this.futureSessionsFrom(referenceSession, true);
+        const sessions = await this.authorizedSessionBatch(await this.futureSessionsFrom(referenceSession, true), currentUser, false);
         for (const session of sessions) {
             for (const application of applications) {
                 const schemeSessionNumber = await this.resolveSchemeSessionNumberForApplication(
@@ -2179,10 +2215,6 @@ export class ClinicalSessionSchedulingService {
             undefined,
             schemeSessionNumber,
         );
-        const desiredTemplateIds = desiredResourceInputs
-            .map(resource => resource.resourceTemplateId)
-            .filter((id): id is number => !!id);
-
         const currentResources = await this.resourceRepository.find({
             where: application
                 ? { clinicalSessionId: session.id, schemeApplicationId: application.id }
@@ -2194,14 +2226,14 @@ export class ClinicalSessionSchedulingService {
             if (!resource.resourceTemplateId) continue;
             if (this.resourceProtectedFromRenumber(resource)) continue;
 
-            if (!desiredTemplateIds.includes(resource.resourceTemplateId)) {
+            const desiredInput = desiredResourceInputs.find(
+                input => input.resourceTemplateId === resource.resourceTemplateId &&
+                    input.responderUserId === resource.assessment?.responderUserId,
+            );
+            if (!desiredInput) {
                 await this.cancelPendingResourceAfterRenumber(resource);
                 continue;
             }
-
-            const desiredInput = desiredResourceInputs.find(
-                input => input.resourceTemplateId === resource.resourceTemplateId,
-            );
             if (desiredInput) {
                 await this.updatePendingResourceFromTemplate(
                     resource,
@@ -2219,18 +2251,13 @@ export class ClinicalSessionSchedulingService {
             where: application
                 ? { clinicalSessionId: session.id, schemeApplicationId: application.id }
                 : { clinicalSessionId: session.id },
+            relations: ['assessment'],
         });
-        const activeTemplateIds = refreshedResources
-            .filter(resource => ![
-                ClinicalSessionResourceStatus.CANCELLED,
-                ClinicalSessionResourceStatus.DETACHED,
-            ].includes(resource.status))
-            .map(resource => resource.resourceTemplateId)
-            .filter((id): id is number => !!id);
 
         for (const desiredInput of desiredResourceInputs) {
             if (!desiredInput.resourceTemplateId) continue;
-            if (activeTemplateIds.includes(desiredInput.resourceTemplateId)) continue;
+            if (refreshedResources.some(resource => resource.resourceTemplateId === desiredInput.resourceTemplateId &&
+                ![ClinicalSessionResourceStatus.CANCELLED, ClinicalSessionResourceStatus.DETACHED].includes(resource.status) && resource.assessment?.responderUserId === desiredInput.responderUserId)) continue;
             await this.createResourceForSession(
                 session,
                 occurrence,
@@ -2365,7 +2392,7 @@ export class ClinicalSessionSchedulingService {
             currentUser?.id;
         const clinicianId = input.therapistId || currentUser?.id;
 
-        return resourceTemplates
+        const selectedTemplates = resourceTemplates
             .filter(resourceTemplate =>
                 this.resourceAppliesToSession(
                     resourceTemplate,
@@ -2373,7 +2400,13 @@ export class ClinicalSessionSchedulingService {
                     sessionTemplateById.get(resourceTemplate.sessionTemplateId),
                 ),
             )
-            .map(resourceTemplate => ({
+            ;
+        const resources: CreateClinicalSessionResourceInput[] = [];
+        for (const resourceTemplate of selectedTemplates) {
+            const responders = this.isAssessmentResource(resourceTemplate.resourceKind)
+                ? await clinicalResponders(resourceTemplate.defaultResponderRole, input, responderUserId)
+                : [{ id: responderUserId }];
+            for (const responder of responders) resources.push({
                 resourceTemplateId: resourceTemplate.id,
                 schemeId: sessionTemplateById.get(resourceTemplate.sessionTemplateId)?.schemeId,
                 schemeRelativeSessionNumber: schemeSessionNumber,
@@ -2383,15 +2416,17 @@ export class ClinicalSessionSchedulingService {
                 questionnaires: resourceTemplate.questionnaireIds || [],
                 questionnaireBundles: resourceTemplate.questionnaireBundleIds || [],
                 randomizationRuleIds: resourceTemplate.randomizationRuleIds || [],
-                responderUserId,
+                responderUserId: responder.id,
                 clinicianId,
-                informantType: resourceTemplate.informantType,
+                informantType: resourceTemplate.defaultResponderRole ? (responder.id === patient?.userId ? 'PATIENT' : 'OTHER_USER') : resourceTemplate.informantType,
                 activationAnchor: resourceTemplate.activationAnchor,
                 activationOffsetMinutes: resourceTemplate.activationOffsetMinutes,
                 availabilityDurationMinutes:
                     resourceTemplate.availabilityDurationMinutes,
                 reminderMinutes: resourceTemplate.reminderMinutes || [],
-            }));
+            });
+        }
+        return resources;
     }
 
     private resourceAppliesToSession(

@@ -3,7 +3,7 @@ import { Args, Mutation, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
 import { CalendarOccurrence } from 'src/modules/calendar/models/calendar-occurrence.model';
-import { UsePermission } from 'src/modules/permission/decorators/permission.decorator';
+import { UseOrPermissions } from 'src/modules/permission/decorators/permission.decorator';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { PermissionGuard } from 'src/modules/permission/guards/permission.guard';
 import { User } from 'src/modules/user/models/user.model';
@@ -21,7 +21,8 @@ export class EvaluationSchemeGenerationResolver {
     constructor(private readonly schemeGenerationService: SchemeGenerationService) {}
 
     @Mutation(() => EvaluationSchemeAssignment)
-    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
+    @UseOrPermissions([PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT, PermissionEnum.ASSESSMENTS_CREATE_ALL,
+        PermissionEnum.ASSESSMENTS_CREATE_DEPARTMENT, PermissionEnum.ASSESSMENTS_CREATE_ASSIGNED])
     applyEvaluationScheme(
         @Args('assignment') input: ApplyEvaluationSchemeInput,
         @CurrentUser() currentUser: User,
@@ -30,7 +31,8 @@ export class EvaluationSchemeGenerationResolver {
     }
 
     @Mutation(() => [CalendarOccurrence])
-    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
+    @UseOrPermissions([PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT, PermissionEnum.ASSESSMENTS_CREATE_ALL,
+        PermissionEnum.ASSESSMENTS_CREATE_DEPARTMENT, PermissionEnum.ASSESSMENTS_CREATE_ASSIGNED])
     generateSchemeOccurrences(
         @Args('generation') input: GenerateSchemeOccurrencesInput,
         @CurrentUser() currentUser: User,
@@ -39,7 +41,8 @@ export class EvaluationSchemeGenerationResolver {
     }
 
     @Mutation(() => [CalendarOccurrence])
-    @UsePermission(PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT)
+    @UseOrPermissions([PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT, PermissionEnum.ASSESSMENTS_CREATE_ALL,
+        PermissionEnum.ASSESSMENTS_CREATE_DEPARTMENT, PermissionEnum.ASSESSMENTS_CREATE_ASSIGNED])
     regenerateFutureSchemeOccurrences(
         @Args('generation') input: RegenerateFutureSchemeOccurrencesInput,
         @CurrentUser() currentUser: User,

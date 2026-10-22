@@ -1,7 +1,7 @@
+import { ClinicalAccess, sessionDepartmentIds, departmentIds, intersection } from 'src/shared/clinical-access';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Assessment } from 'src/modules/assessment/models/assessment.model';
-import { AssessmentOrigin } from 'src/modules/assessment/enums/assessment-origin.enum';
 import { AssessmentStatus } from 'src/modules/questionnaire/enums/assessment-status.enum';
 import { ClinicalSessionCancellationType } from 'src/modules/clinical-session/enums/clinical-session-cancellation-type.enum';
 import { ClinicalSessionKind } from 'src/modules/clinical-session/enums/clinical-session-kind.enum';
@@ -46,6 +46,24 @@ export class CalendarEventService {
         }
 
         return events.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+    }
+
+    async targets(currentUser: User): Promise<User[]> {
+        const viewer = await ClinicalAccess.viewer(currentUser.id), grants = await ClinicalAccess.grants(currentUser.id);
+        const query = this.userRepository.createQueryBuilder('person').leftJoinAndSelect('person.roles', 'role')
+            .leftJoinAndSelect('person.departments', 'department').where('person."deletedAt" IS NULL').andWhere('person.active = true');
+        if (!ClinicalAccess.all(viewer, grants, 'clinical', 'create') && !ClinicalAccess.all(viewer, grants, 'assessments', 'create')) {
+            const patientIds = viewer.caseManagedPatients?.map(patient => patient.id) || [];
+            const therapistIds = viewer.supervisedTherapists?.map(person => person.id) || [];
+            const patients = patientIds.length ? await Patient.findByIds(patientIds) : [];
+            const ids = [...patients.map(patient => patient.userId), ...therapistIds].filter(Boolean);
+            const departments = departmentIds(viewer);
+            const hasDepartmentScope = grants.includes('clinical.create.department') || grants.includes('assessments.create.department');
+            query.andWhere(hasDepartmentScope
+                ? '(person.id IN (:...ids) OR department.id IN (:...departments))' : 'person.id IN (:...ids)',
+                { ids: ids.length ? ids : [0], departments: departments.length ? departments : [0] });
+        }
+        return query.orderBy('person.firstName', 'ASC').addOrderBy('person.lastName', 'ASC').getMany();
     }
 
     private includesType(filter: CalendarEventFilterInput, type: CalendarEventType): boolean {
@@ -132,12 +150,9 @@ export class CalendarEventService {
             .map(session => {
             const cancelled = session.clinicalStatus === ClinicalSessionStatus.CANCELLED;
             const noShow = session.cancellationType === ClinicalSessionCancellationType.NO_SHOW;
-            const departments = this.eventDepartments([
-                ...(session.patient?.departments || []),
-                ...(session.therapist?.departments || []),
-                ...(session.supervisor?.departments || []),
-                ...((session.responsibleUsers || []).flatMap(user => user.departments || [])),
-            ]);
+            const ids = sessionDepartmentIds(session);
+            const departments = this.eventDepartments([...(session.patient?.departments || []), ...(session.therapist?.departments || [])])
+                .filter(department => ids.includes(department.id));
             const canEdit = !cancelled && this.canAccessSession(session, departments, viewer, permissions, 'edit');
             const canDelete = !cancelled && this.canAccessSession(session, departments, viewer, permissions, 'delete');
             return {
@@ -223,26 +238,20 @@ export class CalendarEventService {
         }
 
         const assessments = await query.getMany();
-        return assessments
-            .map(assessment => {
-            const sessionBased = assessment.origin === AssessmentOrigin.SESSION_BASED;
+        await ClinicalAccess.loadAssessmentScopes(assessments);
+        const events = await Promise.all(assessments
+            .map(async assessment => {
             const answered = [
                 AssessmentStatus.COMPLETED,
                 AssessmentStatus.PARTIALLY_COMPLETED,
             ].includes(assessment.status as AssessmentStatus);
             const cancelled = assessment.status === AssessmentStatus.CANCELLED;
-            const departments = this.eventDepartments([
-                ...(assessment.patient?.departments || []),
-                ...(assessment.targetUser?.departments || []),
-                ...(assessment.responderUser?.departments || []),
-                ...(assessment.clinician?.departments || []),
-                ...((assessment.responsibleUsers || []).flatMap(user => user.departments || [])),
-            ]);
-            const canEdit = assessment.editableFromAssessmentList &&
-                this.canAccessAssessment(assessment, departments, viewer, permissions, 'edit');
-            const canDelete = !cancelled &&
-                (assessment.editableFromAssessmentList || (sessionBased && !answered)) &&
-                this.canAccessAssessment(assessment, departments, viewer, permissions, 'delete');
+            const ids = await ClinicalAccess.assessmentDepartments(assessment);
+            const departments = this.eventDepartments([...(assessment.patient?.departments || []), ...(assessment.targetUser?.departments || []),
+                ...(assessment.responderUser?.departments || [])]).filter(department => ids.includes(department.id));
+            const grants = permissions.map(permission => permission.name);
+            const canEdit = await ClinicalAccess.canAssessment(assessment, viewer, grants, 'edit');
+            const canDelete = !cancelled && await ClinicalAccess.canAssessment(assessment, viewer, grants, 'delete');
             return {
             id: `assessment:${assessment.id}`,
             type: CalendarEventType.ASSESSMENT,
@@ -269,8 +278,8 @@ export class CalendarEventService {
             responderUser: assessment.responderUser,
             departments,
         };
-        })
-            .filter(event => this.shouldIncludeAssessmentEvent(event, viewer, permissions, filter));
+        }));
+        return events.filter(event => this.shouldIncludeAssessmentEvent(event, viewer, permissions, filter));
     }
 
     private assessmentEventColor(assessment: Assessment, answered: boolean): string {
@@ -356,6 +365,8 @@ export class CalendarEventService {
         action: 'view' | 'edit' | 'delete',
     ): boolean {
         const event = {
+            sessionKind: session.sessionKind,
+            responsibleUsers: session.responsibleUsers,
             patientId: session.patientId,
             therapistId: session.therapistId,
             supervisorId: session.supervisorId,
@@ -394,13 +405,8 @@ export class CalendarEventService {
         permissions: Permission[],
         action: 'view' | 'edit' | 'delete',
     ): boolean {
-        if (this.hasPermission(permissions, this.permissionName('clinical', action, 'all'))) return true;
-        if (
-            this.hasPermission(permissions, this.permissionName('clinical', action, 'department')) &&
-            this.intersects(this.departmentIds(event.departments), this.userDepartmentIds(viewer))
-        ) return true;
-        return this.hasPermission(permissions, this.permissionName('clinical', action, 'assigned')) &&
-            (this.isOwnSessionEvent(event, viewer) || this.isManagedSessionEvent(event, viewer));
+        return ClinicalAccess.canSession({ ...event, id: event.clinicalSessionId },
+            viewer, permissions.map(permission => permission.name), action);
     }
 
     private canAccessAssessmentEvent(
@@ -409,7 +415,7 @@ export class CalendarEventService {
         permissions: Permission[],
         action: 'view' | 'edit' | 'delete',
     ): boolean {
-        if (this.hasPermission(permissions, this.permissionName('assessments', action, 'all'))) return true;
+        if (ClinicalAccess.all(viewer, permissions.map(permission => permission.name), 'assessments', action)) return true;
         if (
             this.hasPermission(permissions, this.permissionName('assessments', action, 'department')) &&
             this.intersects(this.departmentIds(event.departments), this.userDepartmentIds(viewer))
@@ -430,6 +436,8 @@ export class CalendarEventService {
         const selectedDepartmentIds = (filter.departmentIds || []).map(id => Number(id)).filter(id => Number.isFinite(id));
         if (selectedDepartmentIds.length && !this.intersects(eventDepartmentIds, selectedDepartmentIds)) return false;
         if (this.hasPermission(permissions, this.permissionName(resource, action, 'all'))) return true;
+        if (action === 'view' && (this.isOwnSessionEvent(event, viewer) || this.isManagedSessionEvent(event, viewer) ||
+            this.isOwnAssessmentEvent(event, viewer) || this.isManagedAssessmentEvent(event, viewer))) return true;
         return !eventDepartmentIds.length || this.intersects(eventDepartmentIds, this.userDepartmentIds(viewer));
     }
 

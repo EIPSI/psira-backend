@@ -1,5 +1,5 @@
 import { Field, InputType, Int, PartialType } from '@nestjs/graphql';
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
+import { ArrayUnique, IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 import { NotificationChannel } from '../enums/notification-channel.enum';
 import { NotificationEvent } from '../enums/notification-event.enum';
 import { NotificationFamily } from '../enums/notification-family.enum';
@@ -50,4 +50,18 @@ export class UpdateNotificationConfigurationInput extends PartialType(
     @Field(() => Int)
     @IsInt()
     id: number;
+}
+
+@InputType()
+export class SaveNotificationConfigurationsInput extends CreateNotificationConfigurationInput {
+    @Field(() => Int, { nullable: true })
+    @IsOptional()
+    @IsInt()
+    id?: number;
+
+    @Field(() => [Int])
+    @IsArray()
+    @ArrayUnique()
+    @IsInt({ each: true })
+    departmentIds: number[];
 }

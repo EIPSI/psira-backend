@@ -9,6 +9,7 @@ import { PermissionGuard } from 'src/modules/permission/guards/permission.guard'
 import { User } from 'src/modules/user/models/user.model';
 import {
     CreateNotificationConfigurationInput,
+    SaveNotificationConfigurationsInput,
     UpdateNotificationConfigurationInput,
 } from '../dtos/notification-configuration.input';
 import {
@@ -74,6 +75,12 @@ export class NotificationConfigurationResolver {
     ): Promise<NotificationPreference> {
         this.assertOwnUserPreference(input, currentUser);
         return this.notificationPreferenceService.getOrCreate(input);
+    }
+
+    @Mutation(() => [NotificationConfiguration])
+    @UseOrPermissions([PermissionEnum.NOTIFICATIONS_EDIT_DEPARTMENT, PermissionEnum.MAIL_TEMPLATES_EDIT_DEPARTMENT])
+    saveNotificationConfigurations(@Args('input') input: SaveNotificationConfigurationsInput): Promise<NotificationConfiguration[]> {
+        return this.notificationConfigurationService.saveScopes(input);
     }
 
     @Mutation(() => NotificationConfiguration)

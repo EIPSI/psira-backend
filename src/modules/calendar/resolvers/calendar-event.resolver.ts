@@ -15,6 +15,14 @@ import { CalendarEventService } from '../services/calendar-event.service';
 export class CalendarEventResolver {
     constructor(private readonly calendarEventService: CalendarEventService) {}
 
+    @Query(() => [User])
+    @UseOrPermissions([PermissionEnum.CLINICAL_CREATE_ALL, PermissionEnum.CLINICAL_CREATE_DEPARTMENT,
+        PermissionEnum.CLINICAL_CREATE_ASSIGNED, PermissionEnum.ASSESSMENTS_CREATE_ALL,
+        PermissionEnum.ASSESSMENTS_CREATE_DEPARTMENT, PermissionEnum.ASSESSMENTS_CREATE_ASSIGNED])
+    calendarTargets(@CurrentUser() currentUser: User): Promise<User[]> {
+        return this.calendarEventService.targets(currentUser);
+    }
+
     @Query(() => [CalendarEvent])
     @UseOrPermissions([
         PermissionEnum.CLINICAL_VIEW_ALL,

@@ -301,7 +301,11 @@ export class UserCrudService extends TypeOrmQueryService<User> {
         }
 
         if (roleCodes.includes(RoleCode.CAREGIVER) && !options.skipCaregiver) {
-            throw new BadRequestException('Caregivers must be created from the caregiver creation flow and linked to a patient.');
+            const caregiver = await this.caregiverRepository.findOne({ where: { userId: user.id } });
+            if (!caregiver) {
+                throw new BadRequestException('Caregivers must be created from the caregiver creation flow and linked to a patient.');
+            }
+            await this.updateCaregiverFromUser(caregiver.id, user);
         }
     }
 

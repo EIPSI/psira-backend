@@ -1,4 +1,4 @@
-import { UseGuards } from '@nestjs/common';
+import { ForbiddenException, UseGuards } from '@nestjs/common';
 import { Args, Context, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
@@ -32,9 +32,14 @@ export class InformedConsentResponseResolver {
     @UseOrPermissions([
         PermissionEnum.INFORMED_CONSENT_RESPONSES_VIEW_DEPARTMENT,
         PermissionEnum.INFORMED_CONSENT_RESPONSES_REVIEW_DEPARTMENT,
+        PermissionEnum.CLINICAL_VIEW_ASSIGNED,
     ])
-    informedConsentResponses(): Promise<InformedConsentResponse[]> {
-        return this.responseService.listResponses();
+    informedConsentResponses(
+        @CurrentUser() currentUser: User,
+        @Args('patientId', { type: () => Int, nullable: true }) patientId?: number,
+        @Args('userId', { type: () => Int, nullable: true }) userId?: number,
+    ): Promise<InformedConsentResponse[]> {
+        return this.responseService.listResponses(currentUser, patientId, userId);
     }
 
     @Query(() => [InformedConsentResponse])
@@ -56,11 +61,15 @@ export class InformedConsentResponseResolver {
     @UseOrPermissions([
         PermissionEnum.INFORMED_CONSENT_RESPONSES_VIEW_DEPARTMENT,
         PermissionEnum.INFORMED_CONSENT_RESPONSES_REVIEW_DEPARTMENT,
+        PermissionEnum.CLINICAL_VIEW_ASSIGNED,
     ])
-    informedConsentResponse(
+    async informedConsentResponse(
         @Args('id', { type: () => Int }) id: number,
+        @CurrentUser() currentUser: User,
     ): Promise<InformedConsentResponse> {
-        return this.responseService.getResponse(id);
+        const response = await this.responseService.getResponse(id);
+        if (!await this.responseService.canAccessResponse(response, currentUser)) throw new ForbiddenException('Informed consent response not found');
+        return response;
     }
 
     @Mutation(() => InformedConsentResponse)
@@ -101,6 +110,7 @@ export class InformedConsentResponseResolver {
         PermissionEnum.INFORMED_CONSENT_RESPONSES_REVIEW_DEPARTMENT,
         PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
         PermissionEnum.USERS_EDIT_DEPARTMENT,
+        PermissionEnum.CLINICAL_EDIT_ASSIGNED,
     ])
     revokeInformedConsentResponse(
         @Args('input') input: ReviewInformedConsentResponseInput,
