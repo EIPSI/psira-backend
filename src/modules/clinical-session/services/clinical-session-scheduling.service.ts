@@ -1,3 +1,5 @@
+import * as moment from 'moment-timezone';
+import { userTimezone } from 'src/shared/user-timezone';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -120,7 +122,7 @@ export class ClinicalSessionSchedulingService {
                 title: input.title,
                 startAt: input.startAt,
                 endAt: input.endAt,
-                timezone: input.timezone || 'UTC',
+                timezone: input.timezone || userTimezone(currentUser),
                 status: CalendarOccurrenceStatus.SCHEDULED,
                 schemeId: input.schemeId,
                 schemeAssignmentId: input.schemeAssignmentId,
@@ -867,7 +869,7 @@ export class ClinicalSessionSchedulingService {
             await this.cancelSessionForRestructure(session);
         }
 
-        const windows = this.buildRestructureWindows(input);
+        const windows = this.buildRestructureWindows(input, userTimezone(currentUser));
         if (!windows.length) return [];
 
         await this.moveClinicalSession({
@@ -1387,6 +1389,7 @@ export class ClinicalSessionSchedulingService {
         currentUser?: User,
     ): Promise<void> {
         if (!currentUser) return;
+        if (await this.userHasPermission(currentUser.id, PermissionEnum.ASSESSMENTS_EDIT_ALL)) return;
 
         if (input.patientId) {
             const caseManagerIds = await this.caseManagerIdsForPatient(input.patientId);
@@ -1443,6 +1446,7 @@ export class ClinicalSessionSchedulingService {
             relations: ['permissions', 'roles', 'roles.permissions'],
         });
         if (!user) return false;
+        if (user.isSuperUser || user.roles?.some(role => role.code === 'SUPER_ADMIN')) return true;
         return user.permissions?.some(userPermission => userPermission.name === permission) ||
             user.roles?.some(role => role.permissions?.some(rolePermission => rolePermission.name === permission));
     }
@@ -1756,6 +1760,7 @@ export class ClinicalSessionSchedulingService {
 
     private buildRestructureWindows(
         input: RestructureClinicalSessionsInput,
+        timezone = 'UTC',
     ): Array<{ startAt: Date; endAt: Date }> {
         if (!input.every || input.every < 1) {
             throw new BadRequestException('Repeat interval must be greater than zero');
@@ -1781,11 +1786,13 @@ export class ClinicalSessionSchedulingService {
             : input.endMode === ClinicalSessionRepeatEndMode.ON_DATE
                 ? 366
                 : 24;
-        const endLimit = input.endDate ? this.endOfDay(new Date(input.endDate)) : undefined;
+        const endLimit = input.endDate ? moment.tz(input.endDate, timezone).endOf('day').toDate() : undefined;
+        const dayShift = startAt.getUTCDay() - moment.tz(startAt, timezone).day();
 
         if (input.unit === ClinicalSessionRepeatUnit.WEEK && input.repeatOnDays?.length) {
             const repeatDays = [...new Set(input.repeatOnDays)]
                 .filter(day => day >= 0 && day <= 6)
+                .map(day => (day + dayShift + 7) % 7)
                 .sort((a, b) => a - b);
             if (!repeatDays.length) {
                 throw new BadRequestException('At least one valid repeat day is required');
@@ -2769,7 +2776,7 @@ export class ClinicalSessionSchedulingService {
 
     private addDays(date: Date, days: number): Date {
         const next = new Date(date);
-        next.setDate(next.getDate() + days);
+        next.setUTCDate(next.getUTCDate() + days);
         return next;
     }
 
@@ -2780,37 +2787,31 @@ export class ClinicalSessionSchedulingService {
     ): Date {
         const next = new Date(date);
         if (unit === ClinicalSessionRepeatUnit.DAY) {
-            next.setDate(next.getDate() + amount);
+            next.setUTCDate(next.getUTCDate() + amount);
         } else if (unit === ClinicalSessionRepeatUnit.WEEK) {
-            next.setDate(next.getDate() + amount * 7);
+            next.setUTCDate(next.getUTCDate() + amount * 7);
         } else if (unit === ClinicalSessionRepeatUnit.MONTH) {
-            next.setMonth(next.getMonth() + amount);
+            next.setUTCMonth(next.getUTCMonth() + amount);
         } else {
-            next.setFullYear(next.getFullYear() + amount);
+            next.setUTCFullYear(next.getUTCFullYear() + amount);
         }
         return next;
     }
 
     private startOfWeek(date: Date): Date {
         const start = new Date(date);
-        start.setDate(start.getDate() - start.getDay());
-        start.setHours(0, 0, 0, 0);
+        start.setUTCDate(start.getUTCDate() - start.getUTCDay());
+        start.setUTCHours(0, 0, 0, 0);
         return start;
-    }
-
-    private endOfDay(date: Date): Date {
-        const end = new Date(date);
-        end.setHours(23, 59, 59, 999);
-        return end;
     }
 
     private copyTime(date: Date, source: Date): Date {
         const next = new Date(date);
-        next.setHours(
-            source.getHours(),
-            source.getMinutes(),
-            source.getSeconds(),
-            source.getMilliseconds(),
+        next.setUTCHours(
+            source.getUTCHours(),
+            source.getUTCMinutes(),
+            source.getUTCSeconds(),
+            source.getUTCMilliseconds(),
         );
         return next;
     }

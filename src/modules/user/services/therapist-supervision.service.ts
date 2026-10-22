@@ -62,7 +62,7 @@ export class TherapistSupervisionService {
 
     async getSupervisors(filter: SupervisionFilter, currentUser: User): Promise<UserConnectionDto> {
         const supervisorRoleCodes = await this.getAssignableSupervisorRoleCodes();
-        const query = User.createQueryBuilder('supervisor')
+        const query = User.createQueryBuilder('supervisor').distinct(true)
             .innerJoin('supervisor.roles', 'role', 'role.code IN (:...supervisorRoleCodes)', { supervisorRoleCodes })
             .leftJoinAndSelect('supervisor.roles', 'roles')
             .leftJoinAndSelect('supervisor.departments', 'departments')
@@ -91,12 +91,9 @@ export class TherapistSupervisionService {
         }
 
         if (!filter.therapistId && filter.departmentIds?.length) {
-            query.innerJoin(
-                'supervisor.departments',
-                'requestedDepartment',
-                'requestedDepartment.id IN (:...requestedDepartmentIds)',
-                { requestedDepartmentIds: filter.departmentIds },
-            );
+            query.andWhere('(departments.id IN (:...requestedDepartmentIds) OR role.code = :superAdminCode)', {
+                requestedDepartmentIds: filter.departmentIds, superAdminCode: RoleCode.SUPER_ADMIN,
+            });
         }
 
         return paginate(query, filter, 'supervisor.id');
@@ -140,6 +137,7 @@ export class TherapistSupervisionService {
             throw new BadRequestException('Only active users with an assignable supervisor role can supervise therapists.');
         }
 
+        if (supervisor.roles?.some(role => role.code === RoleCode.SUPER_ADMIN)) return;
         const therapistDepartmentIds = therapist.departments?.map(department => department.id) || [];
         const supervisorDepartmentIds = supervisor.departments?.map(department => department.id) || [];
         const sharesDepartment = therapistDepartmentIds.some(id => supervisorDepartmentIds.includes(id));
@@ -214,7 +212,7 @@ export class TherapistSupervisionService {
 
     private async getAssignableSupervisorRoleCodes(): Promise<RoleCode[]> {
         const value = await this.settingService.getKey('therapistSupervisorRoleCodes' as any) as RoleCode[];
-        return value?.length ? value : [RoleCode.SUPERVISOR];
+        return [...new Set([RoleCode.SUPER_ADMIN, ...(value?.length ? value : [RoleCode.SUPERVISOR])])];
     }
 
     private async canViewAllDepartmentUsers(userId: number): Promise<boolean> {

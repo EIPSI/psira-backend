@@ -55,6 +55,10 @@ export class UserAccountProvisioningService {
         return { user, tempPassword };
     }
 
+    async completePersonUser(account: ProvisionedUserAccount): Promise<void> {
+        await this.userCrudService.completeAccountCreation(account.user, account.tempPassword, account.user.skippedAutomationIds);
+    }
+
     private buildUsername(input: ProvisionPersonUserInput): string | null {
         return input.email ? input.email.trim().toLowerCase() : null;
     }

@@ -1,3 +1,5 @@
+import { tableQueryBuilder } from 'src/shared/query/table-sorting';
+import { InformedConsentResponseService } from 'src/modules/informed-consent/services/informed-consent-response.service';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -81,6 +83,7 @@ export class AssessmentService {
         private readonly patientPermissionService: PatientPermissionService,
         private readonly notificationConfigurationService: NotificationConfigurationService,
         private readonly notificationDispatchService: NotificationDispatchService,
+        private readonly consentService: InformedConsentResponseService,
     ) {}
 
     private async resolveActiveClinicalTreatmentCycleId(
@@ -169,7 +172,7 @@ export class AssessmentService {
             : [{ field: 'id', direction: SortDirection.DESC }];
 
         const result: any = await AssessmentConnection.createFromPromise(
-            q => this.assessmentQueryService.query(q),
+            q => this.querySortedAssessments(q, query.tableSorting),
             query,
             q => this.assessmentQueryService.count(q),
         );
@@ -180,6 +183,32 @@ export class AssessmentService {
         }
 
         return result;
+    }
+
+    private async querySortedAssessments(query, sorting = []) {
+        const expressions = {
+            origin: alias => `(CASE WHEN "${alias}"."clinicalSessionId" IS NOT NULL OR
+                "${alias}"."clinicalSessionResourceId" IS NOT NULL THEN 'SESSION_BASED'
+                WHEN "${alias}"."schemeId" IS NOT NULL OR "${alias}"."schemeAssignmentId" IS NOT NULL
+                THEN 'FIXED_SCHEME' ELSE 'INDIVIDUAL' END)`,
+            assessmentType: alias => `(SELECT name FROM assessment_type WHERE id = "${alias}"."assessmentTypeId")`,
+            patient: alias => `(SELECT concat_ws(' ', "firstName", "middleName", "lastName")
+                FROM patient WHERE id = "${alias}"."patientId")`,
+            clinician: alias => `(SELECT concat_ws(' ', "firstName", "middleName", "lastName")
+                FROM "user" WHERE id = "${alias}"."clinicianId")`,
+            patientMedicalRecordNo: alias => `(SELECT "medicalRecordNo" FROM patient WHERE id = "${alias}"."patientId")`,
+            linkedSessionLabel: alias => `(SELECT "sessionNumber" FROM clinical_session WHERE id = "${alias}"."clinicalSessionId")`,
+        };
+        const parameters = {};
+        if (sorting.some(sort => sort.field === 'formatedQuestionnaires')) {
+            const matchingQuery = tableQueryBuilder(this.assessmentRepository, { ...query, sorting: [], paging: undefined });
+            const matching = await matchingQuery.select(`DISTINCT "${matchingQuery.alias}"."questionnaireAssessmentId"`, 'id').getRawMany();
+            const counts = await this.questionnaireAssessmentService.questionnaireCounts(matching.map(row => row.id));
+            parameters['questionnaireCounts'] = JSON.stringify(Object.fromEntries(counts.map(row => [String(row._id), row.count])));
+            expressions['formatedQuestionnaires'] = alias =>
+                `COALESCE((CAST(:questionnaireCounts AS jsonb) ->> "${alias}"."questionnaireAssessmentId")::integer, 0)`;
+        }
+        return tableQueryBuilder(this.assessmentRepository, query, sorting, expressions).setParameters(parameters).getMany();
     }
 
     async getPatientAssessments(
@@ -822,6 +851,12 @@ export class AssessmentService {
             },
         ) as unknown as FullPublicAssessment);
 
+        if (!assessment) throw new BadRequestException('Assessment link is invalid or no longer available.');
+        const responderId = (assessment as any).responderUserId;
+        if (responderId && await this.consentService.hasBlockingPending(responderId)) {
+            assessment.consentLink = `${this.consentService.publicResponseLinkForUser(responderId)}&assessment=${encodeURIComponent(uuid)}`;
+            return assessment;
+        }
         assessment.questionnaireAssessment = await this.changeQuestionnaireAssessmentStatus(
             assessment,
         );

@@ -152,13 +152,53 @@ export class QuestionnaireBundleService {
     private structureFromInput(input: Pick<CreateQuestionnaireBundleInput, 'structure' | 'structureJson'>) {
         if (input.structureJson) {
             try {
-                return JSON.parse(input.structureJson);
+                const structure = this.normalizeLegacyLayout(JSON.parse(input.structureJson));
+                this.validateStructureLayout(structure);
+                return structure;
             } catch {
                 throw new BadRequestException('Invalid questionnaire bundle structure');
             }
         }
 
-        return input.structure || [];
+        const structure = this.normalizeLegacyLayout(input.structure || []);
+        this.validateStructureLayout(structure);
+        return structure;
+    }
+
+    private normalizeLegacyLayout(nodes: any[]): any[] {
+        if (!Array.isArray(nodes) || nodes.length !== 1 || !['FIXED_GROUP', 'RANDOM_GROUP'].includes(nodes[0]?.type)) {
+            return nodes;
+        }
+        const root = nodes[0];
+        const flatten = (children: any[]): any[] => children.reduce((result, node) => {
+            const nested = flatten(node.children || []);
+            return node.type === 'SCREEN'
+                ? [...result, { ...node, children: [] }, ...nested]
+                : [...result, { ...node, children: nested }];
+        }, []);
+        return [{
+            id: new Types.ObjectId().toHexString(), type: 'SCREEN',
+            headerHtml: root.headerHtml || '', footerHtml: root.footerHtml || '', children: [],
+        }, { ...root, children: flatten(root.children || []) }];
+    }
+
+    private validateStructureLayout(nodes: any[]): void {
+        const groups = ['FIXED_GROUP', 'RANDOM_GROUP'];
+        if (!Array.isArray(nodes) || nodes[0]?.type !== 'SCREEN' || !groups.includes(nodes[1]?.type)) {
+            throw new BadRequestException('A bundle must start with a page and a fixed or randomized group.');
+        }
+        const validate = (items: any[], parentType?: string): void => {
+            for (const node of items) {
+                if (node.type === 'QUESTIONNAIRE' && !groups.includes(parentType)) {
+                    throw new BadRequestException('Questionnaires must belong to a group.');
+                }
+                if ((node.type === 'SCREEN' || node.type === 'QUESTIONNAIRE') && node.children?.length) {
+                    throw new BadRequestException('Pages and questionnaires cannot contain other elements.');
+                }
+                validate(node.children || [], node.type);
+            }
+        };
+        validate(nodes);
     }
 
     private async validateStructureDepartments(structure: any[], departmentIds: number[]): Promise<void> {

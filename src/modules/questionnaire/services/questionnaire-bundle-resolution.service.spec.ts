@@ -58,6 +58,21 @@ describe('QuestionnaireBundleResolutionService', () => {
         return result.questionnaireIds.map(id => id.toHexString());
     }
 
+    it('resolves the new page/group sequence with first-page text and subsequent pages', async () => {
+        const service = createService([
+            { id: 'first-page', type: QuestionnaireBundleNodeType.SCREEN, headerHtml: '<p>First</p>', children: [] },
+            { id: 'first-group', type: QuestionnaireBundleNodeType.FIXED_GROUP, children: [questionnaireNode(questionnaireA)] },
+            { id: 'second-page', type: QuestionnaireBundleNodeType.SCREEN, footerHtml: '<p>Last</p>', children: [] },
+            { id: 'second-group', type: QuestionnaireBundleNodeType.RANDOM_GROUP,
+                randomizationMode: QuestionnaireBundleRandomizationMode.RANDOM_ORDER, children: [questionnaireNode(questionnaireB)] },
+        ]);
+        const result = await service.resolveQuestionnaireSequence([], [bundleId] as any);
+        expect(result.resolvedQuestionnaires.map(item => item.screenId)).toEqual(['first-page', 'second-page']);
+        expect(result.resolvedQuestionnaires.map(item => item.screenIndex)).toEqual([0, 1]);
+        expect(result.resolvedQuestionnaires[0].screenHeaderHtml).toBe('<p>First</p>');
+        expect(result.resolvedQuestionnaires[1].screenFooterHtml).toBe('<p>Last</p>');
+    });
+
     it('resolves a simple fixed group in authored order', async () => {
         const service = createService([
             {
@@ -90,6 +105,54 @@ describe('QuestionnaireBundleResolutionService', () => {
             'Clinical intake',
             'Root',
         ]);
+    });
+
+    it('uses empty screen nodes as page breaks and preserves first-page presentation', async () => {
+        const service = createService([{
+            id: 'root', type: QuestionnaireBundleNodeType.FIXED_GROUP,
+            headerHtml: '<p>First header</p>', footerHtml: '<p>First footer</p>',
+            children: [
+                questionnaireNode(questionnaireA),
+                { id: 'break', type: QuestionnaireBundleNodeType.SCREEN,
+                    headerHtml: '<p>Second header</p>', footerHtml: '<p>Second footer</p>', children: [] },
+                questionnaireNode(questionnaireB),
+                { id: 'nested-group', type: QuestionnaireBundleNodeType.FIXED_GROUP,
+                    children: [questionnaireNode(questionnaireC)] },
+            ],
+        }]);
+        const result = await service.resolveQuestionnaireSequence([], [bundleId] as any);
+        const [first, second, third] = result.resolvedQuestionnaires;
+        expect(first.screenId).not.toEqual(second.screenId);
+        expect(first.screenHeaderHtml).toBe('<p>First header</p>');
+        expect(first.screenFooterHtml).toBe('<p>First footer</p>');
+        expect(second.screenId).toBe('break');
+        expect(third.screenId).toBe('break');
+        expect(second.screenHeaderHtml).toBe('<p>Second header</p>');
+        expect(third.screenFooterHtml).toBe('<p>Second footer</p>');
+    });
+
+    it('keeps legacy screen children usable', async () => {
+        const service = createService([{
+            id: 'legacy-screen', type: QuestionnaireBundleNodeType.SCREEN,
+            children: [questionnaireNode(questionnaireA), questionnaireNode(questionnaireB)],
+        }]);
+        const result = await service.resolveQuestionnaireSequence([], [bundleId] as any);
+        expect(result.resolvedQuestionnaires.map(item => item.screenId)).toEqual(['legacy-screen', 'legacy-screen']);
+    });
+
+    it('does not count page breaks as randomized content', async () => {
+        jest.spyOn(Math, 'random').mockReturnValue(0.99);
+        const service = createService([{
+            id: 'random-pages', type: QuestionnaireBundleNodeType.RANDOM_GROUP,
+            randomizationMode: QuestionnaireBundleRandomizationMode.REPLACEMENT, selectionCount: 1,
+            children: [
+                questionnaireNode(questionnaireA),
+                { id: 'page-break', type: QuestionnaireBundleNodeType.SCREEN, children: [] },
+                questionnaireNode(questionnaireB),
+            ],
+        }]);
+        const result = await service.resolveQuestionnaireSequence([], [bundleId] as any);
+        expect(ids(result)).toEqual([questionnaireB.toHexString()]);
     });
 
     it('randomizes all children in weighted random order', async () => {

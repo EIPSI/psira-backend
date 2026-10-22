@@ -3,9 +3,29 @@ import { DefaultTranslationSeed } from './default-translations';
 export const defaultTranslationSeed = {
   "keys": [
     {
+      "key": "assessmentAdministration.assessmentTypeDeleted",
+      "namespace": "assessmentAdministration",
+      "defaultText": "Assessment type deleted"
+    },
+    {
+      "key": "assessmentAdministration.createAssessmentName",
+      "namespace": "assessmentAdministration",
+      "defaultText": "Create assessment type"
+    },
+    {
+      "key": "assessmentAdministration.deleteAssessmentTypeConfirm",
+      "namespace": "assessmentAdministration",
+      "defaultText": "Are you sure you want to delete the assessment type {{name}}?"
+    },
+    {
       "key": "assessmentAdministration.editType",
       "namespace": "assessmentAdministration",
       "defaultText": "Edit assessment type"
+    },
+    {
+      "key": "assessmentAdministration.unableDeleteAssessmentType",
+      "namespace": "assessmentAdministration",
+      "defaultText": "Unable to delete assessment type"
     },
     {
       "key": "assessmentAdministration.unableSaveAssessmentType",
@@ -96,6 +116,91 @@ export const defaultTranslationSeed = {
       "key": "assessments.notArchivedAssessments",
       "namespace": "assessments",
       "defaultText": "Show Not Archived"
+    },
+    {
+      "key": "assignmentRequests.accept",
+      "namespace": "assignmentRequests",
+      "defaultText": "Accept"
+    },
+    {
+      "key": "assignmentRequests.cancelConfirm",
+      "namespace": "assignmentRequests",
+      "defaultText": "Are you sure you want to cancel the request sent to {{name}}?"
+    },
+    {
+      "key": "assignmentRequests.cancelTitle",
+      "namespace": "assignmentRequests",
+      "defaultText": "Cancel assignment request"
+    },
+    {
+      "key": "assignmentRequests.caseManagerTitle",
+      "namespace": "assignmentRequests",
+      "defaultText": "Request to manage case {{target}}"
+    },
+    {
+      "key": "assignmentRequests.reject",
+      "namespace": "assignmentRequests",
+      "defaultText": "Reject"
+    },
+    {
+      "key": "assignmentRequests.requestSent",
+      "namespace": "assignmentRequests",
+      "defaultText": "Request sent to {{manager}} for patient {{patient}}"
+    },
+    {
+      "key": "assignmentRequests.requestedBy",
+      "namespace": "assignmentRequests",
+      "defaultText": "Requested by {{requester}}"
+    },
+    {
+      "key": "assignmentRequests.status.ACCEPTED",
+      "namespace": "assignmentRequests",
+      "defaultText": "Accepted"
+    },
+    {
+      "key": "assignmentRequests.status.CANCELLED",
+      "namespace": "assignmentRequests",
+      "defaultText": "Cancelled"
+    },
+    {
+      "key": "assignmentRequests.status.PENDING",
+      "namespace": "assignmentRequests",
+      "defaultText": "Pending"
+    },
+    {
+      "key": "assignmentRequests.status.REJECTED",
+      "namespace": "assignmentRequests",
+      "defaultText": "Rejected"
+    },
+    {
+      "key": "assignmentRequests.statusTitle",
+      "namespace": "assignmentRequests",
+      "defaultText": "Request status"
+    },
+    {
+      "key": "assignmentRequests.supervisorTitle",
+      "namespace": "assignmentRequests",
+      "defaultText": "Request to supervise {{target}}"
+    },
+    {
+      "key": "assignmentRequests.unableAccept",
+      "namespace": "assignmentRequests",
+      "defaultText": "Unable to accept assignment request"
+    },
+    {
+      "key": "assignmentRequests.unableCancel",
+      "namespace": "assignmentRequests",
+      "defaultText": "Unable to cancel assignment request"
+    },
+    {
+      "key": "assignmentRequests.unableLoad",
+      "namespace": "assignmentRequests",
+      "defaultText": "Unable to load assignment requests"
+    },
+    {
+      "key": "assignmentRequests.unableReject",
+      "namespace": "assignmentRequests",
+      "defaultText": "Unable to reject assignment request"
     },
     {
       "key": "auth.currentPassword",
@@ -628,6 +733,11 @@ export const defaultTranslationSeed = {
       "defaultText": "Propagate to future sessions"
     },
     {
+      "key": "calendar.propagateResponsibleUsersFutureSessions",
+      "namespace": "calendar",
+      "defaultText": "Propagate responsible users to future sessions"
+    },
+    {
       "key": "calendar.reason",
       "namespace": "calendar",
       "defaultText": "Reason"
@@ -691,6 +801,11 @@ export const defaultTranslationSeed = {
       "key": "calendar.responder",
       "namespace": "calendar",
       "defaultText": "Responder"
+    },
+    {
+      "key": "calendar.responsibleUsersRequired",
+      "namespace": "calendar",
+      "defaultText": "Select at least one session responsible user."
     },
     {
       "key": "calendar.schemeWithId",
@@ -1068,6 +1183,11 @@ export const defaultTranslationSeed = {
       "defaultText": "Search existing caregiver number or name"
     },
     {
+      "key": "clinicalSettings.caseManagerRoles",
+      "namespace": "clinicalSettings",
+      "defaultText": "Roles allowed as case managers"
+    },
+    {
       "key": "clinicalSettings.dashboardLookahead",
       "namespace": "clinicalSettings",
       "defaultText": "Dashboard anticipation"
@@ -1086,6 +1206,11 @@ export const defaultTranslationSeed = {
       "key": "clinicalSettings.editWindow",
       "namespace": "clinicalSettings",
       "defaultText": "Editing window per session"
+    },
+    {
+      "key": "clinicalSettings.supervisorRoles",
+      "namespace": "clinicalSettings",
+      "defaultText": "Roles allowed as supervisors"
     },
     {
       "key": "clinicalSettings.title",
@@ -1136,6 +1261,11 @@ export const defaultTranslationSeed = {
       "key": "core.all",
       "namespace": "core",
       "defaultText": "All"
+    },
+    {
+      "key": "core.archived",
+      "namespace": "core",
+      "defaultText": "Archived"
     },
     {
       "key": "core.assessments",
@@ -1248,6 +1378,11 @@ export const defaultTranslationSeed = {
       "defaultText": "Description"
     },
     {
+      "key": "core.draft",
+      "namespace": "core",
+      "defaultText": "Draft"
+    },
+    {
       "key": "core.duplicate",
       "namespace": "core",
       "defaultText": "Duplicate"
@@ -1323,9 +1458,24 @@ export const defaultTranslationSeed = {
       "defaultText": "Notes"
     },
     {
+      "key": "core.off",
+      "namespace": "core",
+      "defaultText": "Off"
+    },
+    {
+      "key": "core.on",
+      "namespace": "core",
+      "defaultText": "On"
+    },
+    {
       "key": "core.open",
       "namespace": "core",
       "defaultText": "Open"
+    },
+    {
+      "key": "core.paused",
+      "namespace": "core",
+      "defaultText": "Paused"
     },
     {
       "key": "core.previous",
@@ -1341,6 +1491,11 @@ export const defaultTranslationSeed = {
       "key": "core.profile",
       "namespace": "core",
       "defaultText": "Profile"
+    },
+    {
+      "key": "core.publicAssessmentLoadError",
+      "namespace": "core",
+      "defaultText": "Unable to open this assessment. Check the link or contact your care team."
     },
     {
       "key": "core.questionnaire",
@@ -1361,6 +1516,16 @@ export const defaultTranslationSeed = {
       "key": "core.reports",
       "namespace": "core",
       "defaultText": "Reports"
+    },
+    {
+      "key": "core.requiredAnswers",
+      "namespace": "core",
+      "defaultText": "Required answers"
+    },
+    {
+      "key": "core.requiredAnswersBeforeContinue",
+      "namespace": "core",
+      "defaultText": "Answer all required questions before continuing. Missing answers: {{count}}."
     },
     {
       "key": "core.reset",
@@ -1588,6 +1753,21 @@ export const defaultTranslationSeed = {
       "defaultText": "Welcome to PSIRA"
     },
     {
+      "key": "departments.appliesToRoles",
+      "namespace": "departments",
+      "defaultText": "Applies to roles"
+    },
+    {
+      "key": "departments.createDepartment",
+      "namespace": "departments",
+      "defaultText": "Create Department"
+    },
+    {
+      "key": "departments.defaultForRoles",
+      "namespace": "departments",
+      "defaultText": "Default for roles"
+    },
+    {
       "key": "departments.deleteDepartment",
       "namespace": "departments",
       "defaultText": "Delete Department"
@@ -1596,6 +1776,16 @@ export const defaultTranslationSeed = {
       "key": "departments.deleteDepartmentConfirm",
       "namespace": "departments",
       "defaultText": "Are you sure you want to delete this department?"
+    },
+    {
+      "key": "departments.departmentNameDescription",
+      "namespace": "departments",
+      "defaultText": "Enter the department name."
+    },
+    {
+      "key": "departments.departmentNameValidation",
+      "namespace": "departments",
+      "defaultText": "Department name is required."
     },
     {
       "key": "departments.departments",
@@ -1613,9 +1803,19 @@ export const defaultTranslationSeed = {
       "defaultText": "Remove departments"
     },
     {
+      "key": "departments.rolesValidation",
+      "namespace": "departments",
+      "defaultText": "Select at least one applicable role."
+    },
+    {
       "key": "departments.selectAll",
       "namespace": "departments",
       "defaultText": "Select all departments"
+    },
+    {
+      "key": "departments.selectRoles",
+      "namespace": "departments",
+      "defaultText": "Select roles"
     },
     {
       "key": "departments.unableCreateDepartment",
@@ -2368,6 +2568,11 @@ export const defaultTranslationSeed = {
       "defaultText": "Create Scheme"
     },
     {
+      "key": "evaluationSchemes.customGroupDays",
+      "namespace": "evaluationSchemes",
+      "defaultText": "Days per custom group"
+    },
+    {
       "key": "evaluationSchemes.dayOne",
       "namespace": "evaluationSchemes",
       "defaultText": "Day 1"
@@ -2468,9 +2673,49 @@ export const defaultTranslationSeed = {
       "defaultText": "Extend last day"
     },
     {
+      "key": "evaluationSchemes.extendLastGroup",
+      "namespace": "evaluationSchemes",
+      "defaultText": "Extend last group"
+    },
+    {
       "key": "evaluationSchemes.extendLastWeek",
       "namespace": "evaluationSchemes",
       "defaultText": "Extend last week"
+    },
+    {
+      "key": "evaluationSchemes.extensionCount",
+      "namespace": "evaluationSchemes",
+      "defaultText": "Number of repetitions"
+    },
+    {
+      "key": "evaluationSchemes.extensionUnit",
+      "namespace": "evaluationSchemes",
+      "defaultText": "Group unit"
+    },
+    {
+      "key": "evaluationSchemes.extensionUnits.CUSTOM",
+      "namespace": "evaluationSchemes",
+      "defaultText": "Custom"
+    },
+    {
+      "key": "evaluationSchemes.extensionUnits.DAYS",
+      "namespace": "evaluationSchemes",
+      "defaultText": "Days"
+    },
+    {
+      "key": "evaluationSchemes.extensionUnits.FORTNIGHTS",
+      "namespace": "evaluationSchemes",
+      "defaultText": "15-day periods"
+    },
+    {
+      "key": "evaluationSchemes.extensionUnits.MONTHS",
+      "namespace": "evaluationSchemes",
+      "defaultText": "Months (30 days)"
+    },
+    {
+      "key": "evaluationSchemes.extensionUnits.WEEKS",
+      "namespace": "evaluationSchemes",
+      "defaultText": "Weeks"
     },
     {
       "key": "evaluationSchemes.fivePerDay",
@@ -2863,6 +3108,11 @@ export const defaultTranslationSeed = {
       "defaultText": "Set Date And Time Format"
     },
     {
+      "key": "form.system.evaluationAutomationRunRetentionDays",
+      "namespace": "form",
+      "defaultText": "Automation run retention (days)"
+    },
+    {
       "key": "form.system.maxLoginAttempts",
       "namespace": "form",
       "defaultText": "Max Login Attempts"
@@ -2883,6 +3133,11 @@ export const defaultTranslationSeed = {
       "defaultText": "Password Re-Use Cut Off(In Days)"
     },
     {
+      "key": "form.system.patientCaseManagerAssignableHierarchyRank",
+      "namespace": "form",
+      "defaultText": "Case manager hierarchy limit"
+    },
+    {
       "key": "form.system.systemLocale",
       "namespace": "form",
       "defaultText": "Set System Locale"
@@ -2896,6 +3151,11 @@ export const defaultTranslationSeed = {
       "key": "form.system.timeFormat",
       "namespace": "form",
       "defaultText": "Set Time Format"
+    },
+    {
+      "key": "form.system.treatmentFinalizationUndoWindowDays",
+      "namespace": "form",
+      "defaultText": "Treatment finalization undo window (days)"
     },
     {
       "key": "forms.assessmentAdministration.status",
@@ -3065,7 +3325,7 @@ export const defaultTranslationSeed = {
     {
       "key": "forms.createReportForm.repositoryLinkDescription",
       "namespace": "forms",
-      "defaultText": "Repository link associated with the report."
+      "defaultText": "Optional technical reference, such as the Git repository, documentation, script, or internal folder where this report is maintained."
     },
     {
       "key": "forms.createReportForm.repositoryLinkValidation",
@@ -3075,17 +3335,17 @@ export const defaultTranslationSeed = {
     {
       "key": "forms.createReportForm.resources",
       "namespace": "forms",
-      "defaultText": "Resources"
+      "defaultText": "Where it appears"
     },
     {
       "key": "forms.createReportForm.resourcesDescription",
       "namespace": "forms",
-      "defaultText": "Select where this report applies."
+      "defaultText": "Select the general section where this report will appear."
     },
     {
       "key": "forms.createReportForm.resourcesValidation",
       "namespace": "forms",
-      "defaultText": "Report type is required."
+      "defaultText": "Report location is required."
     },
     {
       "key": "forms.createReportForm.roles",
@@ -3653,6 +3913,11 @@ export const defaultTranslationSeed = {
       "defaultText": "Consent kind"
     },
     {
+      "key": "informedConsent.consentProgress",
+      "namespace": "informedConsent",
+      "defaultText": "Consent {{current}} of {{total}}"
+    },
+    {
       "key": "informedConsent.consentReactivated",
       "namespace": "informedConsent",
       "defaultText": "Consent reactivated for a new response."
@@ -3896,6 +4161,16 @@ export const defaultTranslationSeed = {
       "key": "informedConsent.relatedConsentKinds",
       "namespace": "informedConsent",
       "defaultText": "Related consent kind(s)"
+    },
+    {
+      "key": "informedConsent.reminders",
+      "namespace": "informedConsent",
+      "defaultText": "Reminders"
+    },
+    {
+      "key": "informedConsent.remindersHelp",
+      "namespace": "informedConsent",
+      "defaultText": "Separate the reminder intervals with commas, for example 1, 3, 7. Intervals start at the first email."
     },
     {
       "key": "informedConsent.represented",
@@ -4858,61 +5133,6 @@ export const defaultTranslationSeed = {
       "defaultText": "Welcome, {{name}}!"
     },
     {
-      "key": "departments.appliesToRoles",
-      "namespace": "departments",
-      "defaultText": "Applies to roles"
-    },
-    {
-      "key": "departments.createDepartment",
-      "namespace": "departments",
-      "defaultText": "Create department"
-    },
-    {
-      "key": "departments.defaultForRoles",
-      "namespace": "departments",
-      "defaultText": "Default for roles"
-    },
-    {
-      "key": "departments.departmentNameDescription",
-      "namespace": "departments",
-      "defaultText": "Department name"
-    },
-    {
-      "key": "departments.departmentNameValidation",
-      "namespace": "departments",
-      "defaultText": "Department name is required."
-    },
-    {
-      "key": "departments.rolesValidation",
-      "namespace": "departments",
-      "defaultText": "Select at least one role."
-    },
-    {
-      "key": "departments.selectRoles",
-      "namespace": "departments",
-      "defaultText": "Select roles"
-    },
-    {
-      "key": "patientStatuses.descriptionHelp",
-      "namespace": "patientStatuses",
-      "defaultText": "Optional description"
-    },
-    {
-      "key": "patientStatuses.duplicatePatientStatus",
-      "namespace": "patientStatuses",
-      "defaultText": "Duplicate patient status"
-    },
-    {
-      "key": "patientStatuses.nameDescription",
-      "namespace": "patientStatuses",
-      "defaultText": "Patient status name"
-    },
-    {
-      "key": "patientStatuses.nameValidation",
-      "namespace": "patientStatuses",
-      "defaultText": "Patient status name is required."
-    },
-    {
       "key": "patientStatuses.createPatientStatus",
       "namespace": "patientStatuses",
       "defaultText": "Create patient status"
@@ -4933,9 +5153,29 @@ export const defaultTranslationSeed = {
       "defaultText": "Are you sure you want to delete this patient status?"
     },
     {
+      "key": "patientStatuses.descriptionHelp",
+      "namespace": "patientStatuses",
+      "defaultText": "Describe how this status is used."
+    },
+    {
+      "key": "patientStatuses.duplicatePatientStatus",
+      "namespace": "patientStatuses",
+      "defaultText": "Duplicate patient status"
+    },
+    {
       "key": "patientStatuses.editPatientStatus",
       "namespace": "patientStatuses",
       "defaultText": "Edit patient status"
+    },
+    {
+      "key": "patientStatuses.nameDescription",
+      "namespace": "patientStatuses",
+      "defaultText": "Enter the patient status name."
+    },
+    {
+      "key": "patientStatuses.nameValidation",
+      "namespace": "patientStatuses",
+      "defaultText": "Patient status name is required."
     },
     {
       "key": "patientStatuses.patientStatusCreated",
@@ -5318,6 +5558,11 @@ export const defaultTranslationSeed = {
       "defaultText": "Fixed scheme assessment"
     },
     {
+      "key": "patientsManagement.fromThisSession",
+      "namespace": "patientsManagement",
+      "defaultText": "From this session"
+    },
+    {
       "key": "patientsManagement.inPerson",
       "namespace": "patientsManagement",
       "defaultText": "In person"
@@ -5446,6 +5691,11 @@ export const defaultTranslationSeed = {
       "key": "patientsManagement.open",
       "namespace": "patientsManagement",
       "defaultText": "Open"
+    },
+    {
+      "key": "patientsManagement.originalStructure",
+      "namespace": "patientsManagement",
+      "defaultText": "Original structure"
     },
     {
       "key": "patientsManagement.otherReason",
@@ -6385,7 +6635,7 @@ export const defaultTranslationSeed = {
     {
       "key": "questionnaireBundles.addChildScreen",
       "namespace": "questionnaireBundles",
-      "defaultText": "Add child screen"
+      "defaultText": "Add page break"
     },
     {
       "key": "questionnaireBundles.addFixedGroup",
@@ -6405,7 +6655,7 @@ export const defaultTranslationSeed = {
     {
       "key": "questionnaireBundles.addScreen",
       "namespace": "questionnaireBundles",
-      "defaultText": "Add screen"
+      "defaultText": "Add page break"
     },
     {
       "key": "questionnaireBundles.answerPlaceholder",
@@ -6453,6 +6703,21 @@ export const defaultTranslationSeed = {
       "defaultText": "Edit bundle"
     },
     {
+      "key": "questionnaireBundles.firstPage",
+      "namespace": "questionnaireBundles",
+      "defaultText": "First page"
+    },
+    {
+      "key": "questionnaireBundles.firstPageFooter",
+      "namespace": "questionnaireBundles",
+      "defaultText": "First page footer"
+    },
+    {
+      "key": "questionnaireBundles.firstPageHeader",
+      "namespace": "questionnaireBundles",
+      "defaultText": "First page header"
+    },
+    {
       "key": "questionnaireBundles.fixedGroup",
       "namespace": "questionnaireBundles",
       "defaultText": "Fixed group"
@@ -6465,7 +6730,7 @@ export const defaultTranslationSeed = {
     {
       "key": "questionnaireBundles.footerNoticePlaceholder",
       "namespace": "questionnaireBundles",
-      "defaultText": "Text shown at the end of each screen..."
+      "defaultText": "Text shown at the end of each page..."
     },
     {
       "key": "questionnaireBundles.internalName",
@@ -6476,6 +6741,11 @@ export const defaultTranslationSeed = {
       "key": "questionnaireBundles.itemsToSelect",
       "namespace": "questionnaireBundles",
       "defaultText": "Items to select (how many from this group)"
+    },
+    {
+      "key": "questionnaireBundles.minimumStructureHelp",
+      "namespace": "questionnaireBundles",
+      "defaultText": "The first page and first group are required. Questionnaires must belong to groups."
     },
     {
       "key": "questionnaireBundles.optionalVisibleTitle",
@@ -6533,6 +6803,11 @@ export const defaultTranslationSeed = {
       "defaultText": "Replacement"
     },
     {
+      "key": "questionnaireBundles.requiredStructure",
+      "namespace": "questionnaireBundles",
+      "defaultText": "Required structure"
+    },
+    {
       "key": "questionnaireBundles.rootGroup",
       "namespace": "questionnaireBundles",
       "defaultText": "Root group"
@@ -6545,27 +6820,27 @@ export const defaultTranslationSeed = {
     {
       "key": "questionnaireBundles.screen",
       "namespace": "questionnaireBundles",
-      "defaultText": "Screen"
+      "defaultText": "Page break"
     },
     {
       "key": "questionnaireBundles.screenFooter",
       "namespace": "questionnaireBundles",
-      "defaultText": "Screen footer"
+      "defaultText": "Page footer"
     },
     {
       "key": "questionnaireBundles.screenFooterPlaceholder",
       "namespace": "questionnaireBundles",
-      "defaultText": "Optional text below this screen..."
+      "defaultText": "Optional text below this page..."
     },
     {
       "key": "questionnaireBundles.screenHeader",
       "namespace": "questionnaireBundles",
-      "defaultText": "Screen header"
+      "defaultText": "Page header"
     },
     {
       "key": "questionnaireBundles.screenHeaderPlaceholder",
       "namespace": "questionnaireBundles",
-      "defaultText": "Optional text above this screen..."
+      "defaultText": "Optional text above this page..."
     },
     {
       "key": "questionnaireBundles.selectBundleName",
@@ -6580,7 +6855,7 @@ export const defaultTranslationSeed = {
     {
       "key": "questionnaireBundles.sequenceSummary",
       "namespace": "questionnaireBundles",
-      "defaultText": "{{questionnaires}} questionnaires / {{screens}} screens / {{groups}} groups"
+      "defaultText": "{{questionnaires}} questionnaires / {{screens}} page breaks / {{groups}} groups"
     },
     {
       "key": "questionnaireBundles.statusUpdated",
@@ -6726,6 +7001,21 @@ export const defaultTranslationSeed = {
       "key": "questionnaires.addScript",
       "namespace": "questionnaires",
       "defaultText": "Add script"
+    },
+    {
+      "key": "questionnaires.archiveQuestionnaire",
+      "namespace": "questionnaires",
+      "defaultText": "Archive questionnaire"
+    },
+    {
+      "key": "questionnaires.archivedMessage",
+      "namespace": "questionnaires",
+      "defaultText": "<p>This will deactivate the questionnaire for future use without moving it to old versions or deleting previous data.</p>"
+    },
+    {
+      "key": "questionnaires.archivedTitle",
+      "namespace": "questionnaires",
+      "defaultText": "Are you sure you want to archive this questionnaire?"
     },
     {
       "key": "questionnaires.cancelButton",
@@ -6916,6 +7206,11 @@ export const defaultTranslationSeed = {
       "key": "questionnaires.timeToComplete",
       "namespace": "questionnaires",
       "defaultText": "Time To Complete"
+    },
+    {
+      "key": "questionnaires.unableArchiveQuestionnaire",
+      "namespace": "questionnaires",
+      "defaultText": "Unable to archive questionnaire {{name}}"
     },
     {
       "key": "questionnaires.unableCreateScript",
@@ -7463,6 +7758,36 @@ export const defaultTranslationSeed = {
       "defaultText": "Update tree"
     },
     {
+      "key": "reports.context",
+      "namespace": "reports",
+      "defaultText": "Context"
+    },
+    {
+      "key": "reports.contextGeneral",
+      "namespace": "reports",
+      "defaultText": "General"
+    },
+    {
+      "key": "reports.contextPatient",
+      "namespace": "reports",
+      "defaultText": "Patient"
+    },
+    {
+      "key": "reports.contextSupervisor",
+      "namespace": "reports",
+      "defaultText": "Supervisor"
+    },
+    {
+      "key": "reports.contextTherapist",
+      "namespace": "reports",
+      "defaultText": "Therapist"
+    },
+    {
+      "key": "reports.contextUser",
+      "namespace": "reports",
+      "defaultText": "User"
+    },
+    {
       "key": "reports.createReport",
       "namespace": "reports",
       "defaultText": "Create report"
@@ -7483,14 +7808,34 @@ export const defaultTranslationSeed = {
       "defaultText": "Are you sure you want to delete this report?"
     },
     {
+      "key": "reports.duration",
+      "namespace": "reports",
+      "defaultText": "Duration"
+    },
+    {
       "key": "reports.editReport",
       "namespace": "reports",
       "defaultText": "Edit report"
     },
     {
+      "key": "reports.endedAt",
+      "namespace": "reports",
+      "defaultText": "Ended"
+    },
+    {
+      "key": "reports.lastSeenAt",
+      "namespace": "reports",
+      "defaultText": "Last activity"
+    },
+    {
       "key": "reports.notFound",
       "namespace": "reports",
       "defaultText": "Report not found or unavailable."
+    },
+    {
+      "key": "reports.patient",
+      "namespace": "reports",
+      "defaultText": "Patient"
     },
     {
       "key": "reports.report",
@@ -7508,14 +7853,29 @@ export const defaultTranslationSeed = {
       "defaultText": "Report updated"
     },
     {
+      "key": "reports.reports",
+      "namespace": "reports",
+      "defaultText": "Reports"
+    },
+    {
       "key": "reports.rolesRequired",
       "namespace": "reports",
       "defaultText": "Required roles"
     },
     {
+      "key": "reports.rolesRequiredValidation",
+      "namespace": "reports",
+      "defaultText": "Select at least one role that can access this report."
+    },
+    {
       "key": "reports.saveReport",
       "namespace": "reports",
       "defaultText": "Save report"
+    },
+    {
+      "key": "reports.startedAt",
+      "namespace": "reports",
+      "defaultText": "Started"
     },
     {
       "key": "reports.unableCreateReport",
@@ -7526,6 +7886,11 @@ export const defaultTranslationSeed = {
       "key": "reports.unableDeleteReport",
       "namespace": "reports",
       "defaultText": "Unable to delete report"
+    },
+    {
+      "key": "reports.unableLoadReportSessions",
+      "namespace": "reports",
+      "defaultText": "Unable to load report usage"
     },
     {
       "key": "reports.unableLoadReports",
@@ -7548,49 +7913,24 @@ export const defaultTranslationSeed = {
       "defaultText": "Updating report"
     },
     {
-      "key": "roles.createRole",
-      "namespace": "roles",
-      "defaultText": "Create role"
+      "key": "reports.usage",
+      "namespace": "reports",
+      "defaultText": "Report usage"
     },
     {
-      "key": "roles.duplicateRole",
-      "namespace": "roles",
-      "defaultText": "Duplicate role"
-    },
-    {
-      "key": "roles.hierarchyDescription",
-      "namespace": "roles",
-      "defaultText": "Role hierarchy"
-    },
-    {
-      "key": "roles.hierarchyValidation",
-      "namespace": "roles",
-      "defaultText": "Role hierarchy is required."
-    },
-    {
-      "key": "roles.nameDescription",
-      "namespace": "roles",
-      "defaultText": "Role name"
-    },
-    {
-      "key": "roles.nameValidation",
-      "namespace": "roles",
-      "defaultText": "Role name is required."
-    },
-    {
-      "key": "roles.saveRole",
-      "namespace": "roles",
-      "defaultText": "Save role"
-    },
-    {
-      "key": "roles.updateRole",
-      "namespace": "roles",
-      "defaultText": "Update role"
+      "key": "reports.user",
+      "namespace": "reports",
+      "defaultText": "User"
     },
     {
       "key": "roles.caregiver",
       "namespace": "roles",
       "defaultText": "Caregiver"
+    },
+    {
+      "key": "roles.createRole",
+      "namespace": "roles",
+      "defaultText": "Create Role"
     },
     {
       "key": "roles.creatingRole",
@@ -7601,11 +7941,6 @@ export const defaultTranslationSeed = {
       "key": "roles.deleteRole",
       "namespace": "roles",
       "defaultText": "Delete role"
-    },
-    {
-      "key": "roles.editRole",
-      "namespace": "roles",
-      "defaultText": "Edit role"
     },
     {
       "key": "roles.deleteRoleConfirm",
@@ -7621,6 +7956,36 @@ export const defaultTranslationSeed = {
       "key": "roles.deleteRoleUsersWarning",
       "namespace": "roles",
       "defaultText": "This role has assigned users and cannot be removed until they are reassigned."
+    },
+    {
+      "key": "roles.duplicateRole",
+      "namespace": "roles",
+      "defaultText": "Duplicate role"
+    },
+    {
+      "key": "roles.editRole",
+      "namespace": "roles",
+      "defaultText": "Edit role"
+    },
+    {
+      "key": "roles.hierarchyDescription",
+      "namespace": "roles",
+      "defaultText": "Enter a hierarchy from 1 to 999. Lower numbers have more access."
+    },
+    {
+      "key": "roles.hierarchyValidation",
+      "namespace": "roles",
+      "defaultText": "Role hierarchy is required."
+    },
+    {
+      "key": "roles.nameDescription",
+      "namespace": "roles",
+      "defaultText": "Enter the role name."
+    },
+    {
+      "key": "roles.nameValidation",
+      "namespace": "roles",
+      "defaultText": "Role name is required."
     },
     {
       "key": "roles.patient",
@@ -7646,6 +8011,11 @@ export const defaultTranslationSeed = {
       "key": "roles.roles",
       "namespace": "roles",
       "defaultText": "Roles"
+    },
+    {
+      "key": "roles.saveRole",
+      "namespace": "roles",
+      "defaultText": "Save role"
     },
     {
       "key": "roles.supervisor",
@@ -7988,6 +8358,16 @@ export const defaultTranslationSeed = {
       "defaultText": "Unable to remove permission \"{{permission}}\" from role \"{{role}}\""
     },
     {
+      "key": "storageNotice.message",
+      "namespace": "storageNotice",
+      "defaultText": "PSIRA does not use cookies for sign-in or tracking. It uses browser local and session storage to keep the session, permissions, language and system preferences required for the application."
+    },
+    {
+      "key": "storageNotice.title",
+      "namespace": "storageNotice",
+      "defaultText": "Privacy and browser storage"
+    },
+    {
       "key": "system.system",
       "namespace": "system",
       "defaultText": "System"
@@ -8063,6 +8443,11 @@ export const defaultTranslationSeed = {
       "defaultText": "Unexpected error"
     },
     {
+      "key": "systemSettings.accessTokenRetentionDescription",
+      "namespace": "systemSettings",
+      "defaultText": "Number of days expired access-token records are retained."
+    },
+    {
       "key": "systemSettings.clientId",
       "namespace": "systemSettings",
       "defaultText": "Client ID"
@@ -8083,9 +8468,24 @@ export const defaultTranslationSeed = {
       "defaultText": "Leave empty to keep the current value"
     },
     {
+      "key": "systemSettings.dateFormatDescription",
+      "namespace": "systemSettings",
+      "defaultText": "Format used to display dates."
+    },
+    {
+      "key": "systemSettings.dateTimeFormatDescription",
+      "namespace": "systemSettings",
+      "defaultText": "Format used to display the date and time together."
+    },
+    {
       "key": "systemSettings.enableIntegration",
       "namespace": "systemSettings",
       "defaultText": "Enable integration"
+    },
+    {
+      "key": "systemSettings.evaluationAutomationRunRetentionDescription",
+      "namespace": "systemSettings",
+      "defaultText": "Number of days evaluation automation run history is retained."
     },
     {
       "key": "systemSettings.globalFeatures",
@@ -8128,6 +8528,16 @@ export const defaultTranslationSeed = {
       "defaultText": "Informed consent inactive"
     },
     {
+      "key": "systemSettings.maxLoginAttemptsDescription",
+      "namespace": "systemSettings",
+      "defaultText": "Maximum number of failed sign-in attempts before access is blocked."
+    },
+    {
+      "key": "systemSettings.notificationLogRetentionDescription",
+      "namespace": "systemSettings",
+      "defaultText": "Number of days notification logs are retained."
+    },
+    {
       "key": "systemSettings.notifications",
       "namespace": "systemSettings",
       "defaultText": "Notifications"
@@ -8148,6 +8558,21 @@ export const defaultTranslationSeed = {
       "defaultText": "Notifications inactive"
     },
     {
+      "key": "systemSettings.passwordLifeTimeDescription",
+      "namespace": "systemSettings",
+      "defaultText": "Number of days a password remains valid before a change is required."
+    },
+    {
+      "key": "systemSettings.passwordReuseCutoffDescription",
+      "namespace": "systemSettings",
+      "defaultText": "Number of days during which a previous password cannot be reused."
+    },
+    {
+      "key": "systemSettings.patientCaseManagerAssignableHierarchyRankDescription",
+      "namespace": "systemSettings",
+      "defaultText": "Highest hierarchy number allowed when selecting case managers. Lower numbers represent greater authority."
+    },
+    {
       "key": "systemSettings.redirectUri",
       "namespace": "systemSettings",
       "defaultText": "Redirect URI"
@@ -8166,6 +8591,26 @@ export const defaultTranslationSeed = {
       "key": "systemSettings.saveGoogleCalendar",
       "namespace": "systemSettings",
       "defaultText": "Save Google Calendar"
+    },
+    {
+      "key": "systemSettings.systemLocaleDescription",
+      "namespace": "systemSettings",
+      "defaultText": "Reference language and regional format for dates, numbers and system text."
+    },
+    {
+      "key": "systemSettings.systemTimezoneDescription",
+      "namespace": "systemSettings",
+      "defaultText": "Reference zone for tasks without a user time zone. Defaults to UTC. Each user chooses their own zone in Settings."
+    },
+    {
+      "key": "systemSettings.timeFormatDescription",
+      "namespace": "systemSettings",
+      "defaultText": "Format used to display times."
+    },
+    {
+      "key": "systemSettings.treatmentFinalizationUndoWindowDescription",
+      "namespace": "systemSettings",
+      "defaultText": "Number of days during which treatment finalization can be undone."
     },
     {
       "key": "systemSettings.visible",
@@ -8241,6 +8686,11 @@ export const defaultTranslationSeed = {
       "key": "tables.assessmentsPatients.title",
       "namespace": "tables",
       "defaultText": "Assessment Name"
+    },
+    {
+      "key": "tables.casemanagers.departments",
+      "namespace": "tables",
+      "defaultText": "Departments"
     },
     {
       "key": "tables.casemanagers.firstName",
@@ -8388,6 +8838,26 @@ export const defaultTranslationSeed = {
       "defaultText": ""
     },
     {
+      "key": "tables.patientStatuses.description",
+      "namespace": "tables",
+      "defaultText": "Description"
+    },
+    {
+      "key": "tables.patientStatuses.formattedCreatedAt",
+      "namespace": "tables",
+      "defaultText": "Created at"
+    },
+    {
+      "key": "tables.patientStatuses.formattedUpdatedAt",
+      "namespace": "tables",
+      "defaultText": "Updated at"
+    },
+    {
+      "key": "tables.patientStatuses.name",
+      "namespace": "tables",
+      "defaultText": "Name"
+    },
+    {
       "key": "tables.patients.birthDate",
       "namespace": "tables",
       "defaultText": "Date of Birth"
@@ -8465,7 +8935,7 @@ export const defaultTranslationSeed = {
     {
       "key": "tables.reports.resources",
       "namespace": "tables",
-      "defaultText": "Report Type"
+      "defaultText": "Where it appears"
     },
     {
       "key": "tables.reports.roles",
@@ -8476,6 +8946,21 @@ export const defaultTranslationSeed = {
       "key": "tables.reports.status",
       "namespace": "tables",
       "defaultText": "Status"
+    },
+    {
+      "key": "tables.roles.createdAt",
+      "namespace": "tables",
+      "defaultText": "Created at"
+    },
+    {
+      "key": "tables.roles.hierarchy",
+      "namespace": "tables",
+      "defaultText": "Hierarchy"
+    },
+    {
+      "key": "tables.roles.name",
+      "namespace": "tables",
+      "defaultText": "Name"
     },
     {
       "key": "tables.scripts.creator",
@@ -8826,10 +9311,59 @@ export const defaultTranslationSeed = {
       "key": "userManagement.userUpdated",
       "namespace": "userManagement",
       "defaultText": "User has successfully been updated"
+    },
+    {
+      "key": "userSettings.automatic",
+      "namespace": "userSettings",
+      "defaultText": "Automatically detect this device’s time zone"
+    },
+    {
+      "key": "userSettings.current",
+      "namespace": "userSettings",
+      "defaultText": "Current reference"
+    },
+    {
+      "key": "userSettings.detected",
+      "namespace": "userSettings",
+      "defaultText": "Detected zone"
+    },
+    {
+      "key": "userSettings.emailTimezoneHelp",
+      "namespace": "userSettings",
+      "defaultText": "Emails use your manual selection or the last detected zone. Before the first sign-in, the global reference is used."
+    },
+    {
+      "key": "userSettings.saved",
+      "namespace": "userSettings",
+      "defaultText": "Settings saved"
+    },
+    {
+      "key": "userSettings.timezone",
+      "namespace": "userSettings",
+      "defaultText": "Time zone"
+    },
+    {
+      "key": "userSettings.timezoneHelp",
+      "namespace": "userSettings",
+      "defaultText": "PSIRA displays dates and times in your time zone. Changing it does not change scheduled instants."
+    },
+    {
+      "key": "userSettings.timezoneReferenceHelp",
+      "namespace": "userSettings",
+      "defaultText": "The standard UTC offset is shown with example countries. Each option automatically follows daylight saving rules for its reference zone."
+    },
+    {
+      "key": "userSettings.title",
+      "namespace": "userSettings",
+      "defaultText": "Settings"
     }
   ],
   "values": {
     "de": {
+      "storageNotice": {
+        "title": "Datenschutz und Browserspeicher",
+        "message": "PSIRA verwendet keine Cookies für die Anmeldung oder Nachverfolgung. Es nutzt lokalen und sitzungsbezogenen Browserspeicher, um Sitzung, Berechtigungen, Sprache und erforderliche Systemeinstellungen zu speichern."
+      },
       "assessmentForm": {
         "alreadyCompleted": "Testung wurde abgeschlossen",
         "complete": "Danke für die Teilnahme an der Untersuchung.",
@@ -8954,6 +9488,8 @@ export const defaultTranslationSeed = {
         "overwritePendingExistingScheme": "Overwrite pending items from existing scheme",
         "propagateFutureRestructure": "Propagate future restructure",
         "propagateFutureSessions": "Propagate to future sessions",
+        "responsibleUsersRequired": "Select at least one session responsible user.",
+        "propagateResponsibleUsersFutureSessions": "Propagate responsible users to future sessions",
         "reasonRequired": "Reason required",
         "remindersAfterActivation": "Reminders after activation",
         "remindersInMinutes": "Reminders (minutes)",
@@ -9060,6 +9596,8 @@ export const defaultTranslationSeed = {
       "clinicalSettings": {
         "dashboardLookahead": "Dashboard anticipation",
         "daysBeforeDashboard": "days before sessions and assessments appear",
+        "caseManagerRoles": "Roles allowed as case managers",
+        "supervisorRoles": "Roles allowed as supervisors",
         "daysFromSessionDate": "days from the session date",
         "editWindow": "Editing window per session",
         "title": "Clinical settings",
@@ -9067,6 +9605,12 @@ export const defaultTranslationSeed = {
         "unableUpdate": "Unable to update clinical settings"
       },
       "core": {
+        "archived": "Archiviert",
+        "paused": "Pausiert",
+        "draft": "Entwurf",
+        "requiredAnswers": "Pflichtantworten",
+        "requiredAnswersBeforeContinue": "Beantworten Sie alle Pflichtfragen, bevor Sie fortfahren. Fehlende Antworten: {{count}}.",
+        "publicAssessmentLoadError": "Diese Auswertung konnte nicht geöffnet werden. Prüfen Sie den Link oder kontaktieren Sie Ihr Behandlungsteam.",
         "actions": "Actions",
         "active": "Active",
         "add": "Add",
@@ -9089,6 +9633,8 @@ export const defaultTranslationSeed = {
         "duplicate": "Duplicate",
         "edit": "Edit",
         "editCaregiver": "Betreuer bearbeiten",
+        "on": "On",
+        "off": "Off",
         "export": "Export",
         "filter": "Filter",
         "goHome": "Go Home",
@@ -9295,10 +9841,21 @@ export const defaultTranslationSeed = {
         "appliedAutomations": "Applied automations"
       },
       "evaluationSchemes": {
+        "extendLastGroup": "Letzte Gruppe verlängern",
+        "extensionCount": "Anzahl der Wiederholungen",
+        "extensionUnit": "Gruppeneinheit",
+        "customGroupDays": "Tage pro benutzerdefinierter Gruppe",
+        "extensionUnits": {
+          "DAYS": "Tage",
+          "WEEKS": "Wochen",
+          "FORTNIGHTS": "15-Tage-Zeiträume",
+          "MONTHS": "Monate (30 Tage)",
+          "CUSTOM": "Benutzerdefiniert"
+        },
         "activate": "Activate",
         "activationAnchor": "Activation Anchor",
         "activationOffset": "Activation Offset",
-        "active": "Active",
+        "active": "Aktiv",
         "addEvaluation": "Add Evaluation",
         "addResource": "Add Resource",
         "addSession": "Add Session",
@@ -9357,7 +9914,7 @@ export const defaultTranslationSeed = {
         "extend15Minutes": "Extend 15 minutes",
         "extendLastDay": "Extend last day",
         "extendLastWeek": "Extend last week",
-        "fixedScheme": "Fixed scheme",
+        "fixedScheme": "Festes Schema",
         "fixedSchemeHelper": "Relative calendar: day 1 starts when the scheme is applied.",
         "fromSession": "From session",
         "indicateSessionsOrFrequency": "Indicate specific sessions or a session frequency.",
@@ -9384,7 +9941,7 @@ export const defaultTranslationSeed = {
         "scheduling": "Scheduling",
         "schemeMustBeSavedFirst": "Scheme must be saved first",
         "seedOrder": "Seed order",
-        "sessionBased": "Session-based",
+        "sessionBased": "Sitzungsbasiert",
         "sessionBasedHelper": "Define the content first, then when it appears within the session series.",
         "sessionFrequency": "Session frequency",
         "sessionResources": "Session resources",
@@ -9421,6 +9978,9 @@ export const defaultTranslationSeed = {
       },
       "form": {
         "system": {
+          "patientCaseManagerAssignableHierarchyRank": "Hierarchiegrenze für Fallverantwortliche",
+          "treatmentFinalizationUndoWindowDays": "Frist zum Rückgängigmachen eines Behandlungsabschlusses (Tage)",
+          "evaluationAutomationRunRetentionDays": "Aufbewahrung von Automatisierungsläufen (Tage)",
           "accessTokenRetentionDays": "Aufbewahrung von Zugriffstoken (Tage)",
           "dateFormat": "Datumsformat einstellen",
           "dateTimeFormat": "Datums- und Zeitformat einstellen",
@@ -9435,6 +9995,7 @@ export const defaultTranslationSeed = {
       },
       "forms": {
         "assessmentAdministration": {
+          "createAssessmentName": "Create assessment type",
           "nameType": "Bezeichnung",
           "status": "Status",
           "typeName": "Type Name",
@@ -9465,20 +10026,20 @@ export const defaultTranslationSeed = {
           "reportName": "Berichtsname",
           "reportStatus": "Berichtsstatus",
           "repositoryLink": "Repository-Link",
-          "resources": "Ressourcen",
+          "resources": "Where it appears",
           "roles": "Rollen",
           "url": "URL des Berichts",
           "reportNameDescription": "Enter the report name.",
           "reportNameValidation": "Report name is required.",
-          "resourcesDescription": "Select where this report applies.",
-          "resourcesValidation": "Report type is required.",
+          "resourcesDescription": "Select the general section where this report will appear.",
+          "resourcesValidation": "Report location is required.",
           "descriptionDescription": "Describe what this report is used for.",
           "descriptionValidation": "Description is required.",
           "appNameDescription": "Select the Shiny app used by this report.",
           "appNameValidation": "Shiny app is required.",
           "urlDescription": "URL generated from the selected reporting tool.",
           "urlValidation": "Enter a valid URL.",
-          "repositoryLinkDescription": "Repository link associated with the report.",
+          "repositoryLinkDescription": "Optional technical reference, such as the Git repository, documentation, script, or internal folder where this report is maintained.",
           "repositoryLinkValidation": "Enter a valid repository link.",
           "reportStatusDescription": "Enable or disable this report.",
           "reportStatusValidation": "Report status is required."
@@ -9489,7 +10050,6 @@ export const defaultTranslationSeed = {
           "value": "value {{index}}"
         },
         "patientStatuses": {
-        "duplicatePatientStatus": "Duplicate patient status",
           "description": "Beschreibung",
           "name": "Patientenstatus",
           "nameDescription": "Enter the patient status name.",
@@ -9511,7 +10071,7 @@ export const defaultTranslationSeed = {
           "department": "Abteilung",
           "email": "E-Mail Adresse",
           "emergency": "Notfallkontakt",
-          "emergencyContacts": "Emergency Contacts",
+          "emergencyContacts": "Notfallkontakte",
           "firstName": "Vorname",
           "gender": "Geschlecht",
           "id": "Patienten ID",
@@ -9532,7 +10092,7 @@ export const defaultTranslationSeed = {
           "caregiverId": "Caregiver ID",
           "patient": "Patient",
           "relationshipType": "Relationship type",
-          "createCaregiver": "Create caregiver",
+          "createCaregiver": "Betreuungsperson erstellen",
           "isCaregiver": "Is caregiver",
           "searchKeyword": "Search keyword",
           "patientNames": "Patient name(s)",
@@ -9603,6 +10163,9 @@ export const defaultTranslationSeed = {
         }
       },
       "informedConsent": {
+        "consentProgress": "Einwilligung {{current}} von {{total}}",
+        "reminders": "Erinnerungen",
+        "remindersHelp": "Intervalle durch Kommas trennen, z. B. 1, 3, 7. Sie beginnen mit der ersten E-Mail.",
         "editManagement": "Edit IC management",
         "editModel": "Edit IC model",
         "mySignedConsents": "My signed consents",
@@ -9814,6 +10377,27 @@ export const defaultTranslationSeed = {
         "noActiveTabs": "Hey {{name}}, you don't have active tabs",
         "notAvailable": "The page you are looking for is not available!"
       },
+      "assignmentRequests": {
+        "statusTitle": "Request status",
+        "status": {
+          "PENDING": "Pending",
+          "ACCEPTED": "Accepted",
+          "REJECTED": "Rejected",
+          "CANCELLED": "Cancelled"
+        },
+        "requestSent": "Request sent to {{manager}} for patient {{patient}}",
+        "cancelTitle": "Cancel assignment request",
+        "cancelConfirm": "Are you sure you want to cancel the request sent to {{name}}?",
+        "unableCancel": "Unable to cancel assignment request",
+        "unableLoad": "Unable to load assignment requests",
+        "unableAccept": "Unable to accept assignment request",
+        "unableReject": "Unable to reject assignment request",
+        "accept": "Accept",
+        "reject": "Reject",
+        "caseManagerTitle": "Request to manage case {{target}}",
+        "supervisorTitle": "Request to supervise {{target}}",
+        "requestedBy": "Requested by {{requester}}"
+      },
       "modal": {
         "cancel": "Fortfahren ohne Vervollständigung (Nicht empfohlen)",
         "continue": "Zur nächsten Sektion gehen?",
@@ -10001,6 +10585,10 @@ export const defaultTranslationSeed = {
         "createdAt": "Erstellungsdatum",
         "departments": "Abteilungen",
         "discardedMessage": "<p>Bitte beachten Sie die folgenden Konsequenzen:</p>\n    <ol>\n      <li><b>Neue Testungen</b>: Der entfernte Fragebogen steht für zukünftige Testungen nicht mehr zur Verfügung.</li>\n      <li><b>Datenzugriff</b>: Daten, die mit dem nun entfernten Fragebogen erhoben wurden, bleiben weiterhin zugänglich.</li>\n      <li><b>Berichtsanpassungen</b>: Berichte, die den entfernten Fragebogen beinhalten, können nach wie vor angepasst werden.</li>\n      <li><b>Archiv-Bereich</b>: Der entfernte Fragebogen wird in den Bereich \"Alte Fragebogenversionen\" verschoben, wo er weiterhin bearbeitet werden kann.</li>\n      <li><b>Ersatzmöglichkeit</b>: Nach dem Entfernen haben Sie die Möglichkeit, einen neuen Fragebogen mit der gleichen Abkürzung und in derselben Sprache zu erstellen.</li>\n    </ol>",
+        "archiveQuestionnaire": "Fragebogen archivieren",
+        "archivedTitle": "Sind Sie sicher, dass Sie diesen Fragebogen archivieren möchten?",
+        "archivedMessage": "<p>Dadurch wird der Fragebogen für zukünftige Nutzung deaktiviert, ohne ihn in alte Versionen zu verschieben oder vorhandene Daten zu löschen.</p>",
+        "unableArchiveQuestionnaire": "Fragebogen {{name}} konnte nicht archiviert werden",
         "discardedTitle": "Sind Sie sicher, dass Sie diesen Fragebogen entfernen möchten?",
         "formattedStatus": "Status",
         "id": "ID",
@@ -10095,8 +10683,22 @@ export const defaultTranslationSeed = {
         "unableLoadRandomizations": "Unable to load randomizations"
       },
       "reports": {
+        "reports": "Berichte",
+        "usage": "Report usage",
         "notFound": "Report not found or unavailable.",
         "report": "Report",
+        "user": "User",
+        "patient": "Patient",
+        "context": "Context",
+        "contextGeneral": "General",
+        "contextPatient": "Patient",
+        "contextTherapist": "Therapist",
+        "contextSupervisor": "Supervisor",
+        "contextUser": "User",
+        "startedAt": "Started",
+        "lastSeenAt": "Last activity",
+        "endedAt": "Ended",
+        "duration": "Duration",
         "unableLoadReports": "Unable to load reports",
         "createReport": "Create report",
         "saveReport": "Save report",
@@ -10111,7 +10713,9 @@ export const defaultTranslationSeed = {
         "unableCreateReport": "Unable to create report",
         "unableUpdateReport": "Unable to update report",
         "unableDeleteReport": "Unable to delete report",
-        "unableLoadShinyApps": "Unable to load Shiny apps"
+        "unableLoadShinyApps": "Unable to load Shiny apps",
+        "unableLoadReportSessions": "Unable to load report usage",
+        "rolesRequiredValidation": "Select at least one role that can access this report."
       },
       "rolesPermissions": {
         "permissions": "Berechtigungen",
@@ -10198,7 +10802,31 @@ export const defaultTranslationSeed = {
         "unableLoadUpcomingSessions": "Unable to load upcoming sessions",
         "unexpectedError": "Unexpected error"
       },
+      "userSettings": {
+        "timezoneReferenceHelp": "Der UTC-Standardversatz wird mit Beispielländern angezeigt. Jede Option berücksichtigt automatisch die Sommerzeit ihrer Referenzzone.",
+        "emailTimezoneHelp": "E-Mails verwenden Ihre manuelle Auswahl oder die zuletzt erkannte Zone. Vor der ersten Anmeldung gilt die globale Referenz.",
+        "title": "Einstellungen",
+        "timezone": "Zeitzone",
+        "timezoneHelp": "PSIRA zeigt Datum und Uhrzeit in Ihrer Zeitzone an. Eine Änderung verschiebt keine geplanten Termine.",
+        "automatic": "Zeitzone dieses Geräts automatisch erkennen",
+        "detected": "Erkannte Zeitzone",
+        "current": "Aktuelle Referenz",
+        "saved": "Einstellungen gespeichert"
+      },
       "systemSettings": {
+        "patientCaseManagerAssignableHierarchyRankDescription": "Höchste zulässige Hierarchienummer für Fallverantwortliche. Kleinere Zahlen bedeuten höhere Befugnisse.",
+        "treatmentFinalizationUndoWindowDescription": "Anzahl der Tage, in denen ein Behandlungsabschluss rückgängig gemacht werden kann.",
+        "evaluationAutomationRunRetentionDescription": "Anzahl der Tage, die der Ausführungsverlauf von Evaluationsautomatisierungen aufbewahrt wird.",
+        "maxLoginAttemptsDescription": "Maximale Anzahl fehlgeschlagener Anmeldeversuche vor der Zugriffssperre.",
+        "accessTokenRetentionDescription": "Anzahl der Tage, die Datensätze abgelaufener Zugriffstoken aufbewahrt werden.",
+        "notificationLogRetentionDescription": "Anzahl der Tage, die Benachrichtigungsprotokolle aufbewahrt werden.",
+        "passwordReuseCutoffDescription": "Anzahl der Tage, in denen ein früheres Passwort nicht wiederverwendet werden darf.",
+        "passwordLifeTimeDescription": "Anzahl der Tage, bis eine Passwortänderung erforderlich ist.",
+        "dateTimeFormatDescription": "Format zur gemeinsamen Anzeige von Datum und Uhrzeit.",
+        "timeFormatDescription": "Format zur Anzeige von Uhrzeiten.",
+        "dateFormatDescription": "Format zur Anzeige von Datumsangaben.",
+        "systemLocaleDescription": "Referenzsprache und regionales Format für Datum, Zahlen und Systemtexte.",
+        "systemTimezoneDescription": "Referenzzone für Aufgaben ohne Benutzerzeitzone. Standard ist UTC. Jeder Benutzer wählt seine eigene Zone in den Einstellungen.",
         "clientId": "Client ID",
         "clientIdPlaceholder": "Google OAuth Client ID",
         "clientSecret": "Client Secret",
@@ -10223,6 +10851,17 @@ export const defaultTranslationSeed = {
         "visible": "Visible"
       },
       "tables": {
+        "patientStatuses": {
+          "description": "Beschreibung",
+          "name": "Name",
+          "formattedUpdatedAt": "Aktualisiert am",
+          "formattedCreatedAt": "Erstellt am"
+        },
+        "roles": {
+          "createdAt": "Erstellungsdatum",
+          "name": "Name",
+          "hierarchy": "Hierarchie"
+        },
         "assessmentAdministration": {
           "assessmentType": "Bezeichnung",
           "lastUpdate": "Letztes Änderung",
@@ -10238,11 +10877,12 @@ export const defaultTranslationSeed = {
           "status": "Status",
           "title": "Bezeichnung",
           "updatedAt": "Ausfülldatum",
-          "origin": "Origin",
-          "linkedSession": "Linked session",
+          "origin": "Herkunft",
+          "linkedSession": "Verknüpfte Sitzung",
           "submissionDate": "Submission Date"
         },
         "casemanagers": {
+          "departments": "Abteilungen",
           "email": "E-Mail",
           "firstName": "Vorname",
           "lastName": "Nachname",
@@ -10272,13 +10912,13 @@ export const defaultTranslationSeed = {
           "status": "Status"
         },
         "departments": {
-        "createDepartment": "Create department",
-        "departmentNameDescription": "Department name",
-        "departmentNameValidation": "Department name is required.",
-        "appliesToRoles": "Applies to roles",
-        "defaultForRoles": "Default for roles",
-        "selectRoles": "Select roles",
-        "rolesValidation": "Select at least one role.",
+          "createDepartment": "Create Department",
+          "departmentNameDescription": "Enter the department name.",
+          "departmentNameValidation": "Department name is required.",
+          "rolesValidation": "Select at least one applicable role.",
+          "appliesToRoles": "Applies to roles",
+          "defaultForRoles": "Default for roles",
+          "selectRoles": "Select roles",
           "createdAt": "Erstellungsdatum",
           "description": "Beschreibung",
           "name": "Name"
@@ -10309,7 +10949,7 @@ export const defaultTranslationSeed = {
           "description": "Beschreibung",
           "name": "Name",
           "repositoryLink": "Repository",
-          "resources": "Art des Berichts",
+          "resources": "Where it appears",
           "roles": "Rollen mit Zugang zum Bericht",
           "status": "Status"
         },
@@ -10343,6 +10983,8 @@ export const defaultTranslationSeed = {
         "day": "Day"
       },
       "patientsManagement": {
+        "originalStructure": "Ursprüngliche Struktur",
+        "fromThisSession": "Ab dieser Sitzung",
         "submitContact": "Submit contact",
         "savePatient": "Save patient",
         "editPatient": "Edit patient",
@@ -10510,14 +11152,19 @@ export const defaultTranslationSeed = {
         "updateInformant": "Update informant"
       },
       "questionnaireBundles": {
+        "firstPage": "Erste Seite",
+        "minimumStructureHelp": "Die erste Seite und die erste Gruppe sind erforderlich. Fragebögen müssen zu Gruppen gehören.",
+        "requiredStructure": "Erforderliche Struktur",
+        "firstPageHeader": "Kopf der ersten Seite",
+        "firstPageFooter": "Fuß der ersten Seite",
         "addChildFixedGroup": "Add child fixed group",
         "addChildQuestionnaire": "Add child questionnaire",
         "addChildRandomizedGroup": "Add child randomized group",
-        "addChildScreen": "Add child screen",
+        "addChildScreen": "Seitenumbruch hinzufügen",
         "addFixedGroup": "Add fixed group",
         "addQuestionnaire": "Add questionnaire",
         "addRandomizedGroup": "Add randomized group",
-        "addScreen": "Add screen",
+        "addScreen": "Seitenumbruch hinzufügen",
         "answerPlaceholder": "Answer",
         "bundleDuplicated": "Bundle duplicated",
         "compactSummary": "{{questionnaires}} questionnaires / {{groups}} groups",
@@ -10527,7 +11174,7 @@ export const defaultTranslationSeed = {
         "editBundle": "Edit bundle",
         "fixedGroup": "Fixed group",
         "footerNotice": "Footer notice",
-        "footerNoticePlaceholder": "Text shown at the end of each screen...",
+        "footerNoticePlaceholder": "Text am Ende jeder Seite...",
         "internalName": "Internal name",
         "itemsToSelect": "Items to select (how many from this group)",
         "optionalVisibleTitle": "Optional visible title",
@@ -10543,14 +11190,14 @@ export const defaultTranslationSeed = {
         "replacement": "Replacement",
         "rootGroup": "Root group",
         "rootGroupLabel": "Root group label",
-        "screen": "Screen",
-        "screenFooter": "Screen footer",
-        "screenFooterPlaceholder": "Optional text below this screen...",
-        "screenHeader": "Screen header",
-        "screenHeaderPlaceholder": "Optional text above this screen...",
+        "screen": "Seitenumbruch",
+        "screenFooter": "Seitenfuß",
+        "screenFooterPlaceholder": "Optionaler Text unter dieser Seite...",
+        "screenHeader": "Seitenkopf",
+        "screenHeaderPlaceholder": "Optionaler Text über dieser Seite...",
         "selectBundleName": "Select bundle name...",
         "sequenceStructure": "Evaluation sequence structure",
-        "sequenceSummary": "{{questionnaires}} questionnaires / {{screens}} screens / {{groups}} groups",
+        "sequenceSummary": "{{questionnaires}} Fragebögen / {{screens}} Seitenumbrüche / {{groups}} Gruppen",
         "statusUpdated": "Status updated",
         "structure": "Structure",
         "titleHidden": "Hidden",
@@ -10564,6 +11211,7 @@ export const defaultTranslationSeed = {
         "bundles": "Bundles"
       },
       "departments": {
+        "appliesToRoles": "Gilt für Rollen",
         "departments": "Departments",
         "selectAll": "Select all departments",
         "removeAll": "Remove departments",
@@ -10577,19 +11225,18 @@ export const defaultTranslationSeed = {
         "unableDeleteDepartment": "Unable to delete department"
       },
       "roles": {
-        "createRole": "Create role",
+        "createRole": "Rolle erstellen",
         "editRole": "Edit role",
         "deleteRole": "Delete role",
         "duplicateRole": "Duplicate role",
         "saveRole": "Save role",
-        "nameDescription": "Role name",
+        "nameDescription": "Enter the role name.",
+        "hierarchyDescription": "Enter a hierarchy from 1 to 999. Lower numbers have more access.",
         "nameValidation": "Role name is required.",
-        "hierarchyDescription": "Role hierarchy",
         "hierarchyValidation": "Role hierarchy is required.",
-        "updateRole": "Update role",
         "patient": "Patient",
-        "caregiver": "Caregiver",
-        "therapist": "Therapist",
+        "caregiver": "Betreuungsperson",
+        "therapist": "Therapeut",
         "supervisor": "Supervisor",
         "roles": "Roles",
         "unableLoadRoles": "Unable to load roles",
@@ -10719,14 +11366,18 @@ export const defaultTranslationSeed = {
       },
       "assessmentAdministration": {
         "editType": "Edit assessment type",
+        "deleteAssessmentTypeConfirm": "Are you sure you want to delete the assessment type {{name}}?",
+        "assessmentTypeDeleted": "Assessment type deleted",
+        "unableDeleteAssessmentType": "Unable to delete assessment type",
         "unableSaveAssessmentType": "Unable to save assessment type"
       },
       "patientStatuses": {
-        "createPatientStatus": "Create patient status",
+        "createPatientStatus": "Patientenstatus erstellen",
+        "duplicatePatientStatus": "Duplicate patient status",
         "updatePatientStatus": "Update patient status",
         "submitPatientStatus": "Save patient status",
-        "editPatientStatus": "Edit patient status",
-        "deletePatientStatus": "Delete patient status",
+        "editPatientStatus": "Patientenstatus bearbeiten",
+        "deletePatientStatus": "Patientenstatus löschen",
         "deletePatientStatusConfirm": "Are you sure you want to delete this patient status?",
         "creatingPatientStatus": "Creating patient status",
         "patientStatusCreated": "Patient status created",
@@ -10755,7 +11406,17 @@ export const defaultTranslationSeed = {
       }
     },
     "en": {
+      "storageNotice": {
+        "title": "Privacy and browser storage",
+        "message": "PSIRA does not use cookies for sign-in or tracking. It uses browser local and session storage to keep the session, permissions, language and system preferences required for the application."
+      },
       "core": {
+        "archived": "Archived",
+        "paused": "Paused",
+        "draft": "Draft",
+        "requiredAnswers": "Required answers",
+        "requiredAnswersBeforeContinue": "Answer all required questions before continuing. Missing answers: {{count}}.",
+        "publicAssessmentLoadError": "Unable to open this assessment. Check the link or contact your care team.",
         "assessments": "Assessments",
         "profile": "Profile",
         "caseManagers": "Case Managers",
@@ -10797,6 +11458,8 @@ export const defaultTranslationSeed = {
         "toggleActive": "Activate / deactivate",
         "activate": "Activate",
         "deactivate": "Deactivate",
+        "on": "On",
+        "off": "Off",
         "default": "Default",
         "all": "All",
         "status": "Status",
@@ -10925,7 +11588,31 @@ export const defaultTranslationSeed = {
         "unexpectedError": "Unexpected error",
         "informedConsentBlocked": "Pending mandatory informed consent must be completed before using PSIRA."
       },
+      "userSettings": {
+        "timezoneReferenceHelp": "The standard UTC offset is shown with example countries. Each option automatically follows daylight saving rules for its reference zone.",
+        "emailTimezoneHelp": "Emails use your manual selection or the last detected zone. Before the first sign-in, the global reference is used.",
+        "title": "Settings",
+        "timezone": "Time zone",
+        "timezoneHelp": "PSIRA displays dates and times in your time zone. Changing it does not change scheduled instants.",
+        "automatic": "Automatically detect this device’s time zone",
+        "detected": "Detected zone",
+        "current": "Current reference",
+        "saved": "Settings saved"
+      },
       "systemSettings": {
+        "patientCaseManagerAssignableHierarchyRankDescription": "Highest hierarchy number allowed when selecting case managers. Lower numbers represent greater authority.",
+        "treatmentFinalizationUndoWindowDescription": "Number of days during which treatment finalization can be undone.",
+        "evaluationAutomationRunRetentionDescription": "Number of days evaluation automation run history is retained.",
+        "maxLoginAttemptsDescription": "Maximum number of failed sign-in attempts before access is blocked.",
+        "accessTokenRetentionDescription": "Number of days expired access-token records are retained.",
+        "notificationLogRetentionDescription": "Number of days notification logs are retained.",
+        "passwordReuseCutoffDescription": "Number of days during which a previous password cannot be reused.",
+        "passwordLifeTimeDescription": "Number of days a password remains valid before a change is required.",
+        "dateTimeFormatDescription": "Format used to display the date and time together.",
+        "timeFormatDescription": "Format used to display times.",
+        "dateFormatDescription": "Format used to display dates.",
+        "systemLocaleDescription": "Reference language and regional format for dates, numbers and system text.",
+        "systemTimezoneDescription": "Reference zone for tasks without a user time zone. Defaults to UTC. Each user chooses their own zone in Settings.",
         "globalFeatures": "Global features",
         "notifications": "Notifications",
         "notificationsActive": "Notifications active",
@@ -10955,6 +11642,8 @@ export const defaultTranslationSeed = {
         "daysFromSessionDate": "days from the session date",
         "dashboardLookahead": "Dashboard anticipation",
         "daysBeforeDashboard": "days before sessions and assessments appear",
+        "caseManagerRoles": "Roles allowed as case managers",
+        "supervisorRoles": "Roles allowed as supervisors",
         "unableLoad": "Unable to load clinical settings",
         "unableUpdate": "Unable to update clinical settings"
       },
@@ -11054,7 +11743,21 @@ export const defaultTranslationSeed = {
         "noActiveTabs": "Hey {{name}}, you don't have active tabs"
       },
       "reports": {
+        "reports": "Reports",
+        "usage": "Report usage",
         "report": "Report",
+        "user": "User",
+        "patient": "Patient",
+        "context": "Context",
+        "contextGeneral": "General",
+        "contextPatient": "Patient",
+        "contextTherapist": "Therapist",
+        "contextSupervisor": "Supervisor",
+        "contextUser": "User",
+        "startedAt": "Started",
+        "lastSeenAt": "Last activity",
+        "endedAt": "Ended",
+        "duration": "Duration",
         "createReport": "Create report",
         "saveReport": "Save report",
         "editReport": "Edit report",
@@ -11070,18 +11773,27 @@ export const defaultTranslationSeed = {
         "unableCreateReport": "Unable to create report",
         "unableUpdateReport": "Unable to update report",
         "unableDeleteReport": "Unable to delete report",
-        "unableLoadShinyApps": "Unable to load Shiny apps"
+        "unableLoadShinyApps": "Unable to load Shiny apps",
+        "unableLoadReportSessions": "Unable to load report usage",
+        "rolesRequiredValidation": "Select at least one role that can access this report."
       },
       "disclaimers": {
         "editScript": "Edit message"
       },
       "assessmentAdministration": {
+        "createAssessmentName": "Create assessment type",
         "editType": "Edit assessment type",
+        "deleteAssessmentTypeConfirm": "Are you sure you want to delete the assessment type {{name}}?",
+        "assessmentTypeDeleted": "Assessment type deleted",
+        "unableDeleteAssessmentType": "Unable to delete assessment type",
         "unableSaveAssessmentType": "Unable to save assessment type"
       },
       "patientStatuses": {
-        "duplicatePatientStatus": "Duplicate patient status",
+        "nameDescription": "Enter the patient status name.",
+        "nameValidation": "Patient status name is required.",
+        "descriptionHelp": "Describe how this status is used.",
         "createPatientStatus": "Create patient status",
+        "duplicatePatientStatus": "Duplicate patient status",
         "updatePatientStatus": "Update patient status",
         "submitPatientStatus": "Save patient status",
         "editPatientStatus": "Edit patient status",
@@ -11136,6 +11848,9 @@ export const defaultTranslationSeed = {
         "includedPlaces": "Included places"
       },
       "informedConsent": {
+        "consentProgress": "Consent {{current}} of {{total}}",
+        "reminders": "Reminders",
+        "remindersHelp": "Separate the reminder intervals with commas, for example 1, 3, 7. Intervals start at the first email.",
         "title": "Informed Consent",
         "pendingConsents": "Pending consents",
         "newModel": "New IC model",
@@ -11328,6 +12043,8 @@ export const defaultTranslationSeed = {
         "overwritePendingExistingScheme": "Overwrite pending items from existing scheme",
         "propagateFutureRestructure": "Propagate future restructure",
         "propagateFutureSessions": "Propagate to future sessions",
+        "responsibleUsersRequired": "Select at least one session responsible user.",
+        "propagateResponsibleUsersFutureSessions": "Propagate responsible users to future sessions",
         "reasonRequired": "Reason required",
         "reason": "Reason",
         "remindersAfterActivation": "Reminders after activation",
@@ -11412,6 +12129,17 @@ export const defaultTranslationSeed = {
         "weekdayShortSaturday": "Sat"
       },
       "evaluationSchemes": {
+        "extendLastGroup": "Extend last group",
+        "extensionCount": "Number of repetitions",
+        "extensionUnit": "Group unit",
+        "customGroupDays": "Days per custom group",
+        "extensionUnits": {
+          "DAYS": "Days",
+          "WEEKS": "Weeks",
+          "FORTNIGHTS": "15-day periods",
+          "MONTHS": "Months (30 days)",
+          "CUSTOM": "Custom"
+        },
         "name": "Name",
         "description": "Description",
         "type": "Type",
@@ -11569,13 +12297,13 @@ export const defaultTranslationSeed = {
         "unableLoadRandomizations": "Unable to load randomizations"
       },
       "departments": {
-        "createDepartment": "Create department",
-        "departmentNameDescription": "Department name",
+        "createDepartment": "Create Department",
+        "departmentNameDescription": "Enter the department name.",
         "departmentNameValidation": "Department name is required.",
+        "rolesValidation": "Select at least one applicable role.",
         "appliesToRoles": "Applies to roles",
         "defaultForRoles": "Default for roles",
         "selectRoles": "Select roles",
-        "rolesValidation": "Select at least one role.",
         "departments": "Departments",
         "editDepartment": "Edit Department",
         "deleteDepartment": "Delete Department",
@@ -11589,16 +12317,15 @@ export const defaultTranslationSeed = {
         "unableLoadParticularDepartment": "Unable to load default Particular department"
       },
       "roles": {
-        "createRole": "Create role",
+        "createRole": "Create Role",
         "editRole": "Edit role",
         "deleteRole": "Delete role",
         "duplicateRole": "Duplicate role",
         "saveRole": "Save role",
-        "nameDescription": "Role name",
+        "nameDescription": "Enter the role name.",
+        "hierarchyDescription": "Enter a hierarchy from 1 to 999. Lower numbers have more access.",
         "nameValidation": "Role name is required.",
-        "hierarchyDescription": "Role hierarchy",
         "hierarchyValidation": "Role hierarchy is required.",
-        "updateRole": "Update role",
         "roles": "Roles",
         "patient": "Patient",
         "caregiver": "Caregiver",
@@ -11776,6 +12503,17 @@ export const defaultTranslationSeed = {
         "years": "Years"
       },
       "tables": {
+        "patientStatuses": {
+          "description": "Description",
+          "name": "Name",
+          "formattedUpdatedAt": "Updated at",
+          "formattedCreatedAt": "Created at"
+        },
+        "roles": {
+          "createdAt": "Created at",
+          "name": "Name",
+          "hierarchy": "Hierarchy"
+        },
         "assessmentAdministration": {
           "assessmentType": "Assessment Type",
           "lastUpdate": "Last Update",
@@ -11812,7 +12550,7 @@ export const defaultTranslationSeed = {
         "reports": {
           "name": "Name",
           "description": "Description",
-          "resources": "Report Type",
+          "resources": "Where it appears",
           "appName": "Shiny App",
           "roles": "Roles",
           "status": "Status",
@@ -11843,6 +12581,7 @@ export const defaultTranslationSeed = {
           "patients": "Patients"
         },
         "casemanagers": {
+          "departments": "Departments",
           "firstName": "First name",
           "middleName": "Middle name",
           "lastName": "Last name",
@@ -11907,7 +12646,7 @@ export const defaultTranslationSeed = {
         "createReportForm": {
           "reportName": "Report Name",
           "description": "Description",
-          "resources": "Resources",
+          "resources": "Where it appears",
           "url": "URL Of The Reporting Tool",
           "appName": "App Name",
           "repositoryLink": "Repository Link",
@@ -11916,15 +12655,15 @@ export const defaultTranslationSeed = {
           "roles": "Roles",
           "reportNameDescription": "Enter the report name.",
           "reportNameValidation": "Report name is required.",
-          "resourcesDescription": "Select where this report applies.",
-          "resourcesValidation": "Report type is required.",
+          "resourcesDescription": "Select the general section where this report will appear.",
+          "resourcesValidation": "Report location is required.",
           "descriptionDescription": "Describe what this report is used for.",
           "descriptionValidation": "Description is required.",
           "appNameDescription": "Select the Shiny app used by this report.",
           "appNameValidation": "Shiny app is required.",
           "urlDescription": "URL generated from the selected reporting tool.",
           "urlValidation": "Enter a valid URL.",
-          "repositoryLinkDescription": "Repository link associated with the report.",
+          "repositoryLinkDescription": "Optional technical reference, such as the Git repository, documentation, script, or internal folder where this report is maintained.",
           "repositoryLinkValidation": "Enter a valid repository link.",
           "reportStatusDescription": "Enable or disable this report.",
           "reportStatusValidation": "Report status is required."
@@ -12045,6 +12784,8 @@ export const defaultTranslationSeed = {
         }
       },
       "patientsManagement": {
+        "originalStructure": "Original structure",
+        "fromThisSession": "From this session",
         "submitContact": "Submit contact",
         "savePatient": "Save patient",
         "editPatient": "Edit patient",
@@ -12256,6 +12997,10 @@ export const defaultTranslationSeed = {
         "website": "Website",
         "license": "License",
         "createdAt": "Created At",
+        "archiveQuestionnaire": "Archive questionnaire",
+        "archivedTitle": "Are you sure you want to archive this questionnaire?",
+        "archivedMessage": "<p>This will deactivate the questionnaire for future use without moving it to old versions or deleting previous data.</p>",
+        "unableArchiveQuestionnaire": "Unable to archive questionnaire {{name}}",
         "discardedTitle": "Are You Sure You Want to Discard This Questionnaire?",
         "discardedMessage": "<p>What happens when you discard a questionnaire?</p>\n    <ol>\n      <li><b>New Assessments</b>: You won't be able to use this questionnaire for new assessments.</li>\n      <li><b>Data</b>: Any data you've already collected with this questionnaire will still be accessible.</li>\n      <li><b>Report Scripts</b>: You will still be able to edit the scripts that generate reports based on this questionnaire.</li>\n      <li><b>Location</b>: The questionnaire will be moved to a separate section called \"Discarded Questionnaires.\" This is where you can edit the questionnaire, including its associated scripts.</li>\n      <li><b>Replacement</b>: Discarding frees up space for a new questionnaire with the same language and abbreviation.</li>\n    </ol>",
         "continueButton": "Continue",
@@ -12296,16 +13041,21 @@ export const defaultTranslationSeed = {
         "xlsValidationSuffix": "website to check the validity of your XSL form before uploading."
       },
       "questionnaireBundles": {
+        "firstPage": "First page",
+        "minimumStructureHelp": "The first page and first group are required. Questionnaires must belong to groups.",
+        "requiredStructure": "Required structure",
+        "firstPageHeader": "First page header",
+        "firstPageFooter": "First page footer",
         "addChildFixedGroup": "Add child fixed group",
         "addChildQuestionnaire": "Add child questionnaire",
         "addChildRandomizedGroup": "Add child randomized group",
-        "addChildScreen": "Add child screen",
+        "addChildScreen": "Add page break",
         "bundle": "Questionnaire bundle",
         "bundles": "Bundles",
         "addFixedGroup": "Add fixed group",
         "addQuestionnaire": "Add questionnaire",
         "addRandomizedGroup": "Add randomized group",
-        "addScreen": "Add screen",
+        "addScreen": "Add page break",
         "answerPlaceholder": "Answer",
         "bundleDuplicated": "Bundle duplicated",
         "compactSummary": "{{questionnaires}} questionnaires / {{groups}} groups",
@@ -12315,7 +13065,7 @@ export const defaultTranslationSeed = {
         "editBundle": "Edit bundle",
         "fixedGroup": "Fixed group",
         "footerNotice": "Footer notice",
-        "footerNoticePlaceholder": "Text shown at the end of each screen...",
+        "footerNoticePlaceholder": "Text shown at the end of each page...",
         "internalName": "Internal name",
         "itemsToSelect": "Items to select (how many from this group)",
         "optionalVisibleTitle": "Optional visible title",
@@ -12331,14 +13081,14 @@ export const defaultTranslationSeed = {
         "replacement": "Replacement",
         "rootGroup": "Root group",
         "rootGroupLabel": "Root group label",
-        "screen": "Screen",
-        "screenFooter": "Screen footer",
-        "screenFooterPlaceholder": "Optional text below this screen...",
-        "screenHeader": "Screen header",
-        "screenHeaderPlaceholder": "Optional text above this screen...",
+        "screen": "Page break",
+        "screenFooter": "Page footer",
+        "screenFooterPlaceholder": "Optional text below this page...",
+        "screenHeader": "Page header",
+        "screenHeaderPlaceholder": "Optional text above this page...",
         "selectBundleName": "Select bundle name...",
         "sequenceStructure": "Evaluation sequence structure",
-        "sequenceSummary": "{{questionnaires}} questionnaires / {{screens}} screens / {{groups}} groups",
+        "sequenceSummary": "{{questionnaires}} questionnaires / {{screens}} page breaks / {{groups}} groups",
         "statusUpdated": "Status updated",
         "structure": "Structure",
         "titleHidden": "Hidden",
@@ -12537,6 +13287,9 @@ export const defaultTranslationSeed = {
       },
       "form": {
         "system": {
+          "patientCaseManagerAssignableHierarchyRank": "Case manager hierarchy limit",
+          "treatmentFinalizationUndoWindowDays": "Treatment finalization undo window (days)",
+          "evaluationAutomationRunRetentionDays": "Automation run retention (days)",
           "systemLocale": "Set System Locale",
           "systemTimezone": "Set System Time Zone",
           "dateFormat": "Set Date Format",
@@ -12661,6 +13414,27 @@ export const defaultTranslationSeed = {
         "partiallyCompleted": "Partially Completed",
         "completed": "Completed"
       },
+      "assignmentRequests": {
+        "statusTitle": "Request status",
+        "status": {
+          "PENDING": "Pending",
+          "ACCEPTED": "Accepted",
+          "REJECTED": "Rejected",
+          "CANCELLED": "Cancelled"
+        },
+        "requestSent": "Request sent to {{manager}} for patient {{patient}}",
+        "cancelTitle": "Cancel assignment request",
+        "cancelConfirm": "Are you sure you want to cancel the request sent to {{name}}?",
+        "unableCancel": "Unable to cancel assignment request",
+        "unableLoad": "Unable to load assignment requests",
+        "unableAccept": "Unable to accept assignment request",
+        "unableReject": "Unable to reject assignment request",
+        "accept": "Accept",
+        "reject": "Reject",
+        "caseManagerTitle": "Request to manage case {{target}}",
+        "supervisorTitle": "Request to supervise {{target}}",
+        "requestedBy": "Requested by {{requester}}"
+      },
       "modal": {
         "continue": "Continue to next section?",
         "continueOverview": "Finish questionnaire?",
@@ -12677,7 +13451,17 @@ export const defaultTranslationSeed = {
       }
     },
     "es": {
+      "storageNotice": {
+        "title": "Privacidad y almacenamiento del navegador",
+        "message": "PSIRA no usa cookies para iniciar sesión ni para seguimiento. Utiliza almacenamiento local y de sesión del navegador para mantener la sesión, permisos, idioma y preferencias necesarias del sistema."
+      },
       "core": {
+        "archived": "Archivado",
+        "paused": "Pausado",
+        "draft": "Borrador",
+        "requiredAnswers": "Respuestas obligatorias",
+        "requiredAnswersBeforeContinue": "Respondé todas las preguntas obligatorias antes de continuar. Faltan {{count}} respuestas.",
+        "publicAssessmentLoadError": "No se pudo abrir la evaluación. Revisá el enlace o contactá al equipo tratante.",
         "assessments": "Evaluaciones",
         "profile": "Perfil",
         "caseManagers": "Administradores del Caso",
@@ -12719,6 +13503,8 @@ export const defaultTranslationSeed = {
         "toggleActive": "Activar / desactivar",
         "activate": "Activar",
         "deactivate": "Desactivar",
+        "on": "Activado",
+        "off": "Desactivado",
         "default": "Default",
         "all": "Todos",
         "status": "Estado",
@@ -12850,7 +13636,31 @@ export const defaultTranslationSeed = {
       "system": {
         "system": "Sistema"
       },
+      "userSettings": {
+        "timezoneReferenceHelp": "Se muestra el desfase UTC estándar con países de ejemplo. Cada opción aplica automáticamente el horario de verano de su zona de referencia.",
+        "emailTimezoneHelp": "Los emails usan tu selección manual o la última zona detectada. Antes del primer inicio de sesión se usa la referencia global.",
+        "title": "Configuración",
+        "timezone": "Zona horaria",
+        "timezoneHelp": "Las fechas y horas de PSIRA se muestran en tu zona horaria. Cambiarla no modifica las fechas programadas.",
+        "automatic": "Detectar automáticamente la zona de este dispositivo",
+        "detected": "Zona detectada",
+        "current": "Referencia actual",
+        "saved": "Configuración guardada"
+      },
       "systemSettings": {
+        "patientCaseManagerAssignableHierarchyRankDescription": "Valor numérico máximo de jerarquía permitido al seleccionar administradores de caso. Un número menor representa mayor autoridad.",
+        "treatmentFinalizationUndoWindowDescription": "Cantidad de días durante los que se puede deshacer la finalización de un tratamiento.",
+        "evaluationAutomationRunRetentionDescription": "Cantidad de días que se conserva el historial de ejecución de las automatizaciones de evaluación.",
+        "maxLoginAttemptsDescription": "Cantidad máxima de intentos fallidos de inicio de sesión antes de bloquear el acceso.",
+        "accessTokenRetentionDescription": "Cantidad de días que se conservan los registros de tokens de acceso vencidos.",
+        "notificationLogRetentionDescription": "Cantidad de días que se conserva el historial de notificaciones.",
+        "passwordReuseCutoffDescription": "Cantidad de días durante los que no se permite reutilizar una contraseña anterior.",
+        "passwordLifeTimeDescription": "Cantidad de días de validez de una contraseña antes de exigir su cambio.",
+        "dateTimeFormatDescription": "Formato utilizado para mostrar la fecha y la hora juntas.",
+        "timeFormatDescription": "Formato utilizado para mostrar las horas.",
+        "dateFormatDescription": "Formato utilizado para mostrar las fechas.",
+        "systemLocaleDescription": "Idioma y formato regional de referencia para las fechas, los números y los textos del sistema.",
+        "systemTimezoneDescription": "Zona de referencia para tareas sin zona de usuario. Por defecto UTC. Cada usuario configura su propia zona en Configuración.",
         "globalFeatures": "Funcionalidades globales",
         "notifications": "Notificaciones",
         "notificationsActive": "Notificaciones activas",
@@ -12880,6 +13690,8 @@ export const defaultTranslationSeed = {
         "daysFromSessionDate": "días desde la fecha de la sesión",
         "dashboardLookahead": "Anticipación en panel de control",
         "daysBeforeDashboard": "días antes de que aparezcan sesiones y evaluaciones",
+        "caseManagerRoles": "Roles permitidos como administradores de caso",
+        "supervisorRoles": "Roles permitidos como supervisores",
         "unableLoad": "No se pudieron cargar los ajustes clínicos",
         "unableUpdate": "No se pudieron actualizar los ajustes clínicos"
       },
@@ -12976,7 +13788,21 @@ export const defaultTranslationSeed = {
         "noActiveTabs": "Hola {{name}}, no tenés pestañas activas"
       },
       "reports": {
+        "reports": "Informes",
+        "usage": "Uso de informes",
         "report": "Informe",
+        "user": "Usuario",
+        "patient": "Paciente",
+        "context": "Contexto",
+        "contextGeneral": "General",
+        "contextPatient": "Paciente",
+        "contextTherapist": "Terapeuta",
+        "contextSupervisor": "Supervisor",
+        "contextUser": "Usuario",
+        "startedAt": "Inicio",
+        "lastSeenAt": "Última actividad",
+        "endedAt": "Finalización",
+        "duration": "Duración",
         "createReport": "Crear informe",
         "saveReport": "Guardar informe",
         "editReport": "Editar informe",
@@ -12992,22 +13818,31 @@ export const defaultTranslationSeed = {
         "unableCreateReport": "No se pudo crear el informe",
         "unableUpdateReport": "No se pudo actualizar el informe",
         "unableDeleteReport": "No se pudo eliminar el informe",
-        "unableLoadShinyApps": "No se pudieron cargar las apps Shiny"
+        "unableLoadShinyApps": "No se pudieron cargar las apps Shiny",
+        "unableLoadReportSessions": "No se pudo cargar el uso de informes",
+        "rolesRequiredValidation": "Seleccioná al menos un rol que pueda acceder a este informe."
       },
       "disclaimers": {
         "editScript": "Editar mensaje"
       },
       "assessmentAdministration": {
+        "createAssessmentName": "Crear tipo de evaluación",
         "editType": "Editar tipo de evaluación",
+        "deleteAssessmentTypeConfirm": "¿Seguro que querés eliminar el tipo de evaluación {{name}}?",
+        "assessmentTypeDeleted": "Tipo de evaluación eliminado",
+        "unableDeleteAssessmentType": "No se pudo eliminar el tipo de evaluación",
         "unableSaveAssessmentType": "No se pudo guardar el tipo de evaluación"
       },
       "patientStatuses": {
+        "nameDescription": "Ingresá el nombre del estado del paciente.",
+        "nameValidation": "El nombre del estado del paciente es obligatorio.",
+        "descriptionHelp": "Describí cómo se usa este estado.",
+        "createPatientStatus": "Crear estado del paciente",
         "duplicatePatientStatus": "Duplicar estado de paciente",
-        "createPatientStatus": "Crear estado de paciente",
         "updatePatientStatus": "Actualizar estado de paciente",
         "submitPatientStatus": "Guardar estado de paciente",
-        "editPatientStatus": "Editar estado de paciente",
-        "deletePatientStatus": "Eliminar estado de paciente",
+        "editPatientStatus": "Editar estado del paciente",
+        "deletePatientStatus": "Eliminar estado del paciente",
         "deletePatientStatusConfirm": "¿Seguro que querés eliminar este estado de paciente?",
         "creatingPatientStatus": "Creando estado de paciente",
         "patientStatusCreated": "Estado de paciente creado",
@@ -13058,6 +13893,9 @@ export const defaultTranslationSeed = {
         "includedPlaces": "Lugares incluidos"
       },
       "informedConsent": {
+        "consentProgress": "Consentimiento {{current}} de {{total}}",
+        "reminders": "Recordatorios",
+        "remindersHelp": "Separá los intervalos con comas, por ejemplo 1, 3, 7. Se cuentan desde el primer email.",
         "title": "Consentimiento Informado",
         "pendingConsents": "Consentimientos pendientes",
         "newModel": "Nuevo modelo CI",
@@ -13250,6 +14088,8 @@ export const defaultTranslationSeed = {
         "overwritePendingExistingScheme": "Sobrescribir pendientes del esquema existente",
         "propagateFutureRestructure": "Propagar reestructuración futura",
         "propagateFutureSessions": "Propagar a sesiones futuras",
+        "responsibleUsersRequired": "Seleccioná al menos un responsable de la sesión.",
+        "propagateResponsibleUsersFutureSessions": "Propagar responsables a sesiones futuras",
         "reasonRequired": "Motivo requerido",
         "reason": "Motivo",
         "remindersAfterActivation": "Recordatorios después de la activación",
@@ -13334,6 +14174,17 @@ export const defaultTranslationSeed = {
         "weekdayShortSaturday": "Sáb"
       },
       "evaluationSchemes": {
+        "extendLastGroup": "Extender último grupo",
+        "extensionCount": "Cantidad de repeticiones",
+        "extensionUnit": "Unidad del grupo",
+        "customGroupDays": "Días por grupo personalizado",
+        "extensionUnits": {
+          "DAYS": "Días",
+          "WEEKS": "Semanas",
+          "FORTNIGHTS": "Quincenas",
+          "MONTHS": "Meses (30 días)",
+          "CUSTOM": "Personalizado"
+        },
         "name": "Nombre",
         "description": "Descripción",
         "type": "Tipo",
@@ -13423,7 +14274,7 @@ export const defaultTranslationSeed = {
         "scheduling": "Programación",
         "schemeMustBeSavedFirst": "Primero se debe guardar el esquema",
         "seedOrder": "Semilla de orden",
-        "sessionBased": "Session-based",
+        "sessionBased": "Por sesiones",
         "sessionBasedHelper": "Primero definí el contenido, después cuándo aparece dentro de la serie de sesiones.",
         "sessionFrequency": "Frecuencia de sesiones",
         "sessionResources": "Recursos de sesión",
@@ -13492,12 +14343,12 @@ export const defaultTranslationSeed = {
       },
       "departments": {
         "createDepartment": "Crear departamento",
-        "departmentNameDescription": "Nombre del departamento",
+        "departmentNameDescription": "Ingresá el nombre del departamento.",
         "departmentNameValidation": "El nombre del departamento es obligatorio.",
-        "appliesToRoles": "Aplica a roles",
-        "defaultForRoles": "Predeterminado para roles",
+        "rolesValidation": "Seleccioná al menos un rol aplicable.",
+        "appliesToRoles": "Aplica a los roles",
+        "defaultForRoles": "Por defecto para roles",
         "selectRoles": "Seleccionar roles",
-        "rolesValidation": "Seleccioná al menos un rol.",
         "departments": "Departamentos",
         "editDepartment": "Editar Departamento",
         "deleteDepartment": "Eliminar Departamento",
@@ -13516,11 +14367,10 @@ export const defaultTranslationSeed = {
         "deleteRole": "Eliminar rol",
         "duplicateRole": "Duplicar rol",
         "saveRole": "Guardar rol",
-        "nameDescription": "Nombre del rol",
+        "nameDescription": "Ingresá el nombre del rol.",
+        "hierarchyDescription": "Ingresá una jerarquía de 1 a 999. Los números más bajos tienen más acceso.",
         "nameValidation": "El nombre del rol es obligatorio.",
-        "hierarchyDescription": "Jerarquía del rol",
         "hierarchyValidation": "La jerarquía del rol es obligatoria.",
-        "updateRole": "Actualizar rol",
         "roles": "Roles",
         "patient": "Paciente",
         "caregiver": "Cuidador",
@@ -13698,6 +14548,17 @@ export const defaultTranslationSeed = {
         "years": "Años"
       },
       "tables": {
+        "patientStatuses": {
+          "description": "Descripción",
+          "name": "Nombre",
+          "formattedUpdatedAt": "Actualizado el",
+          "formattedCreatedAt": "Creado el"
+        },
+        "roles": {
+          "createdAt": "Fecha de creación",
+          "name": "Nombre",
+          "hierarchy": "Jerarquía"
+        },
         "assessmentAdministration": {
           "assessmentType": "Tipo de Evaluación",
           "lastUpdate": "Última Actualización",
@@ -13734,7 +14595,7 @@ export const defaultTranslationSeed = {
         "reports": {
           "name": "Nombre",
           "description": "Descripción",
-          "resources": "Tipo de Informe",
+          "resources": "Dónde aparece",
           "appName": "App Shiny",
           "roles": "Roles",
           "status": "Estado",
@@ -13765,6 +14626,7 @@ export const defaultTranslationSeed = {
           "patients": "Paciente"
         },
         "casemanagers": {
+          "departments": "Departamentos",
           "firstName": "Nombre",
           "middleName": "Segundo Nombre",
           "lastName": "Apellidos",
@@ -13830,7 +14692,7 @@ export const defaultTranslationSeed = {
         "createReportForm": {
           "reportName": "Nombre Informe",
           "description": "Descripción",
-          "resources": "Recursos",
+          "resources": "Dónde aparece",
           "url": "URL De La Herramienta De Informes",
           "appName": "Nombre App",
           "repositoryLink": "Enlace del Repositorio",
@@ -13839,15 +14701,15 @@ export const defaultTranslationSeed = {
           "roles": "Roles",
           "reportNameDescription": "Ingresá el nombre del informe.",
           "reportNameValidation": "El nombre del informe es obligatorio.",
-          "resourcesDescription": "Seleccioná dónde aplica este informe.",
-          "resourcesValidation": "El tipo de informe es obligatorio.",
+          "resourcesDescription": "Seleccioná en qué sección general aparecerá este informe.",
+          "resourcesValidation": "La ubicación del informe es obligatoria.",
           "descriptionDescription": "Describí para qué se usa este informe.",
           "descriptionValidation": "La descripción es obligatoria.",
           "appNameDescription": "Seleccioná la app Shiny usada por este informe.",
           "appNameValidation": "La app Shiny es obligatoria.",
           "urlDescription": "URL generada desde la herramienta de informes seleccionada.",
           "urlValidation": "Ingresá una URL válida.",
-          "repositoryLinkDescription": "Enlace del repositorio asociado al informe.",
+          "repositoryLinkDescription": "Referencia técnica opcional, como el repositorio Git, documentación, script o carpeta interna donde se mantiene este informe.",
           "repositoryLinkValidation": "Ingresá un enlace de repositorio válido.",
           "reportStatusDescription": "Activá o desactivá este informe.",
           "reportStatusValidation": "El estado del informe es obligatorio."
@@ -13940,7 +14802,7 @@ export const defaultTranslationSeed = {
           "postalCode": "Código Postal",
           "country": "País",
           "emergency": "Contacto de Emergencia",
-          "emergencyContacts": "Contactos de Emergencia",
+          "emergencyContacts": "Contactos de emergencia",
           "note": "Nota",
           "addCaregiver": "Añadir Cuidador",
           "linkedPatient": "Paciente vinculado",
@@ -13968,6 +14830,8 @@ export const defaultTranslationSeed = {
         }
       },
       "patientsManagement": {
+        "originalStructure": "Estructura original",
+        "fromThisSession": "Desde esta sesión",
         "submitContact": "Guardar contacto",
         "savePatient": "Guardar paciente",
         "editPatient": "Editar paciente",
@@ -14179,6 +15043,10 @@ export const defaultTranslationSeed = {
         "website": "Sitio Web",
         "license": "licencia",
         "createdAt": "Creado En",
+        "archiveQuestionnaire": "Archivar cuestionario",
+        "archivedTitle": "¿Está seguro de que desea archivar este cuestionario?",
+        "archivedMessage": "<p>Esto desactivará el cuestionario para usos futuros sin moverlo a versiones antiguas ni eliminar datos previos.</p>",
+        "unableArchiveQuestionnaire": "No se pudo archivar el cuestionario {{name}}",
         "discardedTitle": "¿Está seguro de que desea eliminar este cuestionario?",
         "discardedMessage": "<p>Por favor, tenga en cuenta las siguientes consecuencias:</p>\n    <ol>\n      <li><b>Nuevas pruebas</b>: El cuestionario eliminado no estará disponible para futuras pruebas.</li>\n      <li><b>Acceso a datos</b>: Los datos recopilados con el cuestionario ahora eliminado seguirán siendo accesibles.</li>\n      <li><b>Ajustes de informes</b>: Los informes que incluyen el cuestionario eliminado todavía pueden ser modificados.</li>\n      <li><b>Sección de archivo</b>: El cuestionario eliminado se trasladará a la sección \"Versiones antiguas\", donde aún podrá ser editado.</li>\n      <li><b>Opción de reemplazo</b>: Tras la eliminación, tendrá la opción de crear un nuevo cuestionario con la misma abreviatura y en el mismo idioma.</li>\n    </ol>",
         "continueButton": "Continuar",
@@ -14219,16 +15087,21 @@ export const defaultTranslationSeed = {
         "xlsValidationSuffix": "sitio para chequear la validez del formulario XSL antes de cargarlo."
       },
       "questionnaireBundles": {
+        "firstPage": "Primera pantalla",
+        "minimumStructureHelp": "La primera pantalla y el primer grupo son obligatorios. Los cuestionarios solo pueden estar dentro de grupos.",
+        "requiredStructure": "Estructura obligatoria",
+        "firstPageHeader": "Encabezado de la primera página",
+        "firstPageFooter": "Pie de la primera página",
         "addChildFixedGroup": "Agregar grupo fijo hijo",
         "addChildQuestionnaire": "Agregar cuestionario hijo",
         "addChildRandomizedGroup": "Agregar grupo randomizado hijo",
-        "addChildScreen": "Agregar pantalla hija",
+        "addChildScreen": "Agregar salto de página",
         "bundle": "Paquete de cuestionarios",
         "bundles": "Paquetes",
         "addFixedGroup": "Agregar grupo fijo",
         "addQuestionnaire": "Agregar cuestionario",
         "addRandomizedGroup": "Agregar grupo randomizado",
-        "addScreen": "Agregar pantalla",
+        "addScreen": "Agregar salto de página",
         "answerPlaceholder": "Respuesta",
         "bundleDuplicated": "Paquete duplicado",
         "compactSummary": "{{questionnaires}} cuestionarios / {{groups}} grupos",
@@ -14238,7 +15111,7 @@ export const defaultTranslationSeed = {
         "editBundle": "Editar paquete",
         "fixedGroup": "Grupo fijo",
         "footerNotice": "Aviso al pie",
-        "footerNoticePlaceholder": "Texto que aparece al final de cada pantalla...",
+        "footerNoticePlaceholder": "Texto al final de cada página...",
         "internalName": "Nombre interno",
         "itemsToSelect": "Elementos a seleccionar (cuántos de este grupo)",
         "optionalVisibleTitle": "Título visible opcional",
@@ -14254,14 +15127,14 @@ export const defaultTranslationSeed = {
         "replacement": "Reemplazo",
         "rootGroup": "Grupo raíz",
         "rootGroupLabel": "Etiqueta del grupo raíz",
-        "screen": "Pantalla",
-        "screenFooter": "Pie de pantalla",
-        "screenFooterPlaceholder": "Texto opcional debajo de esta pantalla...",
-        "screenHeader": "Cabecera de pantalla",
-        "screenHeaderPlaceholder": "Texto opcional arriba de esta pantalla...",
+        "screen": "Salto de página",
+        "screenFooter": "Pie de página",
+        "screenFooterPlaceholder": "Texto opcional debajo de esta página...",
+        "screenHeader": "Encabezado de página",
+        "screenHeaderPlaceholder": "Texto opcional arriba de esta página...",
         "selectBundleName": "Seleccionar nombre del paquete...",
         "sequenceStructure": "Estructura de secuencia de evaluación",
-        "sequenceSummary": "{{questionnaires}} cuestionarios / {{screens}} pantallas / {{groups}} grupos",
+        "sequenceSummary": "{{questionnaires}} cuestionarios / {{screens}} saltos de página / {{groups}} grupos",
         "statusUpdated": "Estado actualizado",
         "structure": "Estructura",
         "titleHidden": "Oculto",
@@ -14460,6 +15333,9 @@ export const defaultTranslationSeed = {
       },
       "form": {
         "system": {
+          "patientCaseManagerAssignableHierarchyRank": "Límite de jerarquía para administradores de caso",
+          "treatmentFinalizationUndoWindowDays": "Plazo para deshacer la finalización de un tratamiento (días)",
+          "evaluationAutomationRunRetentionDays": "Conservación de ejecuciones de automatizaciones (días)",
           "systemLocale": "Establecer configuración regional del sistema",
           "systemTimezone": "Establecer zona horaria del sistema",
           "dateFormat": "Establecer formato de fecha",
@@ -14584,6 +15460,27 @@ export const defaultTranslationSeed = {
         "partiallyCompleted": "Parcialmente completado",
         "completed": "Completado"
       },
+      "assignmentRequests": {
+        "statusTitle": "Estado de solicitud",
+        "status": {
+          "PENDING": "Pendiente",
+          "ACCEPTED": "Aceptada",
+          "REJECTED": "Rechazada",
+          "CANCELLED": "Cancelada"
+        },
+        "requestSent": "Solicitud enviada a {{manager}} para el paciente {{patient}}",
+        "cancelTitle": "Cancelar solicitud de asignación",
+        "cancelConfirm": "¿Seguro que querés cancelar la solicitud enviada a {{name}}?",
+        "unableCancel": "No se pudo cancelar la solicitud",
+        "unableLoad": "No se pudieron cargar las solicitudes de asignación",
+        "unableAccept": "No se pudo aceptar la solicitud",
+        "unableReject": "No se pudo rechazar la solicitud",
+        "accept": "Aceptar",
+        "reject": "Rechazar",
+        "caseManagerTitle": "Solicitud para administrar el caso {{target}}",
+        "supervisorTitle": "Solicitud para supervisar a {{target}}",
+        "requestedBy": "Solicitado por {{requester}}"
+      },
       "modal": {
         "continue": "¿Vaya a la siguiente sección?",
         "continueOverview": "¿Salir del cuestionario?",
@@ -14600,6 +15497,10 @@ export const defaultTranslationSeed = {
       }
     },
     "nl": {
+      "storageNotice": {
+        "title": "Privacy en browseropslag",
+        "message": "PSIRA gebruikt geen cookies voor aanmelden of tracking. Het gebruikt lokale en sessieopslag van de browser om de sessie, machtigingen, taal en noodzakelijke systeemvoorkeuren te bewaren."
+      },
       "assessmentForm": {
         "alreadyCompleted": "Assessment is completed",
         "complete": "Thank you for completing this assessment! You can close this page now.",
@@ -14724,6 +15625,8 @@ export const defaultTranslationSeed = {
         "overwritePendingExistingScheme": "Overwrite pending items from existing scheme",
         "propagateFutureRestructure": "Propagate future restructure",
         "propagateFutureSessions": "Propagate to future sessions",
+        "responsibleUsersRequired": "Select at least one session responsible user.",
+        "propagateResponsibleUsersFutureSessions": "Propagate responsible users to future sessions",
         "reasonRequired": "Reason required",
         "remindersAfterActivation": "Reminders after activation",
         "remindersInMinutes": "Reminders (minutes)",
@@ -14830,6 +15733,8 @@ export const defaultTranslationSeed = {
       "clinicalSettings": {
         "dashboardLookahead": "Dashboard anticipation",
         "daysBeforeDashboard": "days before sessions and assessments appear",
+        "caseManagerRoles": "Roles allowed as case managers",
+        "supervisorRoles": "Roles allowed as supervisors",
         "daysFromSessionDate": "days from the session date",
         "editWindow": "Editing window per session",
         "title": "Clinical settings",
@@ -14837,6 +15742,12 @@ export const defaultTranslationSeed = {
         "unableUpdate": "Unable to update clinical settings"
       },
       "core": {
+        "archived": "Gearchiveerd",
+        "paused": "Gepauzeerd",
+        "draft": "Concept",
+        "requiredAnswers": "Verplichte antwoorden",
+        "requiredAnswersBeforeContinue": "Beantwoord alle verplichte vragen voordat u doorgaat. Ontbrekende antwoorden: {{count}}.",
+        "publicAssessmentLoadError": "Deze evaluatie kan niet worden geopend. Controleer de link of neem contact op met uw behandelteam.",
         "actions": "Actions",
         "active": "Active",
         "add": "Add",
@@ -14859,6 +15770,8 @@ export const defaultTranslationSeed = {
         "duplicate": "Duplicate",
         "edit": "Edit",
         "editCaregiver": "Edit Caregiver",
+        "on": "On",
+        "off": "Off",
         "export": "Export",
         "filter": "Filter",
         "goHome": "Go Home",
@@ -15065,10 +15978,21 @@ export const defaultTranslationSeed = {
         "appliedAutomations": "Applied automations"
       },
       "evaluationSchemes": {
+        "extendLastGroup": "Laatste groep verlengen",
+        "extensionCount": "Aantal herhalingen",
+        "extensionUnit": "Groepseenheid",
+        "customGroupDays": "Dagen per aangepaste groep",
+        "extensionUnits": {
+          "DAYS": "Dagen",
+          "WEEKS": "Weken",
+          "FORTNIGHTS": "Perioden van 15 dagen",
+          "MONTHS": "Maanden (30 dagen)",
+          "CUSTOM": "Aangepast"
+        },
         "activate": "Activate",
         "activationAnchor": "Activation Anchor",
         "activationOffset": "Activation Offset",
-        "active": "Active",
+        "active": "Actief",
         "addEvaluation": "Add Evaluation",
         "addResource": "Add Resource",
         "addSession": "Add Session",
@@ -15127,7 +16051,7 @@ export const defaultTranslationSeed = {
         "extend15Minutes": "Extend 15 minutes",
         "extendLastDay": "Extend last day",
         "extendLastWeek": "Extend last week",
-        "fixedScheme": "Fixed scheme",
+        "fixedScheme": "Vast schema",
         "fixedSchemeHelper": "Relative calendar: day 1 starts when the scheme is applied.",
         "fromSession": "From session",
         "indicateSessionsOrFrequency": "Indicate specific sessions or a session frequency.",
@@ -15154,7 +16078,7 @@ export const defaultTranslationSeed = {
         "scheduling": "Scheduling",
         "schemeMustBeSavedFirst": "Scheme must be saved first",
         "seedOrder": "Seed order",
-        "sessionBased": "Session-based",
+        "sessionBased": "Per sessie",
         "sessionBasedHelper": "Define the content first, then when it appears within the session series.",
         "sessionFrequency": "Session frequency",
         "sessionResources": "Session resources",
@@ -15191,6 +16115,9 @@ export const defaultTranslationSeed = {
       },
       "form": {
         "system": {
+          "patientCaseManagerAssignableHierarchyRank": "Hiërarchiegrens voor casemanagers",
+          "treatmentFinalizationUndoWindowDays": "Termijn om een behandelafsluiting ongedaan te maken (dagen)",
+          "evaluationAutomationRunRetentionDays": "Bewaartermijn van automatiseringsuitvoeringen (dagen)",
           "accessTokenRetentionDays": "Access Token Retention (In Days)",
           "dateFormat": "Set Date Format",
           "dateTimeFormat": "Set Date And Time Format",
@@ -15205,6 +16132,7 @@ export const defaultTranslationSeed = {
       },
       "forms": {
         "assessmentAdministration": {
+          "createAssessmentName": "Create assessment type",
           "status": "Status",
           "typeName": "Type Name",
           "typeNameDescription": "Enter the assessment type name.",
@@ -15234,20 +16162,20 @@ export const defaultTranslationSeed = {
           "reportName": "Report Name",
           "reportStatus": "Report Status",
           "repositoryLink": "Repository Link",
-          "resources": "Resources",
+          "resources": "Where it appears",
           "roles": "Roles",
           "url": "URL Of The Reporting Tool",
           "reportNameDescription": "Enter the report name.",
           "reportNameValidation": "Report name is required.",
-          "resourcesDescription": "Select where this report applies.",
-          "resourcesValidation": "Report type is required.",
+          "resourcesDescription": "Select the general section where this report will appear.",
+          "resourcesValidation": "Report location is required.",
           "descriptionDescription": "Describe what this report is used for.",
           "descriptionValidation": "Description is required.",
           "appNameDescription": "Select the Shiny app used by this report.",
           "appNameValidation": "Shiny app is required.",
           "urlDescription": "URL generated from the selected reporting tool.",
           "urlValidation": "Enter a valid URL.",
-          "repositoryLinkDescription": "Repository link associated with the report.",
+          "repositoryLinkDescription": "Optional technical reference, such as the Git repository, documentation, script, or internal folder where this report is maintained.",
           "repositoryLinkValidation": "Enter a valid repository link.",
           "reportStatusDescription": "Enable or disable this report.",
           "reportStatusValidation": "Report status is required."
@@ -15258,7 +16186,6 @@ export const defaultTranslationSeed = {
           "value": "value {{index}}"
         },
         "patientStatuses": {
-        "duplicatePatientStatus": "Duplicate patient status",
           "description": "Description",
           "name": "Patient Status Name",
           "nameDescription": "Enter the patient status name.",
@@ -15280,7 +16207,7 @@ export const defaultTranslationSeed = {
           "department": "Department",
           "email": "Email Address",
           "emergency": "Emergency Contacts",
-          "emergencyContacts": "Emergency Contacts",
+          "emergencyContacts": "Noodcontacten",
           "firstName": "First Name",
           "gender": "Gender",
           "id": "Id",
@@ -15301,7 +16228,7 @@ export const defaultTranslationSeed = {
           "caregiverId": "Caregiver ID",
           "patient": "Patient",
           "relationshipType": "Relationship type",
-          "createCaregiver": "Create caregiver",
+          "createCaregiver": "Verzorger aanmaken",
           "isCaregiver": "Is caregiver",
           "searchKeyword": "Search keyword",
           "patientNames": "Patient name(s)",
@@ -15372,6 +16299,9 @@ export const defaultTranslationSeed = {
         }
       },
       "informedConsent": {
+        "consentProgress": "Toestemming {{current}} van {{total}}",
+        "reminders": "Herinneringen",
+        "remindersHelp": "Scheid de intervallen met komma’s, bijvoorbeeld 1, 3, 7. Ze beginnen bij de eerste e-mail.",
         "editManagement": "Edit IC management",
         "editModel": "Edit IC model",
         "mySignedConsents": "My signed consents",
@@ -15583,6 +16513,27 @@ export const defaultTranslationSeed = {
         "noActiveTabs": "Hey {{name}}, you don't have active tabs",
         "notAvailable": "The page you are looking for is not available!"
       },
+      "assignmentRequests": {
+        "statusTitle": "Request status",
+        "status": {
+          "PENDING": "Pending",
+          "ACCEPTED": "Accepted",
+          "REJECTED": "Rejected",
+          "CANCELLED": "Cancelled"
+        },
+        "requestSent": "Request sent to {{manager}} for patient {{patient}}",
+        "cancelTitle": "Cancel assignment request",
+        "cancelConfirm": "Are you sure you want to cancel the request sent to {{name}}?",
+        "unableCancel": "Unable to cancel assignment request",
+        "unableLoad": "Unable to load assignment requests",
+        "unableAccept": "Unable to accept assignment request",
+        "unableReject": "Unable to reject assignment request",
+        "accept": "Accept",
+        "reject": "Reject",
+        "caseManagerTitle": "Request to manage case {{target}}",
+        "supervisorTitle": "Request to supervise {{target}}",
+        "requestedBy": "Requested by {{requester}}"
+      },
       "modal": {
         "cancel": "Proceed Without Completing (Not Recommended)",
         "continue": "Continue to next section?",
@@ -15770,6 +16721,10 @@ export const defaultTranslationSeed = {
         "createdAt": "Created At",
         "departments": "Departments",
         "discardedMessage": "<p>What happens when you discard a questionnaire?</p>\n    <ol>\n      <li><b>New Assessments</b>: You won't be able to use this questionnaire for new assessments.</li>\n      <li><b>Data</b>: Any data you've already collected with this questionnaire will still be accessible.</li>\n      <li><b>Report Scripts</b>: You will still be able to edit the scripts that generate reports based on this questionnaire.</li>\n      <li><b>Location</b>: The questionnaire will be moved to a separate section called \"Discarded Questionnaires.\" This is where you can edit the questionnaire, including its associated scripts.</li>\n      <li><b>Replacement</b>: Discarding frees up space for a new questionnaire with the same language and abbreviation.</li>\n    </ol>",
+        "archiveQuestionnaire": "Archive questionnaire",
+        "archivedTitle": "Are you sure you want to archive this questionnaire?",
+        "archivedMessage": "<p>This will deactivate the questionnaire for future use without moving it to old versions or deleting previous data.</p>",
+        "unableArchiveQuestionnaire": "Unable to archive questionnaire {{name}}",
         "discardedTitle": "Are You Sure You Want to Discard This Questionnaire?",
         "formattedStatus": "Status",
         "id": "ID",
@@ -15864,8 +16819,22 @@ export const defaultTranslationSeed = {
         "unableLoadRandomizations": "Unable to load randomizations"
       },
       "reports": {
+        "reports": "Reports",
+        "usage": "Report usage",
         "notFound": "Report not found or unavailable.",
         "report": "Report",
+        "user": "User",
+        "patient": "Patient",
+        "context": "Context",
+        "contextGeneral": "General",
+        "contextPatient": "Patient",
+        "contextTherapist": "Therapist",
+        "contextSupervisor": "Supervisor",
+        "contextUser": "User",
+        "startedAt": "Started",
+        "lastSeenAt": "Last activity",
+        "endedAt": "Ended",
+        "duration": "Duration",
         "unableLoadReports": "Unable to load reports",
         "createReport": "Create report",
         "saveReport": "Save report",
@@ -15880,7 +16849,9 @@ export const defaultTranslationSeed = {
         "unableCreateReport": "Unable to create report",
         "unableUpdateReport": "Unable to update report",
         "unableDeleteReport": "Unable to delete report",
-        "unableLoadShinyApps": "Unable to load Shiny apps"
+        "unableLoadShinyApps": "Unable to load Shiny apps",
+        "unableLoadReportSessions": "Unable to load report usage",
+        "rolesRequiredValidation": "Select at least one role that can access this report."
       },
       "rolesPermissions": {
         "permissions": "Permissions",
@@ -15967,7 +16938,31 @@ export const defaultTranslationSeed = {
         "unableLoadUpcomingSessions": "Unable to load upcoming sessions",
         "unexpectedError": "Unexpected error"
       },
+      "userSettings": {
+        "timezoneReferenceHelp": "De standaard UTC-afwijking wordt met voorbeeldlanden getoond. Elke optie volgt automatisch de zomertijdregels van de referentiezone.",
+        "emailTimezoneHelp": "E-mails gebruiken uw handmatige keuze of de laatst gedetecteerde zone. Vóór de eerste aanmelding geldt de globale referentie.",
+        "title": "Instellingen",
+        "timezone": "Tijdzone",
+        "timezoneHelp": "PSIRA toont datums en tijden in uw tijdzone. Een wijziging verschuift geplande tijdstippen niet.",
+        "automatic": "De tijdzone van dit apparaat automatisch detecteren",
+        "detected": "Gedetecteerde zone",
+        "current": "Huidige referentie",
+        "saved": "Instellingen opgeslagen"
+      },
       "systemSettings": {
+        "patientCaseManagerAssignableHierarchyRankDescription": "Hoogste toegestane hiërarchiewaarde voor casemanagers. Lagere waarden betekenen meer bevoegdheid.",
+        "treatmentFinalizationUndoWindowDescription": "Aantal dagen waarin een behandelafsluiting ongedaan kan worden gemaakt.",
+        "evaluationAutomationRunRetentionDescription": "Aantal dagen dat de uitvoeringsgeschiedenis van evaluatieautomatiseringen wordt bewaard.",
+        "maxLoginAttemptsDescription": "Maximaal aantal mislukte aanmeldpogingen voordat toegang wordt geblokkeerd.",
+        "accessTokenRetentionDescription": "Aantal dagen dat gegevens van verlopen toegangstokens worden bewaard.",
+        "notificationLogRetentionDescription": "Aantal dagen dat meldingslogboeken worden bewaard.",
+        "passwordReuseCutoffDescription": "Aantal dagen waarin een eerder wachtwoord niet opnieuw mag worden gebruikt.",
+        "passwordLifeTimeDescription": "Aantal dagen dat een wachtwoord geldig blijft voordat wijziging verplicht is.",
+        "dateTimeFormatDescription": "Opmaak voor de gezamenlijke weergave van datum en tijd.",
+        "timeFormatDescription": "Opmaak voor de weergave van tijden.",
+        "dateFormatDescription": "Opmaak voor de weergave van datums.",
+        "systemLocaleDescription": "Referentietaal en regionale opmaak voor datums, getallen en systeemteksten.",
+        "systemTimezoneDescription": "Referentiezone voor taken zonder gebruikerstijdzone. Standaard UTC. Elke gebruiker kiest een eigen zone in Instellingen.",
         "clientId": "Client ID",
         "clientIdPlaceholder": "Google OAuth Client ID",
         "clientSecret": "Client Secret",
@@ -15992,6 +16987,17 @@ export const defaultTranslationSeed = {
         "visible": "Visible"
       },
       "tables": {
+        "patientStatuses": {
+          "description": "Beschrijving",
+          "name": "Naam",
+          "formattedUpdatedAt": "Bijgewerkt op",
+          "formattedCreatedAt": "Aangemaakt op"
+        },
+        "roles": {
+          "createdAt": "Aanmaakdatum",
+          "name": "Naam",
+          "hierarchy": "Hiërarchie"
+        },
         "assessmentAdministration": {
           "assessmentType": "Assessment Type",
           "lastUpdate": "Last Update",
@@ -16003,14 +17009,15 @@ export const defaultTranslationSeed = {
           "expirationDate": "Expiration Date",
           "informant": "Informant",
           "manager": "Manager",
-          "questionnaires": "Questionnaires",
+          "questionnaires": "Vragenlijsten",
           "status": "Status",
           "title": "Assessment Name",
-          "origin": "Origin",
-          "linkedSession": "Linked session",
+          "origin": "Herkomst",
+          "linkedSession": "Gekoppelde sessie",
           "submissionDate": "Submission Date"
         },
         "casemanagers": {
+          "departments": "Afdelingen",
           "firstName": "First name",
           "lastName": "Last name",
           "middleName": "Middle name",
@@ -16039,13 +17046,13 @@ export const defaultTranslationSeed = {
           "status": "Status"
         },
         "departments": {
-        "createDepartment": "Create department",
-        "departmentNameDescription": "Department name",
-        "departmentNameValidation": "Department name is required.",
-        "appliesToRoles": "Applies to roles",
-        "defaultForRoles": "Default for roles",
-        "selectRoles": "Select roles",
-        "rolesValidation": "Select at least one role.",
+          "createDepartment": "Create Department",
+          "departmentNameDescription": "Enter the department name.",
+          "departmentNameValidation": "Department name is required.",
+          "rolesValidation": "Select at least one applicable role.",
+          "appliesToRoles": "Applies to roles",
+          "defaultForRoles": "Default for roles",
+          "selectRoles": "Select roles",
           "createdAt": "Created At",
           "description": "Description",
           "name": "Name"
@@ -16076,7 +17083,7 @@ export const defaultTranslationSeed = {
           "description": "Description",
           "name": "Name",
           "repositoryLink": "Repository Link",
-          "resources": "Report Type",
+          "resources": "Where it appears",
           "roles": "Roles",
           "status": "Status"
         },
@@ -16110,6 +17117,8 @@ export const defaultTranslationSeed = {
         "day": "Day"
       },
       "patientsManagement": {
+        "originalStructure": "Oorspronkelijke structuur",
+        "fromThisSession": "Vanaf deze sessie",
         "submitContact": "Submit contact",
         "savePatient": "Save patient",
         "editPatient": "Edit patient",
@@ -16277,14 +17286,19 @@ export const defaultTranslationSeed = {
         "updateInformant": "Update informant"
       },
       "questionnaireBundles": {
+        "firstPage": "Eerste pagina",
+        "minimumStructureHelp": "De eerste pagina en eerste groep zijn verplicht. Vragenlijsten moeten bij een groep horen.",
+        "requiredStructure": "Verplichte structuur",
+        "firstPageHeader": "Kop van de eerste pagina",
+        "firstPageFooter": "Voet van de eerste pagina",
         "addChildFixedGroup": "Add child fixed group",
         "addChildQuestionnaire": "Add child questionnaire",
         "addChildRandomizedGroup": "Add child randomized group",
-        "addChildScreen": "Add child screen",
+        "addChildScreen": "Pagina-einde toevoegen",
         "addFixedGroup": "Add fixed group",
         "addQuestionnaire": "Add questionnaire",
         "addRandomizedGroup": "Add randomized group",
-        "addScreen": "Add screen",
+        "addScreen": "Pagina-einde toevoegen",
         "answerPlaceholder": "Answer",
         "bundleDuplicated": "Bundle duplicated",
         "compactSummary": "{{questionnaires}} questionnaires / {{groups}} groups",
@@ -16294,7 +17308,7 @@ export const defaultTranslationSeed = {
         "editBundle": "Edit bundle",
         "fixedGroup": "Fixed group",
         "footerNotice": "Footer notice",
-        "footerNoticePlaceholder": "Text shown at the end of each screen...",
+        "footerNoticePlaceholder": "Tekst aan het einde van elke pagina...",
         "internalName": "Internal name",
         "itemsToSelect": "Items to select (how many from this group)",
         "optionalVisibleTitle": "Optional visible title",
@@ -16310,14 +17324,14 @@ export const defaultTranslationSeed = {
         "replacement": "Replacement",
         "rootGroup": "Root group",
         "rootGroupLabel": "Root group label",
-        "screen": "Screen",
-        "screenFooter": "Screen footer",
-        "screenFooterPlaceholder": "Optional text below this screen...",
-        "screenHeader": "Screen header",
-        "screenHeaderPlaceholder": "Optional text above this screen...",
+        "screen": "Pagina-einde",
+        "screenFooter": "Paginavoet",
+        "screenFooterPlaceholder": "Optionele tekst onder deze pagina...",
+        "screenHeader": "Paginakop",
+        "screenHeaderPlaceholder": "Optionele tekst boven deze pagina...",
         "selectBundleName": "Select bundle name...",
         "sequenceStructure": "Evaluation sequence structure",
-        "sequenceSummary": "{{questionnaires}} questionnaires / {{screens}} screens / {{groups}} groups",
+        "sequenceSummary": "{{questionnaires}} vragenlijsten / {{screens}} pagina-einden / {{groups}} groepen",
         "statusUpdated": "Status updated",
         "structure": "Structure",
         "titleHidden": "Hidden",
@@ -16331,6 +17345,7 @@ export const defaultTranslationSeed = {
         "bundles": "Bundles"
       },
       "departments": {
+        "appliesToRoles": "Van toepassing op rollen",
         "departments": "Departments",
         "selectAll": "Select all departments",
         "removeAll": "Remove departments",
@@ -16344,19 +17359,18 @@ export const defaultTranslationSeed = {
         "unableDeleteDepartment": "Unable to delete department"
       },
       "roles": {
-        "createRole": "Create role",
+        "createRole": "Rol aanmaken",
         "editRole": "Edit role",
         "deleteRole": "Delete role",
         "duplicateRole": "Duplicate role",
         "saveRole": "Save role",
-        "nameDescription": "Role name",
+        "nameDescription": "Enter the role name.",
+        "hierarchyDescription": "Enter a hierarchy from 1 to 999. Lower numbers have more access.",
         "nameValidation": "Role name is required.",
-        "hierarchyDescription": "Role hierarchy",
         "hierarchyValidation": "Role hierarchy is required.",
-        "updateRole": "Update role",
-        "patient": "Patient",
-        "caregiver": "Caregiver",
-        "therapist": "Therapist",
+        "patient": "Patiënt",
+        "caregiver": "Verzorger",
+        "therapist": "Therapeut",
         "supervisor": "Supervisor",
         "roles": "Roles",
         "unableLoadRoles": "Unable to load roles",
@@ -16486,14 +17500,18 @@ export const defaultTranslationSeed = {
       },
       "assessmentAdministration": {
         "editType": "Edit assessment type",
+        "deleteAssessmentTypeConfirm": "Are you sure you want to delete the assessment type {{name}}?",
+        "assessmentTypeDeleted": "Assessment type deleted",
+        "unableDeleteAssessmentType": "Unable to delete assessment type",
         "unableSaveAssessmentType": "Unable to save assessment type"
       },
       "patientStatuses": {
-        "createPatientStatus": "Create patient status",
+        "createPatientStatus": "Patiëntstatus aanmaken",
+        "duplicatePatientStatus": "Duplicate patient status",
         "updatePatientStatus": "Update patient status",
         "submitPatientStatus": "Save patient status",
-        "editPatientStatus": "Edit patient status",
-        "deletePatientStatus": "Delete patient status",
+        "editPatientStatus": "Patiëntstatus bewerken",
+        "deletePatientStatus": "Patiëntstatus verwijderen",
         "deletePatientStatusConfirm": "Are you sure you want to delete this patient status?",
         "creatingPatientStatus": "Creating patient status",
         "patientStatusCreated": "Patient status created",

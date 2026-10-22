@@ -1,3 +1,6 @@
+import { SettingService } from 'src/modules/setting/providers/setting.service';
+import { SettingKey } from 'src/modules/setting/enums/setting-name.enum';
+import { userTimezone } from 'src/shared/user-timezone';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateFullAssessmentInput } from 'src/modules/assessment/dtos/create-assessment.input';
@@ -92,6 +95,7 @@ export class EvaluationAutomationEngineService {
         private readonly patientRepository: Repository<Patient>,
         private readonly schemeGenerationService: SchemeGenerationService,
         private readonly assessmentService: AssessmentService,
+        private readonly settingService: SettingService,
     ) {}
 
     async handleTrigger(
@@ -291,7 +295,7 @@ export class EvaluationAutomationEngineService {
 
         if (automation.automationType === EvaluationAutomationType.FIXED_SCHEME) {
             const assignment = await this.schemeGenerationService.applyScheme(
-                this.buildSchemeAssignmentInput(automation, context, scheduledAt),
+                await this.buildSchemeAssignmentInput(automation, context, scheduledAt),
             );
             return {
                 resourceType:
@@ -321,11 +325,11 @@ export class EvaluationAutomationEngineService {
         };
     }
 
-    private buildSchemeAssignmentInput(
+    private async buildSchemeAssignmentInput(
         automation: EvaluationAutomation,
         context: UserAutomationContext,
         scheduledAt: Date,
-    ): ApplyEvaluationSchemeInput {
+    ): Promise<ApplyEvaluationSchemeInput> {
         return {
             schemeId: automation.schemeId,
             randomizationRuleId: automation.schemeRandomizationRuleId,
@@ -334,7 +338,7 @@ export class EvaluationAutomationEngineService {
             responderUserId: context.user.id,
             clinicianId: this.resolveClinicianId(context),
             startDate: scheduledAt,
-            timezone: 'UTC',
+            timezone: userTimezone(context.user, await this.settingService.getKey(SettingKey.SYSTEM_TIMEZONE) as string),
         };
     }
 
@@ -510,22 +514,22 @@ export class EvaluationAutomationEngineService {
                 return this.addMinutes(base, automation.delayAmount * 60);
             case EvaluationAutomationDelayUnit.DAYS: {
                 const result = new Date(base);
-                result.setDate(result.getDate() + automation.delayAmount);
+                result.setUTCDate(result.getUTCDate() + automation.delayAmount);
                 return result;
             }
             case EvaluationAutomationDelayUnit.WEEKS: {
                 const result = new Date(base);
-                result.setDate(result.getDate() + automation.delayAmount * 7);
+                result.setUTCDate(result.getUTCDate() + automation.delayAmount * 7);
                 return result;
             }
             case EvaluationAutomationDelayUnit.MONTHS: {
                 const result = new Date(base);
-                result.setMonth(result.getMonth() + automation.delayAmount);
+                result.setUTCMonth(result.getUTCMonth() + automation.delayAmount);
                 return result;
             }
             case EvaluationAutomationDelayUnit.YEARS: {
                 const result = new Date(base);
-                result.setFullYear(result.getFullYear() + automation.delayAmount);
+                result.setUTCFullYear(result.getUTCFullYear() + automation.delayAmount);
                 return result;
             }
             default:
@@ -714,11 +718,11 @@ export class EvaluationAutomationEngineService {
         if (!birthDate) return null;
         const today = new Date();
         const birthday = new Date(birthDate);
-        let age = today.getFullYear() - birthday.getFullYear();
-        const monthDiff = today.getMonth() - birthday.getMonth();
+        let age = today.getUTCFullYear() - birthday.getUTCFullYear();
+        const monthDiff = today.getUTCMonth() - birthday.getUTCMonth();
         if (
             monthDiff < 0 ||
-            (monthDiff === 0 && today.getDate() < birthday.getDate())
+            (monthDiff === 0 && today.getUTCDate() < birthday.getUTCDate())
         ) {
             age -= 1;
         }

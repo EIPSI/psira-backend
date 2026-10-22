@@ -40,10 +40,12 @@ export class Department extends BaseEntity {
     active?: boolean;
 
     @Field(() => [String], { nullable: true })
+    @FilterableField(() => String, { nullable: true, filterOnly: true })
     @Column('simple-array', { nullable: true })
     appliedRoleCodes?: string[];
 
     @Field(() => [String], { nullable: true })
+    @FilterableField(() => String, { nullable: true, filterOnly: true })
     @Column('simple-array', { nullable: true })
     defaultRoleCodes?: string[];
 

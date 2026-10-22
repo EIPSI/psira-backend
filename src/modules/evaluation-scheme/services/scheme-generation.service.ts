@@ -1,3 +1,5 @@
+import { userTimezone } from 'src/shared/user-timezone';
+import * as moment from 'moment-timezone';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateFullAssessmentInput } from 'src/modules/assessment/dtos/create-assessment.input';
@@ -100,6 +102,12 @@ export class SchemeGenerationService {
             : await this.schemeRepository.findOne(input.schemeId);
         if (!scheme) throw new NotFoundException('Evaluation scheme not found');
 
+        // Fixed moments belong to the respondent, even when applied by a clinician.
+        const responder = scheme.schemeType === EvaluationSchemeType.INDEPENDENT_EVALUATION
+            ? await this.resolveResponderUser(input as EvaluationSchemeAssignment)
+            : undefined;
+        const timezone = responder ? userTimezone(responder) : input.timezone || userTimezone(currentUser);
+
         const assignment = await this.assignmentRepository.save(
             this.assignmentRepository.create({
                 schemeId: scheme.id,
@@ -111,7 +119,7 @@ export class SchemeGenerationService {
                 responderUserId: input.responderUserId,
                 clinicianId: input.clinicianId,
                 startDate: input.startDate,
-                timezone: input.timezone || 'UTC',
+                timezone,
                 status: EvaluationSchemeAssignmentStatus.ACTIVE,
                 maxFutureOccurrences: input.maxFutureOccurrences || 12,
                 futureGenerationMonths: input.futureGenerationMonths || 3,
@@ -400,8 +408,10 @@ export class SchemeGenerationService {
         baseDate: Date,
         template: IndependentEvaluationTemplate,
     ): FixedTemplateWindow {
-        const relativeDayStart = new Date(baseDate);
-        relativeDayStart.setHours(0, 0, 0, 0);
+        const timezone = context.assignment.timezone || 'UTC';
+        if (!moment.tz.zone(timezone)) throw new BadRequestException('Invalid scheme timezone');
+        // Interpret each fixed moment in the respondent's zone, then persist its UTC instant.
+        const relativeDayStart = moment.tz(baseDate, timezone).startOf('day');
 
         const dayOffset = template.relativeDay || 0;
         const startMinute =
@@ -419,14 +429,15 @@ export class SchemeGenerationService {
             durationMinutes,
         );
 
-        const windowStartAt = this.addMinutes(
-            this.addDays(relativeDayStart, dayOffset),
-            startMinute,
-        );
-        const windowEndAt = this.addMinutes(
-            this.addDays(relativeDayStart, dayOffset),
-            endMinute,
-        );
+        const atMinute = (minute: number): Date => relativeDayStart.clone()
+            .add(dayOffset + Math.floor(minute / 1440), 'days')
+            .hour(Math.floor((minute % 1440) / 60))
+            .minute(minute % 60)
+            .second(0)
+            .millisecond(0)
+            .toDate();
+        const windowStartAt = atMinute(startMinute);
+        const windowEndAt = atMinute(endMinute);
         const deliveryAt = this.resolveFixedTemplateDeliveryAt(
             context,
             template,
@@ -513,7 +524,7 @@ export class SchemeGenerationService {
 
         while (current < context.generationStartsAt) {
             if (!interval) return [];
-            current = this.addInterval(current, interval);
+            current = this.nextRecurrenceDate(current, interval, context);
         }
 
         while (
@@ -522,7 +533,7 @@ export class SchemeGenerationService {
         ) {
             dates.push(new Date(current));
             if (!interval) break;
-            current = this.addInterval(current, interval);
+            current = this.nextRecurrenceDate(current, interval, context);
         }
 
         return dates;
@@ -628,6 +639,20 @@ export class SchemeGenerationService {
         throw new BadRequestException(`Unsupported recurrence rule: ${rule}`);
     }
 
+    private nextRecurrenceDate(
+        date: Date,
+        interval: 'DAILY' | 'WEEKLY' | 'MONTHLY',
+        context: GenerationContext,
+    ): Date {
+        if (context.scheme.schemeType !== EvaluationSchemeType.INDEPENDENT_EVALUATION) {
+            return this.addInterval(date, interval);
+        }
+        // Fixed day moments follow respondent calendar dates before conversion to UTC.
+        return moment.tz(date, context.assignment.timezone || 'UTC')
+            .add(interval === 'WEEKLY' ? 7 : 1, interval === 'MONTHLY' ? 'months' : 'days')
+            .toDate();
+    }
+
     private addInterval(date: Date, interval: 'DAILY' | 'WEEKLY' | 'MONTHLY'): Date {
         if (interval === 'DAILY') return this.addDays(date, 1);
         if (interval === 'WEEKLY') return this.addDays(date, 7);
@@ -698,15 +723,11 @@ export class SchemeGenerationService {
     }
 
     private addDays(date: Date, days: number): Date {
-        const result = new Date(date);
-        result.setDate(result.getDate() + days);
-        return result;
+        return moment.utc(date).add(days, 'days').toDate();
     }
 
     private addMonths(date: Date, months: number): Date {
-        const result = new Date(date);
-        result.setMonth(result.getMonth() + months);
-        return result;
+        return moment.utc(date).add(months, 'months').toDate();
     }
 
     private addMinutes(date: Date, minutes: number): Date {

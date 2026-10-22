@@ -1,6 +1,7 @@
 import { ConnectionType } from '@nestjs-query/query-graphql';
 import {
     Injectable,
+    BadRequestException,
     ForbiddenException,
     NotFoundException,
 } from '@nestjs/common';
@@ -102,7 +103,7 @@ export class MailTemplateService {
             : [{ field: 'id', direction: SortDirection.DESC }];
 
         const result: any = await MailTemplateConnection.createFromPromise(
-            q => this.listEmailTemplates(q, currentUser, departmentIds),
+            q => this.listEmailTemplates({ ...q, tableSorting: query.tableSorting } as MailTemplateQuery, currentUser, departmentIds),
             query,
         );
 
@@ -239,7 +240,16 @@ export class MailTemplateService {
         }
 
         const templates = await qb.getMany();
-        return applyQuery(templates, query);
+        const allowed = new Set(['name', 'subject', 'senderName', 'status', 'departmentNames', 'id', 'createdAt', 'updatedAt']);
+        for (const sort of query.tableSorting || []) {
+            if (!allowed.has(sort.field) || !['ASC', 'DESC'].includes(sort.direction)) {
+                throw new BadRequestException('Invalid email template sort');
+            }
+        }
+        const rows = templates.map(template => Object.assign(template, {
+            departmentNames: (template.departments || []).map(department => department.name).sort().join(', '),
+        }));
+        return applyQuery(rows, { ...query, sorting: query.tableSorting?.length ? query.tableSorting as any : query.sorting });
     }
 
     private async canAccessTemplate(mailTemplate: MailTemplate, currentUser: User): Promise<boolean> {

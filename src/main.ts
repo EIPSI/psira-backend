@@ -8,6 +8,8 @@ import { GqlUnauthorizedHandler } from './shared/exception/gql-unauthorized.hand
 import { graphqlUploadExpress } from 'graphql-upload';
 
 async function bootstrap() {
+    // Persisted timestamps and background tasks always use UTC, regardless of host settings.
+    process.env.TZ = 'UTC';
     const app = await NestFactory.create(AppModule);
     app.getHttpAdapter().getInstance().disable('x-powered-by');
 

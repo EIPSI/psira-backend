@@ -1,6 +1,7 @@
 import { Field, InputType, Int, PartialType } from '@nestjs/graphql';
 import {
     IsArray,
+    IsIn,
     IsBoolean,
     IsEnum,
     IsInt,
@@ -66,6 +67,18 @@ export class CreateInformedConsentManagementInput {
     @IsOptional()
     @IsString()
     profileConditionsJson?: string;
+
+    @Field(() => [Int], { nullable: true })
+    @IsOptional()
+    @IsArray()
+    @IsInt({ each: true })
+    @Min(1, { each: true })
+    reminderOffsets?: number[];
+
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsIn(['DAYS', 'WEEKS', 'MONTHS'])
+    reminderUnit?: string;
 
     @Field(() => Int, { nullable: true, defaultValue: 100 })
     @IsOptional()

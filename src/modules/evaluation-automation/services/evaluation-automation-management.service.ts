@@ -770,22 +770,22 @@ export class EvaluationAutomationManagementService {
         const scheduledAt = new Date();
         switch (automation.delayUnit) {
             case EvaluationAutomationDelayUnit.MINUTES:
-                scheduledAt.setMinutes(scheduledAt.getMinutes() + automation.delayAmount);
+                scheduledAt.setUTCMinutes(scheduledAt.getUTCMinutes() + automation.delayAmount);
                 break;
             case EvaluationAutomationDelayUnit.HOURS:
-                scheduledAt.setHours(scheduledAt.getHours() + automation.delayAmount);
+                scheduledAt.setUTCHours(scheduledAt.getUTCHours() + automation.delayAmount);
                 break;
             case EvaluationAutomationDelayUnit.DAYS:
-                scheduledAt.setDate(scheduledAt.getDate() + automation.delayAmount);
+                scheduledAt.setUTCDate(scheduledAt.getUTCDate() + automation.delayAmount);
                 break;
             case EvaluationAutomationDelayUnit.WEEKS:
-                scheduledAt.setDate(scheduledAt.getDate() + automation.delayAmount * 7);
+                scheduledAt.setUTCDate(scheduledAt.getUTCDate() + automation.delayAmount * 7);
                 break;
             case EvaluationAutomationDelayUnit.MONTHS:
-                scheduledAt.setMonth(scheduledAt.getMonth() + automation.delayAmount);
+                scheduledAt.setUTCMonth(scheduledAt.getUTCMonth() + automation.delayAmount);
                 break;
             case EvaluationAutomationDelayUnit.YEARS:
-                scheduledAt.setFullYear(scheduledAt.getFullYear() + automation.delayAmount);
+                scheduledAt.setUTCFullYear(scheduledAt.getUTCFullYear() + automation.delayAmount);
                 break;
         }
         return scheduledAt;

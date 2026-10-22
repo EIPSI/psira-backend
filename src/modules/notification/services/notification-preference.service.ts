@@ -22,6 +22,10 @@ export class NotificationPreferenceService {
         NotificationEvent.CASE_UPDATED,
         NotificationEvent.CASE_MANAGER_ASSIGNMENT_REQUEST,
         NotificationEvent.CASE_SUPERVISOR_ASSIGNMENT_REQUEST,
+        NotificationEvent.INFORMED_CONSENT_PENDING,
+        NotificationEvent.INFORMED_CONSENT_SUBMITTED,
+        NotificationEvent.INFORMED_CONSENT_REJECTED,
+        NotificationEvent.INFORMED_CONSENT_REACTIVATED,
         NotificationEvent.USER_CREATED,
         NotificationEvent.FIRST_LOGIN,
         NotificationEvent.LAST_LOGIN,
@@ -112,11 +116,11 @@ export class NotificationPreferenceService {
         const start = new Date(now);
         const amount = Math.max(1, preference.periodicEvery || 1);
         if (preference.periodicUnit === NotificationPeriodicUnit.MONTHS) {
-            start.setMonth(start.getMonth() - amount);
+            start.setUTCMonth(start.getUTCMonth() - amount);
         } else if (preference.periodicUnit === NotificationPeriodicUnit.WEEKS) {
-            start.setDate(start.getDate() - amount * 7);
+            start.setUTCDate(start.getUTCDate() - amount * 7);
         } else {
-            start.setDate(start.getDate() - amount);
+            start.setUTCDate(start.getUTCDate() - amount);
         }
         return start;
     }
@@ -125,11 +129,11 @@ export class NotificationPreferenceService {
         const next = new Date(date);
         const amount = Math.max(1, preference.periodicEvery || 1);
         if (preference.periodicUnit === NotificationPeriodicUnit.MONTHS) {
-            next.setMonth(next.getMonth() + amount);
+            next.setUTCMonth(next.getUTCMonth() + amount);
         } else if (preference.periodicUnit === NotificationPeriodicUnit.WEEKS) {
-            next.setDate(next.getDate() + amount * 7);
+            next.setUTCDate(next.getUTCDate() + amount * 7);
         } else {
-            next.setDate(next.getDate() + amount);
+            next.setUTCDate(next.getUTCDate() + amount);
         }
         return next;
     }

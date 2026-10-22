@@ -600,6 +600,7 @@ export class PatientResolver {
 
         const eligibleIds = eligibleCaseManagers
             .filter(user => {
+                if (user.roles?.some(role => role.code === RoleCode.SUPER_ADMIN)) return true;
                 const hierarchy = this.strongestHierarchy(user);
                 const hasAssignableRole = user.roles?.some(role => assignableRoleCodes.includes(role.code as RoleCode));
                 return hasAssignableRole && hierarchy >= assignerHierarchy && hierarchy <= assignableHierarchyRank;
@@ -628,6 +629,7 @@ export class PatientResolver {
         const normalizedDepartmentIds = departmentIds.map(Number).filter(id => Number.isFinite(id));
         const caseManagers = await User.createQueryBuilder('user')
             .leftJoinAndSelect('user.departments', 'department')
+            .leftJoinAndSelect('user.roles', 'role')
             .where('user.id IN (:...caseManagerIds)', { caseManagerIds })
             .andWhere('user.active = true')
             .andWhere('user.deletedAt IS NULL')
@@ -635,6 +637,7 @@ export class PatientResolver {
 
         const invalidIds = caseManagerIds.filter(caseManagerId => {
             const caseManager = caseManagers.find(user => Number(user.id) === Number(caseManagerId));
+            if (caseManager?.roles?.some(role => role.code === RoleCode.SUPER_ADMIN)) return false;
             const caseManagerDepartmentIds = caseManager?.departments?.map(department => Number(department.id)) || [];
             return !caseManagerDepartmentIds.some(departmentId => normalizedDepartmentIds.includes(departmentId));
         });
@@ -648,7 +651,7 @@ export class PatientResolver {
 
     private async getAssignableCaseManagerRoleCodes(): Promise<RoleCode[]> {
         const value = await this.settingService.getKey('patientCaseManagerRoleCodes' as any) as RoleCode[];
-        return value?.length ? value : [RoleCode.SUPER_ADMIN, RoleCode.THERAPIST];
+        return [...new Set([RoleCode.SUPER_ADMIN, ...(value?.length ? value : [RoleCode.THERAPIST])])];
     }
 
     private async getAssignableCaseManagerHierarchyRank(): Promise<number> {

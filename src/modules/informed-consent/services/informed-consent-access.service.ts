@@ -12,8 +12,14 @@ export class InformedConsentAccessService {
         'disclaimers',
         'updateUserAcceptedTerm',
         'getUserProfile',
+        'updateMyPreferences',
         'userPermissionGrants',
         'pendingInformedConsents',
+        'pendingInformedConsentModel',
+        'submitInformedConsentResponse',
+        'myInformedConsentResponses',
+        'reactivateMyInformedConsentResponse',
+        'cancelMyInformedConsentReactivation',
     ]);
 
     constructor(

@@ -1,3 +1,4 @@
+import { tableQueryBuilder } from 'src/shared/query/table-sorting';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Role } from 'src/modules/permission/models/role.model';
@@ -42,7 +43,11 @@ export class ReportService {
 
     getReports(query): Promise<ConnectionType<Report>> {
         return ReportQueryConnection.createFromPromise(
-            q => this.reportQueryService.query(q),
+            q => tableQueryBuilder(this.reportRepository, q, query.tableSorting, {
+                formattedRoles: alias => `(SELECT string_agg(role.name, ', ' ORDER BY role.name)
+                    FROM report_role link JOIN role ON role.id = link."roleId"
+                    WHERE link."reportId" = "${alias}".id AND role."deletedAt" IS NULL)`,
+            }).getMany(),
             query,
             q => this.reportQueryService.count(q),
         );

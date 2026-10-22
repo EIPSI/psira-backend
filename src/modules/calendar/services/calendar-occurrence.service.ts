@@ -40,6 +40,7 @@ export class CalendarOccurrenceService {
             .createQueryBuilder('occurrence')
             .leftJoinAndSelect('occurrence.patient', 'patient')
             .leftJoinAndSelect('patient.departments', 'patientDepartment')
+            .leftJoin('patient.caseManagers', 'caseManager')
             .leftJoinAndSelect('occurrence.therapist', 'therapist')
             .leftJoinAndSelect('therapist.departments', 'therapistDepartment')
             .leftJoin('therapist.supervisors', 'therapistSupervisor')
@@ -59,7 +60,7 @@ export class CalendarOccurrenceService {
 
         if (filter.therapistId) {
             query.andWhere(
-                '(occurrence."therapistId" = :therapistId OR responsibleUser.id = :therapistId)',
+                '(occurrence."therapistId" = :therapistId OR responsibleUser.id = :therapistId OR caseManager.id = :therapistId)',
                 { therapistId: filter.therapistId },
             );
         }
@@ -87,6 +88,7 @@ export class CalendarOccurrenceService {
                 OR occurrence."supervisorId" = :currentUserId
                 OR therapistSupervisor.id = :currentUserId
                 OR responsibleUser.id = :currentUserId
+                OR caseManager.id = :currentUserId
                 OR patient."userId" = :currentUserId
                 OR assessment."responderUserId" = :currentUserId
                 OR assessment."clinicianId" = :currentUserId

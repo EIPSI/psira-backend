@@ -130,6 +130,7 @@ export class PatientQueryService extends TypeOrmQueryService<Patient> {
 
             await this.repo.update(patient.id, { userId: account.user.id });
             patient.userId = account.user.id;
+            await this.userAccountProvisioningService.completePersonUser(account);
         } catch (error) {
             if (account?.user?.id) {
                 await User.update(account.user.id, {

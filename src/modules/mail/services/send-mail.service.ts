@@ -1,3 +1,4 @@
+import { userTimezone } from 'src/shared/user-timezone';
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -5,7 +6,6 @@ import { Assessment } from 'src/modules/assessment/models/assessment.model';
 import { Repository } from 'typeorm';
 import { AssessmentEmailStatus } from 'src/modules/assessment/enums/assessment-emailstatus.enum';
 import Handlebars from 'handlebars';
-import * as CryptoJS from 'crypto-js';
 import { url } from '../../../shared';
 import { configService } from 'src/config/config.service';
 import { QuestionnaireAssessmentService } from 'src/modules/questionnaire/services/questionnaire-assessment.service';
@@ -52,7 +52,7 @@ export class SendMailService {
                 .leftJoinAndSelect('assessment.assessmentType', 'assessmentType')
                 .where(
                     `(assessment."deliveryDate" IS NULL
-                    OR (Extract(epoch FROM (assessment.deliveryDate - now()))/60)::integer <= 0)
+                    OR assessment."deliveryDate" <= now())
                     AND assessment.emailStatus = 'SCHEDULED'`,
                 )
                 .getMany();
@@ -331,9 +331,9 @@ export class SendMailService {
             assessment: {
                 id: assessmentInfo.id,
                 name: assessmentInfo.assessmentType?.name,
-                deliveryDate: await this.formatDateTime(assessmentInfo.deliveryDate),
-                expirationDate: await this.formatDateTime(assessmentInfo.expirationDate),
-                submissionDate: await this.formatDateTime(assessmentInfo.submissionDate),
+                deliveryDate: await this.formatDateTime(assessmentInfo.deliveryDate, assessmentInfo.responderUser),
+                expirationDate: await this.formatDateTime(assessmentInfo.expirationDate, assessmentInfo.responderUser),
+                submissionDate: await this.formatDateTime(assessmentInfo.submissionDate, assessmentInfo.responderUser),
                 responseStatus: assessmentInfo.status,
                 link: url,
             },
@@ -401,16 +401,9 @@ export class SendMailService {
     }
 
     private generateAssessmentURL(assesmentUuid: string): string {
-        const secretKey = configService.getFrontendEncryptionKey();
-
-        const cryptoId = CryptoJS.AES.encrypt(
-            assesmentUuid,
-            secretKey,
-        ).toString();
-
-        return url(
-            `assessment/overview?assessment=${encodeURIComponent(cryptoId)}`,
-        );
+        const payload = Buffer.from(assesmentUuid, 'utf8').toString('base64')
+            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+        return url(`assessment/overview?assessment=${encodeURIComponent(`v3:${payload}`)}`);
     }
 
     private userData(user?: User): Record<string, any> {
@@ -436,9 +429,9 @@ export class SendMailService {
         };
     }
 
-    private async formatDateTime(date?: Date): Promise<string> {
+    private async formatDateTime(date?: Date, recipient?: User): Promise<string> {
         if (!date) return null;
-        const [locale, timezone, dateFormat, timeFormat, dateTimeFormat] = await Promise.all([
+        const [locale, globalTimezone, dateFormat, timeFormat, dateTimeFormat] = await Promise.all([
             this.settingService.getKey(SettingKey.SYSTEM_LOCALE),
             this.settingService.getKey(SettingKey.SYSTEM_TIMEZONE),
             this.settingService.getKey(SettingKey.DATE_FORMAT),
@@ -448,6 +441,7 @@ export class SendMailService {
         const resolvedFormat = !dateTimeFormat || dateTimeFormat === 'YYYY-MM-DD LT'
             ? `${dateFormat || 'YYYY-MM-DD'} ${timeFormat || 'LT'}`
             : dateTimeFormat;
+        const timezone = userTimezone(recipient, globalTimezone as string);
         const value = momentTimezone(date);
         const withTimezone = timezone && momentTimezone.tz.zone(timezone)
             ? value.tz(timezone)

@@ -1,3 +1,4 @@
+import { userTimezone } from 'src/shared/user-timezone';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Assessment } from 'src/modules/assessment/models/assessment.model';
@@ -205,10 +206,10 @@ export class NotificationDispatchService {
                 template: configuration.mailTemplate,
                 extraData: {
                     period: {
-                        start: await this.formatDateTime(input.periodStart),
-                        end: await this.formatDateTime(input.periodEnd),
+                        start: await this.formatDateTime(input.periodStart, recipient),
+                        end: await this.formatDateTime(input.periodEnd, recipient),
                     },
-                    assessmentsTable: await this.buildAssessmentsTable(input.assessments),
+                    assessmentsTable: await this.buildAssessmentsTable(input.assessments, recipient),
                 },
             });
         }
@@ -220,6 +221,7 @@ export class NotificationDispatchService {
         patientId?: number;
         therapistId?: number;
         data?: Record<string, any>;
+        metadata?: Record<string, any>;
     }): Promise<void> {
         if (!await this.notificationsEnabled()) return;
         if (!input.recipient?.email) return;
@@ -233,6 +235,7 @@ export class NotificationDispatchService {
             await this.recordLog({
                 channel: NotificationChannel.EMAIL,
                 event: input.event,
+                metadata: input.metadata,
                 status: NotificationLogStatus.SKIPPED_NO_CONFIGURATION,
                 recipientId: input.recipient.id,
                 recipientEmail: input.recipient.email,
@@ -274,6 +277,7 @@ export class NotificationDispatchService {
             await this.recordLog({
                 channel: NotificationChannel.EMAIL,
                 event: input.event,
+                metadata: input.metadata,
                 status: NotificationLogStatus.SENT,
                 notificationConfigurationId: configuration.id,
                 recipientId: input.recipient.id,
@@ -287,6 +291,7 @@ export class NotificationDispatchService {
             await this.recordLog({
                 channel: NotificationChannel.EMAIL,
                 event: input.event,
+                metadata: input.metadata,
                 status: NotificationLogStatus.FAILED,
                 notificationConfigurationId: configuration.id,
                 recipientId: input.recipient.id,
@@ -424,9 +429,9 @@ export class NotificationDispatchService {
             assessment: {
                 id: assessment.id,
                 name: assessment.assessmentType?.name,
-                deliveryDate: await this.formatDateTime(assessment.deliveryDate),
-                expirationDate: await this.formatDateTime(assessment.expirationDate),
-                submissionDate: await this.formatDateTime(assessment.submissionDate),
+                deliveryDate: await this.formatDateTime(assessment.deliveryDate, recipient),
+                expirationDate: await this.formatDateTime(assessment.expirationDate, recipient),
+                submissionDate: await this.formatDateTime(assessment.submissionDate, recipient),
                 responseStatus: assessment.status,
                 link: assessmentLink,
             },
@@ -435,14 +440,14 @@ export class NotificationDispatchService {
         };
     }
 
-    private async buildAssessmentsTable(assessments: Assessment[]): Promise<string> {
+    private async buildAssessmentsTable(assessments: Assessment[], recipient: User): Promise<string> {
         const rows = await Promise.all(assessments
             .map(async assessment => {
                 const name = assessment.assessmentType?.name || `Evaluación #${assessment.id}`;
                 const status = assessment.submissionDate || assessment.status === AssessmentStatus.COMPLETED
                     ? 'Respondida'
                     : 'No respondida';
-                return `<tr><td>${name}</td><td>${await this.formatDateTime(assessment.deliveryDate) || '-'}</td><td>${status}</td></tr>`;
+                return `<tr><td>${name}</td><td>${await this.formatDateTime(assessment.deliveryDate, recipient) || '-'}</td><td>${status}</td></tr>`;
             }));
         return `<table><thead><tr><th>Evaluación</th><th>Fecha</th><th>Estado</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
     }
@@ -473,9 +478,9 @@ export class NotificationDispatchService {
         return [person?.firstName, person?.lastName].filter(Boolean).join(' ');
     }
 
-    private async formatDateTime(date?: Date): Promise<string> {
+    private async formatDateTime(date?: Date, recipient?: User): Promise<string> {
         if (!date) return null;
-        const [locale, timezone, dateFormat, timeFormat, dateTimeFormat] = await Promise.all([
+        const [locale, globalTimezone, dateFormat, timeFormat, dateTimeFormat] = await Promise.all([
             this.settingService.getKey(SettingKey.SYSTEM_LOCALE),
             this.settingService.getKey(SettingKey.SYSTEM_TIMEZONE),
             this.settingService.getKey(SettingKey.DATE_FORMAT),
@@ -485,6 +490,7 @@ export class NotificationDispatchService {
         const resolvedFormat = !dateTimeFormat || dateTimeFormat === 'YYYY-MM-DD LT'
             ? `${dateFormat || 'YYYY-MM-DD'} ${timeFormat || 'LT'}`
             : dateTimeFormat;
+        const timezone = userTimezone(recipient, globalTimezone as string);
         const value = momentTimezone(date);
         const withTimezone = timezone && momentTimezone.tz.zone(timezone)
             ? value.tz(timezone)

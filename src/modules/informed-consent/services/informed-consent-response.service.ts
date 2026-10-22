@@ -233,7 +233,7 @@ export class InformedConsentResponseService {
 
     async hasBlockingPending(userId: number): Promise<boolean> {
         const pending = await this.pendingForUser(userId);
-        return pending.some(item => item.blocking);
+        return pending.some(item => item.mandatory || item.blocking);
     }
 
     async submit(

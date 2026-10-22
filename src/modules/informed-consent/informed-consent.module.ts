@@ -1,3 +1,4 @@
+import { InformedConsentReminderService } from './services/informed-consent-reminder.service';
 import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Department } from '../department/models/department.model';
@@ -46,6 +47,7 @@ import { InformedConsentResponseService } from './services/informed-consent-resp
         ]),
     ],
     providers: [
+        InformedConsentReminderService,
         InformedConsentModelService,
         InformedConsentManagementService,
         InformedConsentResponseService,

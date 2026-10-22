@@ -29,7 +29,7 @@ export class MailTemplate extends BaseEntity {
     @Column({ nullable: false })
     name: string;
 
-    @Field(() => String)
+    @FilterableField(() => String)
     @Column()
     subject: string;
 

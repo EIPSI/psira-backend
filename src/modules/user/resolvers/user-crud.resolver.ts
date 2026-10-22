@@ -1,3 +1,4 @@
+import { UserRelationSortInput } from '../dto/user-relation-sort.input';
 import { UpdateManyResponse, Filter, SortDirection, mergeFilter } from '@nestjs-query/core';
 import {
     CRUDResolver,
@@ -76,6 +77,7 @@ export class UserCrudResolver extends CRUDResolver(User, {
     async users(
         @Args({ type: () => UserQuery }) query: UserQuery,
         @CurrentUser() currentUser: User,
+        @Args('relationSorting', { type: () => [UserRelationSortInput], nullable: true }) relationSorting?: UserRelationSortInput[],
     ): Promise<ConnectionType<User>> {
         const access = await this.userDepartmentAccessService.getUserDepartmentAccess(currentUser.id);
 
@@ -94,7 +96,7 @@ export class UserCrudResolver extends CRUDResolver(User, {
         );
 
         return UserConnection.createFromPromise(
-            q => this.service.query(q),
+            q => this.service.queryWithRelationSorting(q, relationSorting),
             query,
             q => this.service.count(q),
         );

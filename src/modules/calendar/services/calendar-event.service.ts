@@ -109,7 +109,7 @@ export class CalendarEventService {
 
         if (filter.therapistId) {
             query.andWhere(
-                '(session."therapistId" = :therapistId OR responsibleUser.id = :therapistId)',
+                '(session."therapistId" = :therapistId OR responsibleUser.id = :therapistId OR caseManager.id = :therapistId)',
                 { therapistId: filter.therapistId },
             );
         }
@@ -217,7 +217,7 @@ export class CalendarEventService {
 
         if (filter.therapistId) {
             query.andWhere(
-                '(assessment."clinicianId" = :therapistId OR responsibleUser.id = :therapistId)',
+                '(assessment."clinicianId" = :therapistId OR responsibleUser.id = :therapistId OR caseManager.id = :therapistId)',
                 { therapistId: filter.therapistId },
             );
         }
