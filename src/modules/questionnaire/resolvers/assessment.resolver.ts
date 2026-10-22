@@ -29,10 +29,10 @@ export class AssessmentResolver {
     }
 
     @Mutation(() => QuestionnaireAssessment)
-    addAnswer(
+    async addAnswer(
         @Args('assessment') assessmentInput: AnswerAssessmentInput,
     ): Promise<QuestionnaireAssessment> {
-        this.assessmentService.changeAssessmentStatus(
+        await this.assessmentService.changeAssessmentStatus(
             assessmentInput.assessmentId,
             AssessmentStatus.PARTIALLY_COMPLETED,
         );

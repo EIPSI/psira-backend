@@ -12,7 +12,7 @@ import { SettingService } from '../setting/providers/setting.service';
 import { SettingKey } from '../setting/enums/setting-name.enum';
 import { AccessTokenService } from './providers/access-token.service';
 import { CacheService } from 'src/shared';
-import * as moment from 'moment';
+import * as moment from 'moment-timezone';
 import { EvaluationAutomationTriggerPoint } from '../evaluation-automation/enums/evaluation-automation-trigger-point.enum';
 
 @Injectable()
@@ -29,6 +29,9 @@ export class AuthService {
     async login(loginDto: LoginRequestDto): Promise<LoginResponseDto> {
         const user = await this.validateUserCredentials(loginDto);
         const isFirstLogin = !user.firstLoginAt;
+        if (loginDto.detectedTimezone && moment.tz.zone(loginDto.detectedTimezone)) {
+            user.detectedTimezone = loginDto.detectedTimezone;
+        }
 
         await this.updateLoginTimestamps(user, isFirstLogin);
 

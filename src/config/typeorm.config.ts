@@ -7,6 +7,7 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
   username: process.env.TYPEORM_USERNAME,
   password: process.env.TYPEORM_PASSWORD,
   database: process.env.TYPEORM_DATABASE,
+  extra: { options: '-c timezone=UTC' },
   entities: [__dirname + process.env.TYPEORM_ENTITIES_DIR],
   synchronize: process.env.TYPEORM_SYNCHRONIZE === 'true',
 };

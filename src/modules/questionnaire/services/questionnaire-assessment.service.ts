@@ -1,3 +1,4 @@
+import { InformedConsentResponseService } from 'src/modules/informed-consent/services/informed-consent-response.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model, Types } from 'mongoose';
 import { AnswerAssessmentInput } from '../dtos/assessment.input';
@@ -32,7 +33,24 @@ export class QuestionnaireAssessmentService {
         private notificationDispatchService: NotificationDispatchService,
         @Optional()
         private randomizationResolutionService?: RandomizationResolutionService,
+        private consentService?: InformedConsentResponseService,
     ) {}
+
+    private async assertConsent(assessmentId: Types.ObjectId): Promise<void> {
+        const assessment = await this.assessmentRepository.findOne({ where: { questionnaireAssessmentId: assessmentId } });
+        if (assessment?.responderUserId && this.consentService && await this.consentService.hasBlockingPending(assessment.responderUserId)) {
+            throw new BadRequestException('Pending mandatory informed consent must be completed before answering this assessment.');
+        }
+    }
+
+    async questionnaireCounts(ids: string[]): Promise<Array<{ _id: Types.ObjectId; count: number }>> {
+        const objectIds = [...new Set(ids)].filter(id => isValidObjectId(id)).map(id => new Types.ObjectId(id));
+        if (!objectIds.length) return [];
+        return this.assessmentModel.aggregate([
+            { $match: { _id: { $in: objectIds } } },
+            { $project: { count: { $size: { $ifNull: ['$questionnaires', []] } } } },
+        ]).exec();
+    }
 
     async createNewAssessment(
         questionnaires: Types.ObjectId[],
@@ -59,6 +77,7 @@ export class QuestionnaireAssessmentService {
      * @returns
      */
     async addAnswerToAssessment(assessmentAnswerInput: AnswerAssessmentInput) {
+        await this.assertConsent(assessmentAnswerInput.assessmentId);
         const foundAssessment: QuestionnaireAssessment = await this.assessmentModel.findById(
             assessmentAnswerInput.assessmentId,
         );
@@ -170,6 +189,9 @@ export class QuestionnaireAssessmentService {
             where: { questionnaireAssessmentId: assessmentId },
         });
 
+        if ([AssessmentStatus.PARTIALLY_COMPLETED, AssessmentStatus.COMPLETED].includes(status)) {
+            await this.assertConsent(assessmentId);
+        }
         const completedNow =
             assessmentModel.status !== AssessmentStatus.COMPLETED &&
             status === AssessmentStatus.COMPLETED;

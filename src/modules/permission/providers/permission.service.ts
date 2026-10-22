@@ -136,6 +136,10 @@ export class PermissionService implements OnModuleInit {
             where: { id: userId },
         });
 
+        if (!user) return [];
+        if (user.isSuperUser || user.roles?.some(role => role.code === RoleCode.SUPER_ADMIN)) {
+            return Permission.find();
+        }
         const directPermissions = user.permissions;
 
         const roleIds = user.roles.map(role => role.id);
@@ -217,11 +221,11 @@ export class PermissionService implements OnModuleInit {
                 PermissionEnum.REPORTS_VIEW_ASSIGNED,
             ],
             [RoleCode.DEPARTMENT_ADMIN]: [
-                PermissionEnum.USERS_VIEW_DEPARTMENT_HIERARCHY,
-                PermissionEnum.USERS_CREATE_DEPARTMENT_HIERARCHY,
-                PermissionEnum.USERS_EDIT_DEPARTMENT_HIERARCHY,
-                PermissionEnum.USERS_DELETE_DEPARTMENT_HIERARCHY,
-                PermissionEnum.USERS_RESTORE_DEPARTMENT_HIERARCHY,
+                PermissionEnum.USERS_VIEW_DEPARTMENT,
+                PermissionEnum.USERS_CREATE_DEPARTMENT,
+                PermissionEnum.USERS_EDIT_DEPARTMENT,
+                PermissionEnum.USERS_DELETE_DEPARTMENT,
+                PermissionEnum.USERS_RESTORE_DEPARTMENT,
                 PermissionEnum.PATIENTS_VIEW_DEPARTMENT,
                 PermissionEnum.PATIENTS_CREATE_DEPARTMENT,
                 PermissionEnum.PATIENTS_EDIT_DEPARTMENT,
@@ -251,27 +255,6 @@ export class PermissionService implements OnModuleInit {
                 PermissionEnum.ASSESSMENTS_ARCHIVE_DEPARTMENT,
                 PermissionEnum.ASSESSMENTS_RESTORE_DEPARTMENT,
                 PermissionEnum.ASSESSMENTS_ASSIGN_DEPARTMENT,
-                PermissionEnum.QUESTIONNAIRES_VIEW_DEPARTMENT,
-                PermissionEnum.QUESTIONNAIRES_CREATE_DEPARTMENT,
-                PermissionEnum.QUESTIONNAIRES_EDIT_DEPARTMENT,
-                PermissionEnum.QUESTIONNAIRES_DELETE_DEPARTMENT,
-                PermissionEnum.QUESTIONNAIRE_BUNDLES_VIEW_DEPARTMENT,
-                PermissionEnum.QUESTIONNAIRE_BUNDLES_CREATE_DEPARTMENT,
-                PermissionEnum.QUESTIONNAIRE_BUNDLES_EDIT_DEPARTMENT,
-                PermissionEnum.QUESTIONNAIRE_BUNDLES_DELETE_DEPARTMENT,
-                PermissionEnum.EVALUATION_SCHEMES_VIEW_DEPARTMENT,
-                PermissionEnum.EVALUATION_SCHEMES_CREATE_DEPARTMENT,
-                PermissionEnum.EVALUATION_SCHEMES_EDIT_DEPARTMENT,
-                PermissionEnum.EVALUATION_SCHEMES_DELETE_DEPARTMENT,
-                PermissionEnum.RANDOMIZATIONS_VIEW_DEPARTMENT,
-                PermissionEnum.RANDOMIZATIONS_CREATE_DEPARTMENT,
-                PermissionEnum.RANDOMIZATIONS_EDIT_DEPARTMENT,
-                PermissionEnum.RANDOMIZATIONS_DELETE_DEPARTMENT,
-                PermissionEnum.AUTOMATIONS_VIEW_DEPARTMENT,
-                PermissionEnum.AUTOMATIONS_CREATE_DEPARTMENT,
-                PermissionEnum.AUTOMATIONS_EDIT_DEPARTMENT,
-                PermissionEnum.AUTOMATIONS_DELETE_DEPARTMENT,
-                PermissionEnum.AUTOMATIONS_TEST_DEPARTMENT,
                 PermissionEnum.NOTIFICATIONS_VIEW_DEPARTMENT,
                 PermissionEnum.NOTIFICATIONS_CREATE_DEPARTMENT,
                 PermissionEnum.NOTIFICATIONS_EDIT_DEPARTMENT,
@@ -291,10 +274,6 @@ export class PermissionService implements OnModuleInit {
                 PermissionEnum.INFORMED_CONSENT_MANAGEMENT_DELETE_DEPARTMENT,
                 PermissionEnum.INFORMED_CONSENT_RESPONSES_VIEW_DEPARTMENT,
                 PermissionEnum.INFORMED_CONSENT_RESPONSES_REVIEW_DEPARTMENT,
-                PermissionEnum.REPORTS_VIEW_DEPARTMENT,
-                PermissionEnum.REPORTS_CREATE_DEPARTMENT,
-                PermissionEnum.REPORTS_EDIT_DEPARTMENT,
-                PermissionEnum.REPORTS_DELETE_DEPARTMENT,
             ],
             [RoleCode.NO_ROLE]: [],
         };
@@ -359,6 +338,8 @@ export class PermissionService implements OnModuleInit {
                 relations: ['roles'],
             });
         }
+
+        if (currentUser.isSuperUser || currentUser.roles.some(role => role.code === RoleCode.SUPER_ADMIN)) return true;
 
         // true if currentUser is stronger than targetUser
         return Math.min(...currentUser.roles.map(r => r.hierarchy)) < Math.min(...targetUser.roles.map(r => r.hierarchy));

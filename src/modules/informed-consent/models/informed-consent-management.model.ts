@@ -64,6 +64,14 @@ export class InformedConsentManagement extends BaseEntity {
     @Column({ type: 'jsonb', nullable: true })
     profileConditions?: any;
 
+    @Field(() => [Int])
+    @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
+    reminderOffsets: number[];
+
+    @Field()
+    @Column({ default: 'DAYS' })
+    reminderUnit: string;
+
     @Field({ nullable: true })
     @Column({ nullable: true })
     scopeHash?: string;

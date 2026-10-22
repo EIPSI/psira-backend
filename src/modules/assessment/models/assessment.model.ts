@@ -320,6 +320,9 @@ export class FullAssessment extends Assessment {
 
 @ObjectType()
 export class FullPublicAssessment {
+    @Field(() => String, { nullable: true })
+    consentLink?: string;
+
     @Field(() => Int)
     id: number;
 
@@ -350,7 +353,7 @@ export class FullPublicAssessment {
     @Field(() => String, { nullable: true })
     informantType?: string;
 
-    @Field(() => QuestionnaireAssessment)
+    @Field(() => QuestionnaireAssessment, { nullable: true })
     questionnaireAssessment: QuestionnaireAssessment;
 
     @Field(() => AssessmentType, { nullable: true })

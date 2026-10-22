@@ -75,6 +75,8 @@ export class InformedConsentManagementService {
             profileConditions: parsedConditions,
             scopeHash,
             priority: input.priority ?? 100,
+            reminderOffsets: input.reminderOffsets || [],
+            reminderUnit: input.reminderUnit || 'DAYS',
             active: input.active ?? true,
             createdById: currentUser?.id,
         });
@@ -126,6 +128,8 @@ export class InformedConsentManagementService {
         management.appliesToAllRoles = next.appliesToAllRoles;
         management.profileConditions = parsedConditions;
         management.scopeHash = scopeHash;
+        if (input.reminderOffsets !== undefined) management.reminderOffsets = input.reminderOffsets;
+        if (input.reminderUnit !== undefined) management.reminderUnit = input.reminderUnit;
         if (input.priority !== undefined) management.priority = input.priority;
         if (input.active !== undefined) management.active = input.active;
         management.departments = departments;
@@ -143,6 +147,8 @@ export class InformedConsentManagementService {
             status: InformedConsentManagementStatus.DRAFT,
             trigger: management.trigger,
             mandatory: management.mandatory,
+            reminderOffsets: management.reminderOffsets,
+            reminderUnit: management.reminderUnit,
             appliesToAllDepartments: management.appliesToAllDepartments,
             departmentIds: management.departments?.map(department => department.id),
             appliesToAllRoles: management.appliesToAllRoles,

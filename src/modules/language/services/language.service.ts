@@ -219,7 +219,10 @@ export class LanguageService implements OnModuleInit {
                         key,
                         value: String(flatValues[key] ?? ''),
                     }));
-                } else if (!existing.value || existing.value === key) {
+                } else if (!existing.value || existing.value === key || (
+                    !existing.updatedById && language.code !== 'en' &&
+                    existing.value === englishDefaults[key] && flatValues[key] !== englishDefaults[key]
+                )) {
                     existing.value = String(flatValues[key] ?? '');
                     existing.languageCode = language.code;
                     valuesToSave.push(existing);

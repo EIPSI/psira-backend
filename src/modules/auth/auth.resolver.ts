@@ -1,3 +1,6 @@
+import { BadRequestException } from '@nestjs/common';
+import * as moment from 'moment-timezone';
+import { UserPreferencesInput } from './dto/user-preferences.input';
 import { Resolver, Mutation, Args, Query } from '@nestjs/graphql';
 import { User } from 'src/modules/user/models/user.model';
 import { AuthService } from './auth.service';
@@ -30,6 +33,24 @@ export class AuthResolver {
     return Promise.resolve(user);
   }
 
+
+  @Mutation(() => User)
+  @UseGuards(GqlAuthGuard)
+  async updateMyPreferences(
+    @CurrentUser() user: User,
+    @Args('input') input: UserPreferencesInput,
+  ): Promise<User> {
+    const update: Partial<User> = {};
+    for (const key of ['timezone', 'detectedTimezone'] as const) {
+      if (input[key] === undefined) continue;
+      if (input[key] !== null && !moment.tz.zone(input[key])) {
+        throw new BadRequestException('Invalid timezone. Choose an IANA timezone.');
+      }
+      update[key] = input[key];
+    }
+    if (Object.keys(update).length) await User.update(user.id, update);
+    return Object.assign(user, update);
+  }
 
   // permission grants
   @Query(() => [Permission], { description: 'Get User Permission Grants. ' })

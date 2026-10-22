@@ -36,18 +36,21 @@ export class NotificationConfigurationService {
     ) {}
 
     list(): Promise<NotificationConfiguration[]> {
-        return this.configurationRepository.find({
-            relations: ['department', 'recipientRole', 'mailTemplate'],
-            order: { id: 'DESC' },
-        });
+        return this.configurationQuery().orderBy('configuration.id', 'DESC').getMany();
     }
 
     async get(id: number): Promise<NotificationConfiguration> {
-        const configuration = await this.configurationRepository.findOne(id, {
-            relations: ['department', 'recipientRole', 'mailTemplate'],
-        });
+        const configuration = await this.configurationQuery()
+            .where('configuration.id = :id', { id }).getOne();
         if (!configuration) throw new NotFoundException('Notification configuration not found');
         return configuration;
+    }
+
+    private configurationQuery() {
+        return this.configurationRepository.createQueryBuilder('configuration')
+            .innerJoinAndSelect('configuration.recipientRole', 'recipientRole')
+            .leftJoinAndSelect('configuration.department', 'department')
+            .leftJoinAndSelect('configuration.mailTemplate', 'mailTemplate');
     }
 
     async create(input: CreateNotificationConfigurationInput): Promise<NotificationConfiguration> {
@@ -172,11 +175,11 @@ export class NotificationConfigurationService {
         if (!responder?.roles?.length) return null;
 
         const userPreference = await this.preferenceService.getOrCreate({ userId: responder.id });
-        if (
+        if (input.event !== NotificationEvent.INFORMED_CONSENT_PENDING && (
             !userPreference.enabled ||
             !userPreference.immediateEnabled ||
             !this.preferenceService.isEventEnabled(userPreference, input.event)
-        ) {
+        )) {
             return null;
         }
 
@@ -211,6 +214,10 @@ export class NotificationConfigurationService {
             .addOrderBy('configuration.id', 'ASC')
             .getOne();
 
+        if (!configuration && input.event === NotificationEvent.INFORMED_CONSENT_PENDING) {
+            const template = await this.mailTemplateRepository.findOne({ where: { name: 'Consentimiento informado pendiente' } });
+            if (template) return { mailTemplate: template } as NotificationConfiguration;
+        }
         return configuration || null;
     }
 

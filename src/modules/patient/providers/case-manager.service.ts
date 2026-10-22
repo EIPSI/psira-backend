@@ -126,6 +126,7 @@ export class CaseManagerService {
             .andWhere('user.deletedAt IS NULL')
             .getOne();
 
+        if (caseManager?.roles?.some(role => role.code === RoleCode.SUPER_ADMIN)) return;
         const caseManagerHierarchy = this.strongestHierarchy(caseManager);
         const hasAssignableRole = caseManager?.roles?.some(role => assignableRoleCodes.includes(role.code as RoleCode));
         if (
@@ -150,6 +151,7 @@ export class CaseManagerService {
         }
 
         const user = await User.findOne(userId, { relations: ['roles', 'departments'] });
+        if (user?.roles?.some(role => role.code === RoleCode.SUPER_ADMIN)) return;
         const sharedDepartment = user?.departments?.some(department => patientDepartmentIds.includes(department.id));
         if (!sharedDepartment) {
             throw new BadRequestException('Case manager must belong to one of the patient departments');
@@ -158,7 +160,7 @@ export class CaseManagerService {
 
     private async getAssignableCaseManagerRoleCodes(): Promise<RoleCode[]> {
         const value = await this.settingService.getKey('patientCaseManagerRoleCodes' as any) as RoleCode[];
-        return value?.length ? value : [RoleCode.SUPER_ADMIN, RoleCode.THERAPIST];
+        return [...new Set([RoleCode.SUPER_ADMIN, ...(value?.length ? value : [RoleCode.THERAPIST])])];
     }
 
     private async getAssignableCaseManagerHierarchyRank(): Promise<number> {

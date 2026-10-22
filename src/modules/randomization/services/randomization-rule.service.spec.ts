@@ -85,6 +85,7 @@ describe('RandomizationRuleService', () => {
             schemeRepository as any,
             questionnaireModel as any,
             bundleModel as any,
+            { canAccessDepartments: jest.fn().mockResolvedValue(true) } as any,
         );
 
         return {

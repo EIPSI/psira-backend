@@ -1,4 +1,5 @@
-import { QueryService } from '@nestjs-query/core';
+import { UserRelationSortInput } from '../dto/user-relation-sort.input';
+import { Query, QueryService } from '@nestjs-query/core';
 import { TypeOrmQueryService } from '@nestjs-query/query-typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, IsNull } from 'typeorm';
@@ -33,6 +34,25 @@ export class UserCrudService extends TypeOrmQueryService<User> {
     ) {
         // pass the use soft delete option to the service.
         super(userRepository);
+    }
+
+    async queryWithRelationSorting(query: Query<User>, sorting: UserRelationSortInput[] = []): Promise<User[]> {
+        if (!sorting.length) return this.query(query);
+        const builder = this.filterQueryBuilder.select(query);
+        const alias = builder.alias;
+        for (const sort of sorting) {
+            const role = sort.field === 'roles';
+            const joinTable = role ? 'user_role' : 'user_department';
+            const targetTable = role ? 'role' : 'department';
+            const targetColumn = role ? 'roleId' : 'departmentId';
+            const selection = `(SELECT string_agg(target.name, ', ' ORDER BY target.name)
+                FROM "${joinTable}" link JOIN "${targetTable}" target ON target.id = link."${targetColumn}"
+                WHERE link."userId" = "${alias}".id AND target."deletedAt" IS NULL)`;
+            const sortAlias = role ? 'user_role_sort' : 'user_department_sort';
+            builder.addSelect(selection, sortAlias).addOrderBy(sortAlias, sort.direction, 'NULLS LAST');
+        }
+        builder.addOrderBy(`"${alias}".id`, 'ASC');
+        return builder.getMany();
     }
 
     async createOne(input: CreateUserInput): Promise<User> {
@@ -91,19 +111,21 @@ export class UserCrudService extends TypeOrmQueryService<User> {
             throw error;
         }
 
+        if (!skipCaregiverProfileSync && !skipPatientProfileSync) {
+            await this.completeAccountCreation(user, plainPassword, skippedAutomationIds);
+        }
+        return user;
+    }
+
+    async completeAccountCreation(user: User, plainPassword: string, skippedAutomationIds?: number[]): Promise<void> {
         if (user.email) {
             try {
                 await this.sendMailService.sendWelcomeEmail(user, plainPassword);
             } catch (error) {
-                this.logger.error(
-                    `Unable to send welcome email to user ${user.id}: ${error?.message || error}`,
-                );
+                this.logger.error(`Unable to send welcome email to user ${user.id}: ${error?.message || error}`);
             }
         }
-
         await this.dispatchUserCreatedAutomation(user, skippedAutomationIds);
-
-        return user;
     }
 
     async updateOneUser(
@@ -154,7 +176,9 @@ export class UserCrudService extends TypeOrmQueryService<User> {
         if (roleCodes && departmentIds === undefined) {
             departmentIds = await this.getUserDepartmentIds(id);
         }
-        departmentIds = await this.applyDefaultDepartmentsForRoles(effectiveRoleCodes, departmentIds);
+        if (departmentIds !== undefined) {
+            departmentIds = await this.applyDefaultDepartmentsForRoles(effectiveRoleCodes, departmentIds);
+        }
         if (departmentIds !== undefined) {
             this.validateRequiredDepartments(effectiveRoleCodes, departmentIds);
             await this.validateDepartmentsApplyToRoles(effectiveRoleCodes, departmentIds);
@@ -307,7 +331,7 @@ export class UserCrudService extends TypeOrmQueryService<User> {
             return departmentIds;
         }
 
-        const departments = await Department.find();
+        const departments = await Department.find({ where: { active: true } });
         const defaultDepartmentIds = departments
             .filter(department => this.departmentDefaultsForAnyRole(department, roleCodes))
             .map(department => department.id);

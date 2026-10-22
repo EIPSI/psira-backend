@@ -1,3 +1,4 @@
+jest.mock('argon2', () => ({ hash: jest.fn(), verify: jest.fn() }));
 import { BadRequestException } from '@nestjs/common';
 import { NotificationChannel } from '../enums/notification-channel.enum';
 import { NotificationEvent } from '../enums/notification-event.enum';
@@ -11,6 +12,11 @@ describe('NotificationConfigurationService', () => {
             save: jest.fn((value: any) => Promise.resolve({ ...value, id: 1 })),
             findOne: jest.fn().mockResolvedValue({ id: 1 }),
             createQueryBuilder: jest.fn(() => ({
+                innerJoinAndSelect: jest.fn().mockReturnThis(),
+                leftJoinAndSelect: jest.fn().mockReturnThis(),
+                orderBy: jest.fn().mockReturnThis(),
+                getOne: jest.fn().mockResolvedValue({ id: 1, recipientRole: { id: 1 } }),
+                getMany: jest.fn().mockResolvedValue([{ id: 1, recipientRole: { id: 1 } }]),
                 where: jest.fn().mockReturnThis(),
                 andWhere: jest.fn().mockReturnThis(),
                 getCount: jest.fn().mockResolvedValue(0),
@@ -28,6 +34,7 @@ describe('NotificationConfigurationService', () => {
             mailTemplateRepository as any,
             userRepository as any,
             patientRepository as any,
+            {} as any,
         );
         return { service };
     }

@@ -94,6 +94,7 @@ class ConfigService {
             username: this.getValue('TYPEORM_USERNAME'),
             password: this.getValue('TYPEORM_PASSWORD'),
             database: this.getValue('TYPEORM_DATABASE'),
+            extra: { options: '-c timezone=UTC' },
             entities,
             synchronize: this.getValue('TYPEORM_SYNCHRONIZE') === 'true',
             logging: this.getValue('TYPEORM_LOGGING') === 'true',

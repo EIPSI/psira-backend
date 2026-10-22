@@ -280,6 +280,7 @@ export class CaregiverService extends TypeOrmQueryService<Caregiver> {
 
             await this.repo.update(caregiver.id, { userId: account.user.id });
             caregiver.userId = account.user.id;
+            await this.userAccountProvisioningService.completePersonUser(account);
         } catch (error) {
             throw new BadRequestException('Failed to create user for caregiver.');
         }

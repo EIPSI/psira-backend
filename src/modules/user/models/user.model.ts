@@ -52,6 +52,14 @@ export class User extends BaseEntity {
     @Column({default: false})
     isSuperUser: boolean;
 
+    @Field(() => String, { nullable: true })
+    @Column({ nullable: true, type: 'varchar' })
+    timezone?: string;
+
+    @Field(() => String, { nullable: true })
+    @Column({ nullable: true, type: 'varchar' })
+    detectedTimezone?: string;
+
     @Field()
     @Column({default: false})
     acceptedTerm: boolean;

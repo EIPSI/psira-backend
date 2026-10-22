@@ -77,11 +77,11 @@ export class CaregiverResolver {
     @UseOrPermissions([PermissionEnum.CAREGIVERS_EDIT_DEPARTMENT, PermissionEnum.CAREGIVERS_CREATE_ASSIGNED])
     async createOneCaregiver(@Args('input', { type: () => CreateOneCaregiverInput }) input: CreateOneCaregiverInput): Promise<Caregiver> {
         try {
-            const caregiverInput = input['caregiver'] as CaregiverInput;
+            const caregiverInput = (input['caregiver'] || input.input) as CaregiverInput;
             return await this.caregiverService.insert(caregiverInput)
         } catch (error) {
             error.message = error.message === 'Conflict' ? 'This caregiver number has already been registered!' : error.message;
-            return error
+            throw error;
         }
 
     }
