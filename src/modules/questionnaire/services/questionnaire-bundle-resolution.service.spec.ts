@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 import {
     QuestionnaireBundleNodeType,
+    QuestionnaireProgressMode,
     QuestionnaireBundleRandomizationMode,
 } from '../models/questionnaire-bundle.schema';
 import { QuestionnaireStatus } from '../models/questionnaire.schema';
@@ -17,7 +18,7 @@ describe('QuestionnaireBundleResolutionService', () => {
         jest.restoreAllMocks();
     });
 
-    function createService(structure: any[]) {
+    function createService(structure: any[], progressMode?: QuestionnaireProgressMode) {
         const questionnaireBundleModel = {
             findById: jest.fn().mockReturnValue({
                 orFail: jest.fn().mockReturnValue({
@@ -25,6 +26,7 @@ describe('QuestionnaireBundleResolutionService', () => {
                         _id: bundleId,
                         name: 'Clinical intake',
                         structure,
+                        progressMode,
                     }),
                 }),
             }),
@@ -57,6 +59,18 @@ describe('QuestionnaireBundleResolutionService', () => {
     function ids(result: any) {
         return result.questionnaireIds.map(id => id.toHexString());
     }
+
+    it.each(Object.values(QuestionnaireProgressMode))('snapshots %s progress on every resolved occurrence', async progressMode => {
+        const service = createService([
+            { id: 'first', type: QuestionnaireBundleNodeType.SCREEN, children: [] },
+            { id: 'group', type: QuestionnaireBundleNodeType.FIXED_GROUP, children: [questionnaireNode(questionnaireA)] },
+            { id: 'second', type: QuestionnaireBundleNodeType.SCREEN, children: [] },
+            { id: 'group2', type: QuestionnaireBundleNodeType.RANDOM_GROUP, children: [questionnaireNode(questionnaireB)] },
+        ], progressMode);
+        const result = await service.resolveQuestionnaireSequence([], [bundleId] as any);
+        expect(result.resolvedQuestionnaires.map(item => item.progressMode)).toEqual([progressMode, progressMode]);
+        expect(result.resolvedQuestionnaires[0].occurrenceId).not.toEqual(result.resolvedQuestionnaires[1].occurrenceId);
+    });
 
     it('resolves the new page/group sequence with first-page text and subsequent pages', async () => {
         const service = createService([

@@ -7,6 +7,7 @@ import {
 } from '../models/questionnaire.schema';
 import {
     QuestionnaireBundle,
+    QuestionnaireProgressMode,
     QuestionnaireBundleNode,
     QuestionnaireBundleNodeType,
     QuestionnaireBundleRandomizationMode,
@@ -22,6 +23,7 @@ interface BundleScreenContext {
 }
 
 interface BundlePresentationContext {
+    progressMode?: QuestionnaireProgressMode;
     headerHtml?: string;
     noticeHtml?: string;
 }
@@ -62,6 +64,7 @@ export class QuestionnaireBundleResolutionService {
             const bundlePresentation: BundlePresentationContext = {
                 headerHtml: bundle.headerHtml,
                 noticeHtml: bundle.noticeHtml,
+                progressMode: bundle.progressMode || QuestionnaireProgressMode.NONE,
             };
             const root = this.structureForBundle(bundle)[0];
             screenState.currentScreen = root?.type === QuestionnaireBundleNodeType.SCREEN ? undefined : {
@@ -253,6 +256,7 @@ export class QuestionnaireBundleResolutionService {
             screenFooterHtml: screen?.footerHtml,
             bundleHeaderHtml: bundlePresentation?.headerHtml,
             bundleNoticeHtml: bundlePresentation?.noticeHtml,
+            progressMode: bundlePresentation?.progressMode,
             questionnaireDisplayTitle: node?.displayTitle,
             showQuestionnaireTitle: node?.showTitle,
             screenIndex: screen?.index,

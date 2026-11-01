@@ -1,5 +1,7 @@
-import { Injectable, Module } from '@nestjs/common';
-import { Authorizer, NestjsQueryGraphQLModule } from '@nestjs-query/query-graphql';
+import { CreateUserInput } from './dto/create-user.input';
+import { UpdateUserInput } from './dto/update-user.input';
+import { Module } from '@nestjs/common';
+import { NestjsQueryGraphQLModule } from '@nestjs-query/query-graphql';
 import { NestjsQueryTypeOrmModule } from '@nestjs-query/query-typeorm';
 import { User } from './models/user.model';
 import { UserCrudService } from './providers/user-crud.service';
@@ -19,17 +21,6 @@ import { Caregiver } from '../caregiver/models/caregiver.model';
 import { UserPreviousPasswordRetentionService } from './services/user-previous-password-retention.service';
 import { AssignmentRequestModule } from '../assignment-request/assignment-request.module';
 
-@Injectable()
-export class UserAuthorizer implements Authorizer<User> {
-    async authorize() {
-        return {};
-    }
-
-    async authorizeRelation() {
-        return {};
-    }
-}
-
 @Module({
     imports: [
         SettingModule,
@@ -40,6 +31,7 @@ export class UserAuthorizer implements Authorizer<User> {
             // import the NestjsQueryTypeOrmModule to register the entity with typeorm
             // and provide a QueryService
             imports: [NestjsQueryTypeOrmModule.forFeature([User, Role, Patient, Caregiver])],
+            dtos: [{ DTOClass: User, CreateDTOClass: CreateUserInput, UpdateDTOClass: UpdateUserInput }],
             // describe the resolvers you want to expose
             resolvers: [],
         }),
@@ -49,7 +41,6 @@ export class UserAuthorizer implements Authorizer<User> {
         UserCrudResolver,
         ChangePasswordService,
         ChangePasswordResolver,
-        UserAuthorizer,
         UserDepartmentAccessService,
         UserAccountProvisioningService,
         UserPreviousPasswordRetentionService,

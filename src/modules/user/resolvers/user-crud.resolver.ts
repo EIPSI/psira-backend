@@ -1,3 +1,5 @@
+import { projectDepartments } from 'src/shared/project-resource-access';
+import { isSuperAdministrator, strongestRole } from 'src/shared/administrative-access';
 import { UserRelationSortInput } from '../dto/user-relation-sort.input';
 import { UpdateManyResponse, Filter, SortDirection, mergeFilter } from '@nestjs-query/core';
 import {
@@ -166,7 +168,7 @@ export class UserCrudResolver extends CRUDResolver(User, {
         }
 
         // delegate to service
-        return this.service.createOne(userInput);
+        return this.service.createOne(userInput, (await projectDepartments(currentUser.id)) ?? undefined);
     }
 
     private extractUserInput(input: CreateOneUserInput | any): CreateUserInput {
@@ -186,20 +188,7 @@ export class UserCrudResolver extends CRUDResolver(User, {
     ): Promise<User> {
         const { id, update } = input;
 
-        // Validar departamentos si se están actualizando
         const userInputUpdate = update as any;
-        if (userInputUpdate.departmentIds && userInputUpdate.departmentIds.length > 0) {
-            const canAccess = await this.userDepartmentAccessService.canAccessDepartments(
-                currentUser.id,
-                userInputUpdate.departmentIds,
-            );
-
-            if (!canAccess) {
-                throw new ForbiddenException(
-                    'No puedes asignar usuarios a departamentos a los que no perteneces',
-                );
-            }
-        }
 
         // Validar jerarquía de roles
         const [user] = await this.service.query({
@@ -318,6 +307,17 @@ export class UserCrudResolver extends CRUDResolver(User, {
         @Args('input', { type: () => FilterType(User) }) filter: Filter<User>,
         @CurrentUser() currentUser: User,
     ): Promise<UpdateManyResponse> {
+        const viewer = await User.findOneOrFail(currentUser.id, { relations: ['roles'] });
+        if (!isSuperAdministrator(viewer)) {
+            const users = await User.find({ withDeleted: true, relations: ['roles', 'roles.permissions', 'permissions'] });
+            const grants = await PermissionService.userPermissionGrants(currentUser.id);
+            const protectedIds = users.filter(user => user.isSuperUser || strongestRole(user) <= strongestRole(viewer) ||
+                [...(user.permissions || []), ...user.roles.flatMap(role => role.permissions || [])].some(permission =>
+                    !PermissionService.hasPermission(grants, permission.name.replace(/\.assigned$/, '.department'))))
+                .map(user => user.id);
+            if (protectedIds.length) filter = mergeFilter(filter, { id: { notIn: protectedIds } });
+        }
+
         // Get creator's departments
         const creatorDeptIds = await this.userDepartmentAccessService.getUserDepartmentIds(currentUser.id);
 

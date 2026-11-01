@@ -3,6 +3,13 @@ import { Field, Float, Int, ObjectType, registerEnumType } from "@nestjs/graphql
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
 
+export enum QuestionnaireProgressMode {
+    NONE = 'NONE',
+    PAGES = 'PAGES',
+    BAR = 'BAR',
+}
+registerEnumType(QuestionnaireProgressMode, { name: 'QuestionnaireProgressMode' });
+
 export enum QuestionnaireBundleNodeType {
     QUESTIONNAIRE = 'QUESTIONNAIRE',
     SCREEN = 'SCREEN',
@@ -87,6 +94,10 @@ export class QuestionnaireBundle extends Document {
     @Field(() => String, { nullable: true })
     @Prop({ type: String, default: '' })
     noticeHtml?: string;
+
+    @Field(() => QuestionnaireProgressMode, { nullable: true })
+    @Prop({ type: String, enum: Object.values(QuestionnaireProgressMode), default: QuestionnaireProgressMode.NONE })
+    progressMode?: QuestionnaireProgressMode;
 
     @Field(() => [Number], { nullable: true })
     @Prop({ type: [Number] })

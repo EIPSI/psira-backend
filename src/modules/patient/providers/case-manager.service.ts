@@ -19,7 +19,10 @@ export class CaseManagerService {
     ) {}
 
     async getPatientCaseManagers(caseManagerFilter: CaseManagerFilter): Promise<UserConnectionDto> {
-        const assignableRoleCodes = await this.getAssignableCaseManagerRoleCodes();
+        const patient = caseManagerFilter.patientId ? await Patient.findOne(caseManagerFilter.patientId, { relations: ['departments'] }) : undefined;
+        const assignableRoleCodes = await this.getAssignableCaseManagerRoleCodes(
+            patient?.departments?.map(department => department.id) || caseManagerFilter.departmentIds || [],
+        );
         const allowSuperAdmin = assignableRoleCodes.includes(RoleCode.SUPER_ADMIN);
         const query = User
             .createQueryBuilder('caseManager')
@@ -44,11 +47,16 @@ export class CaseManagerService {
                 { patientId: caseManagerFilter.patientId },
             );
         } else if (caseManagerFilter.departmentIds?.length) {
+            const rules = await Promise.all(caseManagerFilter.departmentIds.map(async departmentId => ({ departmentId,
+                codes: await this.settingService.clinicalRoleCodes('patientCaseManagerRoleCodes', [departmentId]),
+            })));
             query.andWhere(new Brackets(qb => {
-                qb.where('departments.id IN (:...departmentIds)', { departmentIds: caseManagerFilter.departmentIds });
-                if (allowSuperAdmin) {
-                    qb.orWhere('role.code = :superAdminRole', { superAdminRole: RoleCode.SUPER_ADMIN });
-                }
+                qb.where('1 = 0');
+                rules.forEach((rule, index) => {
+                    if (rule.codes.length) qb.orWhere(`(departments.id = :roleDepartment${index} AND role.code IN (:...roleCodes${index}))`,
+                        { [`roleDepartment${index}`]: rule.departmentId, [`roleCodes${index}`]: rule.codes });
+                });
+                if (allowSuperAdmin) qb.orWhere('role.code = :superAdminRole', { superAdminRole: RoleCode.SUPER_ADMIN });
             }));
         }
 
@@ -116,7 +124,8 @@ export class CaseManagerService {
         });
         const assignerHierarchy = this.strongestHierarchy(assigner);
         const assignableHierarchyRank = await this.getAssignableCaseManagerHierarchyRank();
-        const assignableRoleCodes = await this.getAssignableCaseManagerRoleCodes();
+        const patient = await Patient.findOne(patientId, { relations: ['departments'] });
+        const assignableRoleCodes = await this.getAssignableCaseManagerRoleCodes(patient?.departments?.map(department => department.id));
 
         const caseManager = await User.createQueryBuilder('user')
             .innerJoinAndSelect('user.roles', 'role')
@@ -152,15 +161,16 @@ export class CaseManagerService {
 
         const user = await User.findOne(userId, { relations: ['roles', 'departments'] });
         if (user?.roles?.some(role => role.code === RoleCode.SUPER_ADMIN)) return;
-        const sharedDepartment = user?.departments?.some(department => patientDepartmentIds.includes(department.id));
-        if (!sharedDepartment) {
+        const sharedDepartments = user?.departments?.map(department => department.id).filter(id => patientDepartmentIds.includes(id)) || [];
+        const roleCodes = await this.settingService.clinicalRoleCodes('patientCaseManagerRoleCodes', sharedDepartments);
+        if (!sharedDepartments.length || !user.roles.some(role => roleCodes.includes(role.code))) {
             throw new BadRequestException('Case manager must belong to one of the patient departments');
         }
     }
 
-    private async getAssignableCaseManagerRoleCodes(): Promise<RoleCode[]> {
-        const value = await this.settingService.getKey('patientCaseManagerRoleCodes' as any) as RoleCode[];
-        return [...new Set([RoleCode.SUPER_ADMIN, ...(value?.length ? value : [RoleCode.THERAPIST])])];
+    private async getAssignableCaseManagerRoleCodes(departmentIds: number[] = []): Promise<RoleCode[]> {
+        const value = await this.settingService.clinicalRoleCodes('patientCaseManagerRoleCodes', departmentIds) as RoleCode[];
+        return [...new Set([RoleCode.SUPER_ADMIN, ...(Array.isArray(value) ? value : [RoleCode.THERAPIST])])];
     }
 
     private async getAssignableCaseManagerHierarchyRank(): Promise<number> {

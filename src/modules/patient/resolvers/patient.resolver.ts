@@ -188,13 +188,14 @@ export class PatientResolver {
         await this.validateCaseManagersAssignable(
             currentUser.id,
             patientInput.caseManagerIds || [],
+            patientInput.departmentIds,
         );
         await this.validateCaseManagersShareDepartments(
             patientInput.caseManagerIds || [],
             patientInput.departmentIds || [],
         );
 
-        const caseManagerRoleCodes = await this.getAssignableCaseManagerRoleCodes();
+        const caseManagerRoleCodes = await this.getAssignableCaseManagerRoleCodes(patientInput.departmentIds);
 
         // Department validation
         const canViewAllPatients = await PermissionService.userCan(
@@ -325,7 +326,7 @@ export class PatientResolver {
                 case PatientAccessScope.DEPARTMENT:
                     // Validate case managers belong to patient's departments
                     if (update.caseManagerIds.length > 0) {
-                        const caseManagerRoleCodes = await this.getAssignableCaseManagerRoleCodes();
+                        const caseManagerRoleCodes = await this.getAssignableCaseManagerRoleCodes(finalDepartmentIds);
                         const departmentIds = finalDepartmentIds;
 
                         if (departmentIds.length === 0) {
@@ -388,6 +389,7 @@ export class PatientResolver {
             await this.validateCaseManagersAssignable(
                 currentUser.id,
                 update.caseManagerIds || [],
+                finalDepartmentIds,
             );
             await this.validateCaseManagersShareDepartments(
                 update.caseManagerIds || [],
@@ -569,7 +571,7 @@ export class PatientResolver {
     }
 
     @Mutation(() => PatientStatus)
-    @UsePermission(PermissionEnum.SETTINGS_EDIT_ALL)
+    @UseOrPermissions([PermissionEnum.SETTINGS_EDIT_ALL, PermissionEnum.SETTINGS_EDIT_DEPARTMENT])
     async createOnePatientStatus(
         @Args('input', { type: () => CreateOnePatientStatusInput })
         input: CreateOnePatientStatusInput,
@@ -580,6 +582,7 @@ export class PatientResolver {
     private async validateCaseManagersAssignable(
         assigningUserId: number,
         caseManagerIds: number[],
+        departmentIds: number[] = [],
     ): Promise<void> {
         if (!caseManagerIds.length) return;
 
@@ -588,7 +591,7 @@ export class PatientResolver {
         });
         const assignerHierarchy = this.strongestHierarchy(assigner);
         const assignableHierarchyRank = await this.getAssignableCaseManagerHierarchyRank();
-        const assignableRoleCodes = await this.getAssignableCaseManagerRoleCodes();
+        const assignableRoleCodes = await this.getAssignableCaseManagerRoleCodes(departmentIds);
 
         const eligibleCaseManagers = await User.createQueryBuilder('user')
             .distinct(true)
@@ -635,11 +638,14 @@ export class PatientResolver {
             .andWhere('user.deletedAt IS NULL')
             .getMany();
 
+        const departmentRoles = new Map(await Promise.all(normalizedDepartmentIds.map(async id =>
+            [id, await this.settingService.clinicalRoleCodes('patientCaseManagerRoleCodes', [id])] as [number, string[]])));
         const invalidIds = caseManagerIds.filter(caseManagerId => {
             const caseManager = caseManagers.find(user => Number(user.id) === Number(caseManagerId));
             if (caseManager?.roles?.some(role => role.code === RoleCode.SUPER_ADMIN)) return false;
             const caseManagerDepartmentIds = caseManager?.departments?.map(department => Number(department.id)) || [];
-            return !caseManagerDepartmentIds.some(departmentId => normalizedDepartmentIds.includes(departmentId));
+            return !caseManagerDepartmentIds.some(departmentId => normalizedDepartmentIds.includes(departmentId) &&
+                caseManager.roles.some(role => departmentRoles.get(departmentId)?.includes(role.code)));
         });
 
         if (invalidIds.length) {
@@ -649,9 +655,9 @@ export class PatientResolver {
         }
     }
 
-    private async getAssignableCaseManagerRoleCodes(): Promise<RoleCode[]> {
-        const value = await this.settingService.getKey('patientCaseManagerRoleCodes' as any) as RoleCode[];
-        return [...new Set([RoleCode.SUPER_ADMIN, ...(value?.length ? value : [RoleCode.THERAPIST])])];
+    private async getAssignableCaseManagerRoleCodes(departmentIds: number[] = []): Promise<RoleCode[]> {
+        const value = await this.settingService.clinicalRoleCodes('patientCaseManagerRoleCodes', departmentIds) as RoleCode[];
+        return [...new Set([RoleCode.SUPER_ADMIN, ...(Array.isArray(value) ? value : [RoleCode.THERAPIST])])];
     }
 
     private async getAssignableCaseManagerHierarchyRank(): Promise<number> {

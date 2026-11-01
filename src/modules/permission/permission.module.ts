@@ -1,9 +1,10 @@
+import { RoleInput } from './dtos/role.input';
 import { SortDirection } from '@nestjs-query/core';
-import { Authorizer, NestjsQueryGraphQLModule } from '@nestjs-query/query-graphql';
+import { NestjsQueryGraphQLModule } from '@nestjs-query/query-graphql';
 import { NestjsQueryTypeOrmModule } from '@nestjs-query/query-typeorm';
-import { Injectable, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { GqlAuthGuard } from '../auth/auth.guard';
-import { UsePermission } from './decorators/permission.decorator';
+import { UseOrPermissions, UsePermission } from './decorators/permission.decorator';
 import { PermissionEnum } from './enums/permission.enum';
 import { PermissionGuard } from './guards/permission.guard';
 import { Permission } from './models/permission.model';
@@ -12,17 +13,6 @@ import { PermissionService } from './providers/permission.service';
 import { AuthorizationPolicyService } from './providers/authorization-policy.service';
 import { RoleCrudService } from './providers/role-crud.service';
 import { RoleResolver } from './resolvers/role.resolver';
-
-@Injectable()
-export class RoleAuthorizer implements Authorizer<Role> {
-    async authorize() {
-        return {};
-    }
-
-    async authorizeRelation() {
-        return {};
-    }
-}
 
 @Module({
     imports: [
@@ -35,6 +25,7 @@ export class RoleAuthorizer implements Authorizer<Role> {
                     Role,
                 ]),
             ],
+            dtos: [{ DTOClass: Role, CreateDTOClass: RoleInput, UpdateDTOClass: RoleInput }],
             // describe the resolvers you want to expose
             resolvers: [
                 {
@@ -43,7 +34,7 @@ export class RoleAuthorizer implements Authorizer<Role> {
                     guards: [GqlAuthGuard, PermissionGuard],
                     read: {
                         defaultSort: [{ field: 'id', direction: SortDirection.DESC }],
-                        decorators: [UsePermission(PermissionEnum.ROLES_VIEW_ALL)]
+                        decorators: [UseOrPermissions([PermissionEnum.ROLES_VIEW_ALL, PermissionEnum.ROLES_VIEW_DEPARTMENT_HIERARCHY])]
                     },
                     create: { disabled: true },
                     update: { disabled: true },
@@ -58,7 +49,6 @@ export class RoleAuthorizer implements Authorizer<Role> {
         AuthorizationPolicyService,
         RoleResolver,
         RoleCrudService,
-        RoleAuthorizer,
     ],
     exports: [
         PermissionGuard,

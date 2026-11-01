@@ -69,6 +69,7 @@ export class XLSForm {
                     }
                 }
             }
+            if (sheetName === XLSFormSheets.SURVEY) (dataObject as any)._row = this.getSheet(sheetName).data.indexOf(rowObject) + 1;
             formattedData.push(dataObject);
         }
 

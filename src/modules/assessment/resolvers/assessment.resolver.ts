@@ -50,6 +50,17 @@ export class AssessmentResolver {
     }
 
     @Query(() => [Assessment])
+    @UseOrPermissions([PermissionEnum.ASSESSMENTS_VIEW_ALL, PermissionEnum.ASSESSMENTS_VIEW_DEPARTMENT,
+        PermissionEnum.ASSESSMENTS_VIEW_ASSIGNED])
+    caseHistoryAssessments(
+        @CurrentUser() currentUser: User,
+        @Args('patientId', { type: () => Int, nullable: true }) patientId?: number,
+        @Args('therapistId', { type: () => Int, nullable: true }) therapistId?: number,
+    ): Promise<Assessment[]> {
+        return this.assessmentService.caseHistoryAssessments(patientId, therapistId, currentUser);
+    }
+
+    @Query(() => [Assessment])
     @UseOrPermissions([
         PermissionEnum.ASSESSMENTS_VIEW_ALL,
         PermissionEnum.ASSESSMENTS_VIEW_DEPARTMENT,

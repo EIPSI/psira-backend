@@ -1,3 +1,4 @@
+import { researchRoleDefaults, researchPermissionNames } from '../research-role-policy';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { User } from 'src/modules/user/models/user.model';
 import { Hash } from 'src/shared';
@@ -91,6 +92,14 @@ export class PermissionService implements OnModuleInit {
         superAdminRole.permissions = allPermissions;
         await superAdminRole.save();
 
+        for (const defaults of researchRoleDefaults) {
+            let role = await Role.findOne({ where: { code: defaults.code }, withDeleted: true });
+            if (!role) role = Role.create(defaults);
+            if (role.deletedAt) { await Role.getRepository().restore(role.id); role.deletedAt = null; }
+            const names = researchPermissionNames(defaults.code);
+            role.permissions = allPermissions.filter(permission => names.includes(permission.name));
+            await role.save();
+        }
         await this.assignDefaultSystemRolePermissions(allPermissions);
 
         // Refetch super admin role from DB with its users

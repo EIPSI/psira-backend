@@ -8,6 +8,7 @@ export class PatientStatusService {
 
         newPatientStatus.name = patientStatusInput.name;
         newPatientStatus.description = patientStatusInput.description;
+        newPatientStatus.departmentIds = (input?.patientStatus || input?.input?.patientStatus || input?.input || input).departmentIds;
 
         return newPatientStatus.save();
     }

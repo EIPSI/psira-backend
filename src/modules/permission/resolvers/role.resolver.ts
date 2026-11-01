@@ -1,3 +1,4 @@
+import { PermissionService } from '../providers/permission.service';
 import { SortDirection } from '@nestjs-query/core';
 import { CRUDResolver } from '@nestjs-query/query-graphql';
 import { BadRequestException, UseGuards } from '@nestjs/common';
@@ -34,6 +35,7 @@ export class RoleResolver extends CRUDResolver(Role, {
         decorators: [
             UseOrPermissions([
                 PermissionEnum.ROLES_VIEW_ALL,
+                PermissionEnum.ROLES_VIEW_DEPARTMENT_HIERARCHY,
                 PermissionEnum.ROLES_EDIT_ALL,
                 PermissionEnum.USERS_VIEW_DEPARTMENT,
                 PermissionEnum.USERS_EDIT_DEPARTMENT,
@@ -49,7 +51,7 @@ export class RoleResolver extends CRUDResolver(Role, {
     }
 
     @Mutation(() => Role)
-    @UsePermission(PermissionEnum.ROLES_EDIT_ALL)
+    @UseOrPermissions([PermissionEnum.ROLES_EDIT_ALL, PermissionEnum.ROLES_EDIT_DEPARTMENT_HIERARCHY])
     async createOneRole(
         @Args('input', { type: () => CreateOneRoleInput })
         input: CreateOneRoleInput,
@@ -83,7 +85,7 @@ export class RoleResolver extends CRUDResolver(Role, {
     }
 
     @Mutation(() => Role)
-    @UsePermission(PermissionEnum.ROLES_EDIT_ALL)
+    @UseOrPermissions([PermissionEnum.ROLES_EDIT_ALL, PermissionEnum.ROLES_EDIT_DEPARTMENT_HIERARCHY])
     async updateOneRole(
         @Args('input', { type: () => UpdateOneRoleInput })
         input: UpdateOneRoleInput,
@@ -110,7 +112,7 @@ export class RoleResolver extends CRUDResolver(Role, {
     }
 
     @Mutation(() => Role)
-    @UsePermission(PermissionEnum.ROLES_EDIT_ALL)
+    @UseOrPermissions([PermissionEnum.ROLES_EDIT_ALL, PermissionEnum.ROLES_EDIT_DEPARTMENT_HIERARCHY])
     async deleteOneRole(
         @Args('input', { type: () => DeleteOneRoleInput })
         input: DeleteOneRoleInput,
@@ -125,7 +127,7 @@ export class RoleResolver extends CRUDResolver(Role, {
     }
 
     @Mutation(() => Role)
-    @UsePermission(PermissionEnum.ROLES_EDIT_ALL)
+    @UseOrPermissions([PermissionEnum.ROLES_EDIT_ALL, PermissionEnum.ROLES_EDIT_DEPARTMENT_HIERARCHY])
     async removePermissionsFromRole(
         @Args('input', { type: () => RemovePermissionsFromRoleInput })
         input: RemovePermissionsFromRoleInput,
@@ -149,7 +151,7 @@ export class RoleResolver extends CRUDResolver(Role, {
     }
 
     @Mutation(() => Role)
-    @UsePermission(PermissionEnum.ROLES_EDIT_ALL)
+    @UseOrPermissions([PermissionEnum.ROLES_EDIT_ALL, PermissionEnum.ROLES_EDIT_DEPARTMENT_HIERARCHY])
     async addPermissionsToRole(
         @Args('input', { type: () => AddPermissionsToRoleInput })
         input: AddPermissionsToRoleInput,
@@ -194,11 +196,13 @@ export class RoleResolver extends CRUDResolver(Role, {
         const hasHigherHierarchy = currentUser.roles.some(
             userRole => userRole.hierarchy < role.hierarchy,
         );
-        const hasPermission = currentUser.roles.some(userRole =>
-            userRole.permissions.some(permission =>
-                input.relationIds.includes(permission.id),
-            ),
-        );
+        const grants = await PermissionService.userPermissionGrants(currentUser.id);
+        const requested = await Permission.find({ where: { id: In(input.relationIds.length ? input.relationIds : [0]) } });
+        if (role.departmentIds?.length && requested.some(permission => permission.name.endsWith('.all'))) {
+            throw new BadRequestException('Departmental roles cannot receive global permissions');
+        }
+        const hasPermission = requested.length === new Set(input.relationIds).size &&
+            requested.every(permission => PermissionService.hasPermission(grants, permission.name));
 
         if (isSuperAdminRole) {
             errorMessage = 'Super Admin permissions are fixed and cannot be modified.';
@@ -268,6 +272,11 @@ export class RoleResolver extends CRUDResolver(Role, {
         const roleInDb = await Role.findOneOrFail({
             where: { id: roleId },
         });
+
+        if (update?.departmentIds !== undefined && JSON.stringify([...update.departmentIds].map(Number).sort()) !==
+            JSON.stringify([...(roleInDb.departmentIds || [])].sort())) {
+            throw new BadRequestException('Create a separate role to change its departmental scope');
+        }
 
         // reload current user with roles
         currentUser = await User.findOne({

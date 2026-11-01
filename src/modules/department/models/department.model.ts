@@ -1,3 +1,4 @@
+import { projectDepartments } from 'src/shared/project-resource-access';
 import { ObjectType, Int, GraphQLISODateTime, Field } from '@nestjs/graphql';
 import {
     Entity,
@@ -10,16 +11,25 @@ import {
     ManyToMany,
     JoinTable,
 } from 'typeorm';
-import { FilterableField, FilterableUnPagedRelation, KeySet } from '@nestjs-query/query-graphql';
+import { Authorize, FilterableField, FilterableUnPagedRelation, KeySet } from '@nestjs-query/query-graphql';
 import { User } from 'src/modules/user/models/user.model';
 import { Patient } from 'src/modules/patient/models/patient.model';
 import { MailTemplate } from 'src/modules/mail/models/mail-template.model';
 
+const projectMemberFilter = async (context: any) => {
+    const ids = await projectDepartments(context.req.user.id);
+    return ids ? { departments: { id: { in: ids.length ? ids : [0] } } } : {};
+};
+
+@Authorize({ authorize: async context => {
+    const ids = await projectDepartments(context.req.user.id);
+    return ids ? { id: { in: ids.length ? ids : [0] } } : {};
+} })
 @ObjectType()
 @KeySet(['id'])
-@FilterableUnPagedRelation('users', () => User, { disableUpdate: true, disableRemove: true })
-@FilterableUnPagedRelation('patients', () => Patient, { disableUpdate: true, disableRemove: true })
-@FilterableUnPagedRelation('mailTemplates', () => MailTemplate, { disableUpdate: true, disableRemove: true })
+@FilterableUnPagedRelation('users', () => User, { disableUpdate: true, disableRemove: true, auth: { authorize: projectMemberFilter } })
+@FilterableUnPagedRelation('patients', () => Patient, { disableUpdate: true, disableRemove: true, auth: { authorize: projectMemberFilter } })
+@FilterableUnPagedRelation('mailTemplates', () => MailTemplate, { disableUpdate: true, disableRemove: true, auth: { authorize: projectMemberFilter } })
 @Entity()
 export class Department extends BaseEntity {
 

@@ -1,3 +1,5 @@
+import { departmentDefinitionFilter } from 'src/shared/department-definition-access';
+import { Authorize } from '@nestjs-query/query-graphql';
 import { FilterableField, UnPagedRelation } from '@nestjs-query/query-graphql';
 import { Field, Int, ObjectType } from '@nestjs/graphql';
 import {
@@ -14,9 +16,14 @@ import {
 import { AssessmentTypeEnum } from '../enums/assessment-type.enum';
 import { Assessment } from './assessment.model';
 
+@Authorize<AssessmentType>({ authorize: async context => await departmentDefinitionFilter('AssessmentType', context) })
 @ObjectType()
 @Entity()
 export class AssessmentType extends BaseEntity {
+    @Field(() => [Int], { nullable: true })
+    @Column('simple-json', { nullable: true })
+    departmentIds?: number[];
+
     @FilterableField(() => Int)
     @PrimaryGeneratedColumn()
     id: number;

@@ -2,6 +2,7 @@ import { Field, InputType } from "@nestjs/graphql";
 import { Types } from "mongoose";
 import {
     QuestionnaireBundleNodeType,
+    QuestionnaireProgressMode,
     QuestionnaireBundleRandomizationMode,
 } from '../models/questionnaire-bundle.schema';
 
@@ -60,6 +61,9 @@ export class CreateQuestionnaireBundleInput {
 
     @Field(() => String, { nullable: true })
     noticeHtml?: string;
+
+    @Field(() => QuestionnaireProgressMode, { nullable: true })
+    progressMode?: QuestionnaireProgressMode;
 
     @Field(() => [Number], { nullable: true })
     departmentIds: number[]

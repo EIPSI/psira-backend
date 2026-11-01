@@ -89,7 +89,8 @@ export class ClinicalAccess {
             return this.canSession(assessment.clinicalSession?.responsibleUsers ? assessment.clinicalSession : await this.session(assessment.clinicalSessionId), viewer, grants, action);
         }
         return assessment.responderUserId === viewer.id || assessment.targetUserId === viewer.id ||
-            this.manages(viewer, assessment.patientId, assessment.targetUserId);
+            this.manages(viewer, assessment.patientId, assessment.targetUserId) ||
+            !!assessment.targetUserId && viewer.caseManagedPatients?.some(patient => Number(patient.userId) === Number(assessment.targetUserId));
     }
     static async assertAssessment(assessment: Assessment, currentUser: User, action: string): Promise<void> {
         if (!await this.canAssessment(assessment, await this.viewer(currentUser.id), await this.grants(currentUser.id), action)) {

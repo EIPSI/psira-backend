@@ -1,7 +1,10 @@
-import { Field, GraphQLISODateTime, InputType } from '@nestjs/graphql';
+import { Field, GraphQLISODateTime, InputType, Int } from '@nestjs/graphql';
 
 @InputType()
 export class UpdateDisclaimerInput {
+    @Field(() => Int, { nullable: true })
+    departmentId?: number;
+
     @Field(() => String)
     type: string;
 

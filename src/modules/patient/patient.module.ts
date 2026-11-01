@@ -193,12 +193,12 @@ const guards = [GqlAuthGuard, PermissionGuard];
                     },
                     update: {
                         decorators: [
-                            UsePermission(PermissionEnum.SETTINGS_EDIT_ALL),
+                            UseOrPermissions([PermissionEnum.SETTINGS_EDIT_ALL, PermissionEnum.SETTINGS_EDIT_DEPARTMENT]),
                         ],
                     },
                     delete: {
                         decorators: [
-                            UsePermission(PermissionEnum.SETTINGS_EDIT_ALL),
+                            UseOrPermissions([PermissionEnum.SETTINGS_EDIT_ALL, PermissionEnum.SETTINGS_EDIT_DEPARTMENT]),
                         ],
                     },
                 },

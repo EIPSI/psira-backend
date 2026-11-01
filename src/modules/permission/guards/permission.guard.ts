@@ -1,3 +1,5 @@
+import { assertProjectResourceRequest } from 'src/shared/project-resource-access';
+import { assertAdministrativeMutation } from 'src/shared/administrative-access';
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { GqlExecutionContext } from '@nestjs/graphql';
@@ -16,6 +18,12 @@ export class PermissionGuard implements CanActivate {
         const userId = GqlExecutionContext.create(context)?.getContext()?.req?.user?.id;
         // Return failure if un-authenticated request
         if (!userId) return false;
+        const gql = GqlExecutionContext.create(context);
+        if (gql.getInfo()?.operation?.operation === 'mutation') {
+            await assertAdministrativeMutation(userId, gql.getInfo().fieldName, gql.getArgs()?.input);
+        }
+
+        if (gql.getInfo()?.returnType) await assertProjectResourceRequest(userId, gql.getInfo(), gql.getArgs());
 
         // get permissions of user
         const permissionGrants = await PermissionService.userPermissionGrants(userId);

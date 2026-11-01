@@ -1,3 +1,4 @@
+import { projectDepartments } from 'src/shared/project-resource-access';
 import { UserRelationSortInput } from '../dto/user-relation-sort.input';
 import { Query, QueryService } from '@nestjs-query/core';
 import { TypeOrmQueryService } from '@nestjs-query/query-typeorm';
@@ -55,7 +56,7 @@ export class UserCrudService extends TypeOrmQueryService<User> {
         return builder.getMany();
     }
 
-    async createOne(input: CreateUserInput): Promise<User> {
+    async createOne(input: CreateUserInput, authorizedDepartmentIds?: number[]): Promise<User> {
         if (!input.email) {
             throw new BadRequestException('Email is required');
         }
@@ -78,7 +79,7 @@ export class UserCrudService extends TypeOrmQueryService<User> {
         let departmentIds = inputDepartmentIds;
         const plainPassword = rest.password;
 
-        departmentIds = await this.applyDefaultDepartmentsForRoles(roleCodes, departmentIds);
+        departmentIds = await this.applyDefaultDepartmentsForRoles(roleCodes, departmentIds, authorizedDepartmentIds);
         this.validateRequiredDepartments(roleCodes, departmentIds);
         await this.validateDepartmentsApplyToRoles(roleCodes, departmentIds);
 
@@ -91,6 +92,7 @@ export class UserCrudService extends TypeOrmQueryService<User> {
         let roles: Role[] = [];
         if (roleCodes && roleCodes.length > 0) {
             roles = await Role.find({ where: { code: In(roleCodes) } });
+            this.validateRoleDepartmentScope(roles, departmentIds);
             user.roles = roles;
         }
 
@@ -169,7 +171,7 @@ export class UserCrudService extends TypeOrmQueryService<User> {
         let roles: Role[] = [];
         if (roleCodes) {
             roles = await Role.find({ where: { code: In(roleCodes) } });
-            await this.setRelations('roles', id, roles.map(r => r.id));
+
         }
 
         const effectiveRoleCodes = roleCodes || await this.getUserRoleCodes(id);
@@ -177,12 +179,18 @@ export class UserCrudService extends TypeOrmQueryService<User> {
             departmentIds = await this.getUserDepartmentIds(id);
         }
         if (departmentIds !== undefined) {
-            departmentIds = await this.applyDefaultDepartmentsForRoles(effectiveRoleCodes, departmentIds);
+            departmentIds = await this.applyDefaultDepartmentsForRoles(
+                effectiveRoleCodes, departmentIds, (await projectDepartments(currentUser.id)) ?? undefined,
+            );
         }
         if (departmentIds !== undefined) {
             this.validateRequiredDepartments(effectiveRoleCodes, departmentIds);
             await this.validateDepartmentsApplyToRoles(effectiveRoleCodes, departmentIds);
         }
+
+        const effectiveRoles = roleCodes ? roles : (await User.findOneOrFail(id, { relations: ['roles'] })).roles;
+        this.validateRoleDepartmentScope(effectiveRoles, departmentIds ?? await this.getUserDepartmentIds(id));
+        if (roleCodes) await this.setRelations('roles', id, roles.map(role => role.id));
 
         let departments: Department[] = [];
         if (departmentIds) {
@@ -330,21 +338,30 @@ export class UserCrudService extends TypeOrmQueryService<User> {
         }
     }
 
-    private async applyDefaultDepartmentsForRoles(roleCodes?: string[], departmentIds?: number[]): Promise<number[] | undefined> {
+    private async applyDefaultDepartmentsForRoles(
+        roleCodes?: string[], departmentIds?: number[], authorizedDepartmentIds?: number[],
+    ): Promise<number[] | undefined> {
         if (!roleCodes?.length) {
             return departmentIds;
         }
 
         const departments = await Department.find({ where: { active: true } });
         const defaultDepartmentIds = departments
-            .filter(department => this.departmentDefaultsForAnyRole(department, roleCodes))
+            .filter(department => this.departmentDefaultsForAnyRole(department, roleCodes) &&
+                (!authorizedDepartmentIds || authorizedDepartmentIds.includes(department.id)))
             .map(department => department.id);
 
         return [...new Set([...(departmentIds ?? []), ...defaultDepartmentIds])];
     }
 
+    private validateRoleDepartmentScope(roles: Role[], departments?: number[]): void {
+        if (roles.some(role => role.departmentIds?.length && (departments || []).some(id => !role.departmentIds.includes(Number(id))))) {
+            throw new BadRequestException('Account departments exceed the scope of its departmental roles');
+        }
+    }
+
     private validateRequiredDepartments(roleCodes?: string[], departmentIds?: number[]): void {
-        if (roleCodes?.includes(RoleCode.SUPER_ADMIN)) {
+        if (roleCodes?.some(code => [RoleCode.SUPER_ADMIN, RoleCode.RESEARCH_ADMIN].includes(code as RoleCode))) {
             return;
         }
         if (!departmentIds?.length) {

@@ -1,3 +1,7 @@
+import { projectDepartments, filterProjectResources } from 'src/shared/project-resource-access';
+import { PermissionService } from 'src/modules/permission/providers/permission.service';
+import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
+import { mergeFilter } from '@nestjs-query/core';
 import { tableQueryBuilder } from 'src/shared/query/table-sorting';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -41,7 +45,11 @@ export class ReportService {
         private readonly reportQueryService: QueryService<Report>,
     ) {}
 
-    getReports(query): Promise<ConnectionType<Report>> {
+    async getReports(query, currentUser?: User): Promise<ConnectionType<Report>> {
+        if (currentUser && await projectDepartments(currentUser.id)) {
+            const rows = await filterProjectResources(currentUser.id, await this.reportRepository.find());
+            query.filter = mergeFilter(query.filter, { id: { in: rows.length ? rows.map(row => row.id) : [0] } });
+        }
         return ReportQueryConnection.createFromPromise(
             q => tableQueryBuilder(this.reportRepository, q, query.tableSorting, {
                 formattedRoles: alias => `(SELECT string_agg(role.name, ', ' ORDER BY role.name)
@@ -141,6 +149,7 @@ export class ReportService {
             where: { id: currentUser.id },
         });
 
+        const administrator = user.isSuperUser || user.roles.some(role => ['SUPER_ADMIN', 'RESEARCH_ADMIN', 'PROJECT_RESEARCHER'].includes(role.code));
         const userRoleIds = user.roles.map(role => role.id);
 
         const reports = await this.reportRepository
@@ -149,11 +158,11 @@ export class ReportService {
             .where('report.resources = :resources', { resources: resource })
             .andWhere('report.status = :status', { status: true })
             .andWhere('roles.id IN (:...roleId)', {
-                roleId: userRoleIds,
+                roleId: administrator ? (await Role.find()).map(role => role.id) : userRoleIds,
             })
             .getMany();
 
-        return reports;
+        return filterProjectResources(currentUser.id, reports);
     }
 
     async getReportForCurrentUser(
@@ -165,17 +174,23 @@ export class ReportService {
             where: { id: currentUser.id },
         });
 
+        const administrator = user.isSuperUser || user.roles.some(role => ['SUPER_ADMIN', 'RESEARCH_ADMIN', 'PROJECT_RESEARCHER'].includes(role.code));
         const userRoleIds = user.roles.map(role => role.id);
 
-        return this.reportRepository
+        const report = await this.reportRepository
             .createQueryBuilder('report')
             .innerJoin('report.roles', 'roles')
             .where('report.id = :id', { id })
             .andWhere('report.status = :status', { status: true })
             .andWhere('roles.id IN (:...roleId)', {
-                roleId: userRoleIds,
+                roleId: administrator ? (await Role.find()).map(role => role.id) : userRoleIds,
             })
             .getOne();
+        if (!report || !(await filterProjectResources(currentUser.id, [report])).length) return null;
+        if (/export/i.test(report.appName || '') && !await PermissionService.userCan(currentUser.id, PermissionEnum.DATA_EXPORTS_VIEW_DEPARTMENT)) {
+            throw new BadRequestException('Explicit research export permission required');
+        }
+        return report;
     }
 
     async getReportEmbed(
@@ -263,7 +278,7 @@ export class ReportService {
         return this.reportSessionRepository.save(session);
     }
 
-    async getReportSessions(filters: ReportSessionFilters = {}): Promise<ReportSession[]> {
+    async getReportSessions(filters: ReportSessionFilters = {}, currentUser?: User): Promise<ReportSession[]> {
         await this.closeStaleReportSessions();
 
         const query = this.reportSessionRepository
@@ -273,6 +288,12 @@ export class ReportService {
             .leftJoinAndSelect('session.patient', 'patient')
             .orderBy('session.startedAt', 'DESC')
             .take(Number(process.env.REPORT_SESSION_QUERY_LIMIT || 5000));
+
+        const departments = currentUser ? await projectDepartments(currentUser.id) : null;
+        if (departments) query.andWhere(`(EXISTS(SELECT 1 FROM user_department d WHERE d."userId"=session."userId"
+            AND d."departmentId" IN (:...projectDepartments)) OR EXISTS(SELECT 1 FROM patient_department d
+            WHERE d."patientId"=session."patientId" AND d."departmentId" IN (:...projectDepartments)))`,
+            { projectDepartments: departments.length ? departments : [0] });
 
         if (filters.reportId) {
             query.andWhere('session.reportId = :reportId', { reportId: filters.reportId });

@@ -9,6 +9,9 @@ export class CreateAssessmentTypeInput {
     @FilterableField(() => String)
     name: string;
 
+    @Field(() => [Int], { nullable: true })
+    departmentIds?: number[];
+
     @FilterableField(() => AssessmentTypeEnum)
     status: AssessmentTypeEnum;
 }

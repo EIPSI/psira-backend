@@ -1,3 +1,4 @@
+import { CreateAssessmentTypeInput, UpdateAssessmentTypeInput } from './dtos/create-assessment-type.input';
 import { NestjsQueryGraphQLModule } from '@nestjs-query/query-graphql';
 import { NestjsQueryTypeOrmModule } from '@nestjs-query/query-typeorm';
 import { Module } from '@nestjs/common';
@@ -72,6 +73,7 @@ const guards = [GqlAuthGuard, PermissionGuard];
                     },
                 ]),
             ],
+            dtos: [{ DTOClass: AssessmentType, CreateDTOClass: CreateAssessmentTypeInput, UpdateDTOClass: UpdateAssessmentTypeInput }],
             // describe the resolvers you want to expose
             resolvers: [
                 {
