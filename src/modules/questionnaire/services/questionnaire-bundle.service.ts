@@ -47,6 +47,7 @@ export class QuestionnaireBundleService {
         newQuestionnaireBundle.structureJson = JSON.stringify(structure);
         newQuestionnaireBundle.headerHtml = input.headerHtml || '';
         newQuestionnaireBundle.noticeHtml = input.noticeHtml || '';
+        if (input.progressMode != null) newQuestionnaireBundle.progressMode = input.progressMode;
         newQuestionnaireBundle.departmentIds = departmentIds;
         newQuestionnaireBundle.active = input.active !== false;
         newQuestionnaireBundle.author = currentUser.id
@@ -116,6 +117,7 @@ export class QuestionnaireBundleService {
         questionnaireBundle.structureJson = JSON.stringify(structure);
         questionnaireBundle.headerHtml = restInput.headerHtml || '';
         questionnaireBundle.noticeHtml = restInput.noticeHtml || '';
+        if (restInput.progressMode != null) questionnaireBundle.progressMode = restInput.progressMode;
         questionnaireBundle.departmentIds = departmentIds;
         questionnaireBundle.active = restInput.active !== false;
         questionnaireBundle.markModified('structure');

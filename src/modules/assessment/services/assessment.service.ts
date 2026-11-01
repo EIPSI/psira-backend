@@ -189,6 +189,35 @@ export class AssessmentService {
         return tableQueryBuilder(this.assessmentRepository, query, sorting, expressions).setParameters(parameters).getMany();
     }
 
+    async caseHistoryAssessments(patientId: number | undefined, therapistId: number | undefined, currentUser: User): Promise<Assessment[]> {
+        if (!patientId && !therapistId) throw new BadRequestException('A patient or therapist is required');
+        const patient = patientId ? await this.patientRepository.findOne(patientId) : undefined;
+        const query = this.assessmentRepository.createQueryBuilder('assessment')
+            .leftJoinAndSelect('assessment.assessmentType', 'assessmentType')
+            .where('assessment."clinicalSessionId" IS NULL')
+            .andWhere('assessment.status != :cancelled', { cancelled: AssessmentStatus.CANCELLED })
+            .andWhere('(assessment.deleted IS NULL OR assessment.deleted = false OR assessment.status IN (:...answered))',
+                { answered: [AssessmentStatus.COMPLETED, AssessmentStatus.PARTIALLY_COMPLETED] });
+        if (patientId) {
+            query.andWhere('(assessment."patientId" = :patientId OR assessment."targetUserId" = :subjectUserId)',
+                { patientId, subjectUserId: patient?.userId || 0 });
+        } else {
+            query.andWhere(`assessment."patientId" IS NULL AND (assessment."targetUserId" = :therapistId OR
+                (assessment."targetUserId" IS NULL AND assessment."responderUserId" = :therapistId))`, { therapistId });
+        }
+        const assessments = await query.orderBy('COALESCE(assessment."deliveryDate", assessment."createdAt")', 'DESC').getMany();
+        await ClinicalAccess.loadAssessmentScopes(assessments);
+        const viewer = await ClinicalAccess.viewer(currentUser.id), grants = await ClinicalAccess.grants(currentUser.id);
+        const visible: Assessment[] = [];
+        for (const assessment of assessments) {
+            if (await ClinicalAccess.canAssessment(assessment, viewer, grants, 'view')) {
+                await this.changeQuestionnaireAssessmentStatus(assessment);
+                visible.push(assessment);
+            }
+        }
+        return visible;
+    }
+
     async getPatientAssessments(
         patientId: number,
         currentUser: User,

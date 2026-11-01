@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { Field, ObjectType } from '@nestjs/graphql';
+import { Field, ObjectType, Float } from '@nestjs/graphql';
 
 export const enum QuestionType {
     BEGIN_GROUP = 'begin_group',
@@ -40,8 +40,36 @@ export class Choice extends Document {
 export const ChoiceSchema = SchemaFactory.createForClass(Choice);
 
 @ObjectType()
+export class ScaleLabel {
+    @Field(() => Float) value: number;
+    @Field() label: string;
+    @Field() position: string;
+    @Field() align: string;
+}
+
+@ObjectType()
+export class QuestionPresentation {
+    @Field(() => Float) min: number;
+    @Field(() => Float) max: number;
+    @Field(() => Float, { nullable: true }) step?: number;
+    @Field(() => [ScaleLabel]) labels: ScaleLabel[];
+    @Field() valuePosition: string;
+    @Field(() => Float) labelFontSize: number;
+    @Field(() => Float) valueFontSize: number;
+    @Field() labelBoxes: boolean;
+    @Field() boldLabels: boolean;
+    @Field() gradient: string;
+    @Field() colorStart: string;
+    @Field() colorEnd: string;
+}
+
+@ObjectType()
 @Schema()
 export class Question extends Document {
+    @Field(() => QuestionPresentation, { nullable: true })
+    @Prop({ type: Object })
+    presentation?: QuestionPresentation;
+
     @Field(() => String)
     _id: Types.ObjectId;
 

@@ -284,7 +284,8 @@ export class CalendarEventService {
 
     private assessmentEventColor(assessment: Assessment, answered: boolean): string {
         if (answered) return '#95de64';
-        if (assessment.status === AssessmentStatus.EXPIRED) return '#ffa39e';
+        const expired = assessment.expirationDate && new Date(assessment.expirationDate).getTime() <= Date.now();
+        if (assessment.status === AssessmentStatus.EXPIRED || expired) return '#ffa39e';
         return assessment.editableFromAssessmentList ? '#2f80ed' : '#1d4ed8';
     }
 
@@ -465,7 +466,8 @@ export class CalendarEventService {
         const userId = Number(viewer.id);
         const patientIds = (viewer.caseManagedPatients || []).map(patient => Number(patient.id));
         const therapistIds = (viewer.supervisedTherapists || []).map(user => Number(user.id));
-        return event.responsibleUserIds?.includes(userId) ||
+        return (viewer.caseManagedPatients || []).some(patient => Number(patient.userId) === Number(event.targetUser?.id)) ||
+            event.responsibleUserIds?.includes(userId) ||
             event.therapistId === userId ||
             (!!event.patientId && patientIds.includes(Number(event.patientId))) ||
             (!!event.therapistId && therapistIds.includes(Number(event.therapistId)));

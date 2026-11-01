@@ -1,3 +1,4 @@
+import { PermissionGuard } from 'src/modules/permission/guards/permission.guard';
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
@@ -9,7 +10,7 @@ import { MasterExportDataset } from '../models/master-export-dataset.model';
 import { MasterExportService } from '../services/master-export.service';
 
 @Resolver(() => MasterExportDataset)
-@UseGuards(GqlAuthGuard)
+@UseGuards(GqlAuthGuard, PermissionGuard)
 export class MasterExportResolver {
     constructor(private readonly masterExportService: MasterExportService) {}
 

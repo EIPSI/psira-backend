@@ -1,3 +1,6 @@
+import { departmentDefinitionFilter } from 'src/shared/department-definition-access';
+import { Authorize } from '@nestjs-query/query-graphql';
+import { projectDepartments } from 'src/shared/project-resource-access';
 import {
     PrimaryGeneratedColumn,
     CreateDateColumn,
@@ -20,11 +23,19 @@ import { RoleCode } from '../enums/role-code.enum';
 import { MIN_ROLE_HIERARCHY } from '../constants';
 import { Report } from 'src/modules/report/models/report.model';
 
+@Authorize<Role>({ authorize: async context => await departmentDefinitionFilter('Role', context) })
 @ObjectType()
 @UnPagedRelation('permissions', () => Permission, {disableUpdate: true, disableRemove: true})
-@UnPagedRelation('users', () => User)
+@UnPagedRelation('users', () => User, { disableUpdate: true, disableRemove: true, auth: { authorize: async context => {
+    const ids = await projectDepartments(context.req.user.id);
+    return ids ? { departments: { id: { in: ids.length ? ids : [0] } } } : {};
+} } })
 @Entity()
 export class Role extends BaseEntity {
+    @Field(() => [Int], { nullable: true })
+    @Column('simple-json', { nullable: true })
+    departmentIds?: number[];
+
     @FilterableField(() => Int)
     @PrimaryGeneratedColumn()
     id: number;
@@ -101,7 +112,7 @@ export class Role extends BaseEntity {
     beforeUpdate() {
         if (this.isSuperAdmin || this.isPatient || this.isCaregiver || 
             this.isTherapist || this.isSupervisor || 
-            this.code === RoleCode.DEPARTMENT_ADMIN)
+            [RoleCode.DEPARTMENT_ADMIN, RoleCode.RESEARCH_ADMIN, RoleCode.PROJECT_RESEARCHER].includes(this.code))
             throw new Error('Cannot update system roles');
     }
 
@@ -109,7 +120,7 @@ export class Role extends BaseEntity {
     beforeDelete() {
         if (this.isSuperAdmin || this.isPatient || this.isCaregiver || 
             this.isTherapist || this.isSupervisor || 
-            this.code === RoleCode.DEPARTMENT_ADMIN)
+            [RoleCode.DEPARTMENT_ADMIN, RoleCode.RESEARCH_ADMIN, RoleCode.PROJECT_RESEARCHER].includes(this.code))
             throw new Error('Cannot delete system roles');
     }
 

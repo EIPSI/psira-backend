@@ -43,6 +43,10 @@ export class Report extends BaseEntity {
     @PrimaryGeneratedColumn()
     id: number;
 
+    @Field(() => [Int], { nullable: true })
+    @Column('simple-json', { nullable: true })
+    departmentIds?: number[];
+
     @FilterableField(() => Boolean, { nullable: true })
     @Column({ nullable: true })
     anonymus?: boolean;

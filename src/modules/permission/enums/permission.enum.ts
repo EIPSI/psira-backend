@@ -47,10 +47,12 @@ export const systemPermissions = [
     ...scoped('informed_consent_management', 'informed-consent-management', 'Informed Consent', ['view', 'create', 'edit', 'delete'], ['all', 'department']),
     ...scoped('informed_consent_responses', 'informed-consent-responses', 'Informed Consent', ['view', 'review'], ['all', 'department', 'assigned']),
     ...scoped('reports', 'reports', 'Reports', ['view', 'create', 'edit', 'delete'], ['all', 'department', 'assigned']),
-    ...scoped('departments', 'departments', 'Departments', ['view', 'create', 'edit', 'delete'], ['all']),
+    ...scoped('clinical_settings', 'clinical-settings', 'Clinical Settings', ['view', 'edit'], ['all', 'department']),
+    ...scoped('data_exports', 'data-exports', 'Research Exports', ['view'], ['all', 'department']),
+    ...scoped('departments', 'departments', 'Departments', ['view', 'create', 'edit', 'delete'], ['all', 'department']),
     ...scoped('roles', 'roles', 'Roles and Permissions', ['view', 'create', 'edit', 'delete'], ['all', 'department_hierarchy']),
     ...scoped('permissions', 'permissions', 'Roles and Permissions', ['view', 'assign'], ['all', 'department_hierarchy']),
-    ...scoped('settings', 'settings', 'System Configuration', ['view', 'edit'], ['all']),
+    ...scoped('settings', 'settings', 'System Configuration', ['view', 'edit'], ['all', 'department']),
     ...scoped('system', 'system', 'System Configuration', ['view', 'edit'], ['all']),
 ] as const;
 

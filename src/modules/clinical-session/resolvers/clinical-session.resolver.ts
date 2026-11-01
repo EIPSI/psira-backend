@@ -100,9 +100,14 @@ export class ClinicalSessionResolver {
         PermissionEnum.CLINICAL_VIEW_DEPARTMENT,
         PermissionEnum.CLINICAL_VIEW_ASSIGNED,
         PermissionEnum.SETTINGS_VIEW_ALL,
+        PermissionEnum.CLINICAL_SETTINGS_VIEW_ALL,
+        PermissionEnum.CLINICAL_SETTINGS_VIEW_DEPARTMENT,
     ])
-    clinicalSessionFollowUpSettings(): Promise<ClinicalSessionFollowUpSetting> {
-        return this.schedulingService.getClinicalSessionFollowUpSettings();
+    clinicalSessionFollowUpSettings(
+        @CurrentUser() currentUser: User,
+        @Args('departmentId', { type: () => Int, nullable: true }) departmentId?: number,
+    ): Promise<ClinicalSessionFollowUpSetting> {
+        return this.schedulingService.getClinicalSessionFollowUpSettings(departmentId, currentUser);
     }
 
     @Mutation(() => ClinicalSession)
@@ -197,11 +202,13 @@ export class ClinicalSessionResolver {
     }
 
     @Mutation(() => ClinicalSessionFollowUpSetting)
-    @UsePermission(PermissionEnum.SETTINGS_EDIT_ALL)
+    @UseOrPermissions([PermissionEnum.SETTINGS_EDIT_ALL, PermissionEnum.CLINICAL_SETTINGS_EDIT_ALL,
+        PermissionEnum.CLINICAL_SETTINGS_EDIT_DEPARTMENT])
     updateClinicalSessionFollowUpSettings(
         @Args('settings') input: UpdateClinicalSessionFollowUpSettingsInput,
+        @CurrentUser() currentUser: User,
     ): Promise<ClinicalSessionFollowUpSetting> {
-        return this.schedulingService.updateClinicalSessionFollowUpSettings(input);
+        return this.schedulingService.updateClinicalSessionFollowUpSettings(input, currentUser);
     }
 
     @Mutation(() => ClinicalSession)

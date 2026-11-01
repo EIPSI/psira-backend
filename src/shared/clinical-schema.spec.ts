@@ -1,7 +1,18 @@
+import { QuestionnaireBundleResolver } from 'src/modules/questionnaire/resolvers/questionnaire-bundle.resolver';
+import { QuestionnaireResolver } from 'src/modules/questionnaire/resolvers/questionnaire.resolver';
+import { PublicAssessmentResolver } from 'src/modules/assessment/resolvers/public.assesment.resolver';
+import { AssessmentResolver as QuestionnaireAssessmentResolver } from 'src/modules/questionnaire/resolvers/assessment.resolver';
+import { DisclaimerResolver } from 'src/modules/disclaimer/resolvers/disclaimer.resolver';
+import { RoleResolver } from 'src/modules/permission/resolvers/role.resolver';
+import { AssessmentTypeResolver } from 'src/modules/assessment/resolvers/assessment-type.resolver';
+import { Report } from 'src/modules/report/models/report.model';
 jest.mock('argon2', () => ({ hash: jest.fn(), verify: jest.fn() }));
+import { DepartmentResolver } from 'src/modules/department/resolvers/departments.resolver';
+import { ReportResolver } from 'src/modules/report/resolvers/report.resolver';
 import { CRUDResolver } from '@nestjs-query/query-graphql';
 import { ClinicalSession } from 'src/modules/clinical-session/models/clinical-session.model';
 import { ClinicalSessionResource } from 'src/modules/clinical-session/models/clinical-session-resource.model';
+import { AssessmentResolver } from 'src/modules/assessment/resolvers/assessment.resolver';
 import { Assessment } from 'src/modules/assessment/models/assessment.model';
 import { Patient } from 'src/modules/patient/models/patient.model';
 import { CalendarOccurrence } from 'src/modules/calendar/models/calendar-occurrence.model';
@@ -20,11 +31,11 @@ it('exposes the clinical calendar, scoped consents and batch configuration contr
     const app = await NestFactory.createApplicationContext(GraphQLSchemaBuilderModule, { logger: false });
     try {
         // Match the relation-only CRUD resolvers registered by the application modules.
-        const relationResolvers = ([ClinicalSession, ClinicalSessionResource, Assessment, Patient, CalendarOccurrence] as any[])
+        const relationResolvers = ([ClinicalSession, ClinicalSessionResource, Assessment, Patient, CalendarOccurrence, Report] as any[])
             .map(model => CRUDResolver(model, { read: { disabled: true }, create: { disabled: true },
                 update: { disabled: true }, delete: { disabled: true } }));
-        const schema = await app.get(GraphQLSchemaFactory).create([...relationResolvers, UserCrudResolver, CalendarEventResolver, ClinicalSessionResolver,
-            NotificationConfigurationResolver, InformedConsentResponseResolver, EvaluationSchemeGenerationResolver]);
+        const schema = await app.get(GraphQLSchemaFactory).create([...relationResolvers, AssessmentResolver, UserCrudResolver, CalendarEventResolver, ClinicalSessionResolver,
+            NotificationConfigurationResolver, InformedConsentResponseResolver, EvaluationSchemeGenerationResolver, DepartmentResolver, ReportResolver, DisclaimerResolver, RoleResolver, AssessmentTypeResolver, PublicAssessmentResolver, QuestionnaireAssessmentResolver, QuestionnaireBundleResolver, QuestionnaireResolver]);
         const text = printSchema(schema);
         expect(text).toContain('calendarTargets: [User!]!');
         expect(text).toContain('saveNotificationConfigurations');

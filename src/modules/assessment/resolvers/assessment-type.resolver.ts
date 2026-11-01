@@ -1,3 +1,8 @@
+import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
+import { User } from 'src/modules/user/models/user.model';
+import { departmentDefinitionFilter } from 'src/shared/department-definition-access';
+import { mergeFilter } from '@nestjs-query/core';
+import { filterProjectResources } from 'src/shared/project-resource-access';
 import { UseGuards } from '@nestjs/common';
 import {
     Resolver,
@@ -36,14 +41,16 @@ export class AssessmentTypeResolver {
     // @UsePermission(PermissionEnum.ASSESSMENTS_VIEW_DEPARTMENT)
     async assessmentTypes(
         @Args({ type: () => AssessmentTypeQuery }) query: AssessmentTypeQuery,
+        @CurrentUser() user: User,
     ): Promise<ConnectionType<AssessmentType>> {
+        query.filter = mergeFilter(query.filter, await departmentDefinitionFilter('AssessmentType', { req: { user } }));
         return this.assessmentTypeService.getAssessmentTypes(query);
     }
 
     @Query(() => [AssessmentType])
     // @UsePermission(PermissionEnum.ASSESSMENTS_VIEW_DEPARTMENT)
-    async activeAssessmentTypes(): Promise<AssessmentType[]> {
-        return this.assessmentTypeService.getActiveAssessmentTypes();
+    async activeAssessmentTypes(@CurrentUser() user: User): Promise<AssessmentType[]> {
+        return filterProjectResources(user.id, await this.assessmentTypeService.getActiveAssessmentTypes());
     }
 
     @Mutation(() => AssessmentType)

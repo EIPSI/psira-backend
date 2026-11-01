@@ -1,3 +1,6 @@
+import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
+import { User } from 'src/modules/user/models/user.model';
+import { filterProjectResources } from 'src/shared/project-resource-access';
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { GqlAuthGuard } from 'src/modules/auth/auth.guard';
@@ -32,10 +35,11 @@ export class CaseEventReasonResolver {
         PermissionEnum.AUTOMATIONS_VIEW_ALL,
         PermissionEnum.AUTOMATIONS_EDIT_ALL,
     ])
-    caseEventReasonTrees(
+    async caseEventReasonTrees(
         @Args('includeInactive', { type: () => Boolean, nullable: true }) includeInactive?: boolean,
+        @CurrentUser() user?: User,
     ): Promise<CaseEventReasonTree[]> {
-        return this.reasonService.getTrees(includeInactive);
+        return filterProjectResources(user.id, await this.reasonService.getTrees(includeInactive));
     }
 
     @Query(() => [CaseEventReason])
@@ -48,14 +52,15 @@ export class CaseEventReasonResolver {
         PermissionEnum.AUTOMATIONS_VIEW_ALL,
         PermissionEnum.AUTOMATIONS_EDIT_ALL,
     ])
-    caseEventReasons(
+    async caseEventReasons(
         @Args('context', { type: () => CaseEventReasonContext }) context: CaseEventReasonContext,
         @Args('parentId', { type: () => Int, nullable: true }) parentId?: number | null,
         @Args('departmentId', { type: () => Int, nullable: true }) departmentId?: number | null,
         @Args('includeInactive', { type: () => Boolean, nullable: true }) includeInactive?: boolean,
         @Args('exactDepartment', { type: () => Boolean, nullable: true }) exactDepartment?: boolean,
+        @CurrentUser() user?: User,
     ): Promise<CaseEventReason[]> {
-        return this.reasonService.getReasons(context, parentId, departmentId, includeInactive, exactDepartment);
+        return filterProjectResources(user.id, await this.reasonService.getReasons(context, parentId, departmentId, includeInactive, exactDepartment));
     }
 
     @Mutation(() => CaseEventReason)

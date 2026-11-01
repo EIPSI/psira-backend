@@ -4,7 +4,7 @@ import { Document, Types } from 'mongoose';
 import { Field, ObjectType } from '@nestjs/graphql';
 import { Questionnaire } from './questionnaire.schema';
 import { AssessmentStatus } from '../enums/assessment-status.enum';
-import { QuestionnaireBundle } from './questionnaire-bundle.schema';
+import { QuestionnaireBundle, QuestionnaireProgressMode } from './questionnaire-bundle.schema';
 
 @ObjectType()
 export class ResolvedQuestionnaire {
@@ -37,6 +37,9 @@ export class ResolvedQuestionnaire {
 
     @Field(() => String, { nullable: true })
     bundleNoticeHtml?: string;
+
+    @Field(() => QuestionnaireProgressMode, { nullable: true })
+    progressMode?: QuestionnaireProgressMode;
 
     @Field(() => String, { nullable: true })
     questionnaireDisplayTitle?: string;

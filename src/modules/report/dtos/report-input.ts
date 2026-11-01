@@ -8,6 +8,9 @@ import { Report } from '../models/report.model';
 
 @InputType()
 export class ReportInput {
+    @Field(() => [Int], { nullable: true })
+    departmentIds?: number[];
+
     @Field(() => Boolean, { nullable: true })
     anonymus?: boolean;
 

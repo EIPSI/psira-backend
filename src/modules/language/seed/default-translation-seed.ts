@@ -103,6 +103,76 @@ export const defaultTranslationSeed = {
       "defaultText": "Sorry, assessment is not available! It will be available at:"
     },
     {
+      "key": "assessmentPresentation.downloadLocalizedExampleWorkbook",
+      "namespace": "assessmentPresentation",
+      "defaultText": "Download the complete test questionnaire"
+    },
+    {
+      "key": "assessmentPresentation.downloadWorkbook",
+      "namespace": "assessmentPresentation",
+      "defaultText": "Download the Excel questionnaire guide and examples"
+    },
+    {
+      "key": "assessmentPresentation.invalidAnswer",
+      "namespace": "assessmentPresentation",
+      "defaultText": "Review this answer before continuing."
+    },
+    {
+      "key": "assessmentPresentation.pageOf",
+      "namespace": "assessmentPresentation",
+      "defaultText": "Page {{current}} of {{total}}"
+    },
+    {
+      "key": "assessmentPresentation.progress",
+      "namespace": "assessmentPresentation",
+      "defaultText": "Assessment progress"
+    },
+    {
+      "key": "assessmentPresentation.progressBar",
+      "namespace": "assessmentPresentation",
+      "defaultText": "Progress bar"
+    },
+    {
+      "key": "assessmentPresentation.progressNone",
+      "namespace": "assessmentPresentation",
+      "defaultText": "No indicator"
+    },
+    {
+      "key": "assessmentPresentation.progressPages",
+      "namespace": "assessmentPresentation",
+      "defaultText": "Current page and total"
+    },
+    {
+      "key": "assessmentPresentation.progressSetting",
+      "namespace": "assessmentPresentation",
+      "defaultText": "Progress indicator"
+    },
+    {
+      "key": "assessmentPresentation.question",
+      "namespace": "assessmentPresentation",
+      "defaultText": "Question"
+    },
+    {
+      "key": "assessmentPresentation.rangeInstruction",
+      "namespace": "assessmentPresentation",
+      "defaultText": "Move or touch the scale to answer. You can also press Enter to confirm with the keyboard."
+    },
+    {
+      "key": "assessmentPresentation.required",
+      "namespace": "assessmentPresentation",
+      "defaultText": "Required"
+    },
+    {
+      "key": "assessmentPresentation.unanswered",
+      "namespace": "assessmentPresentation",
+      "defaultText": "Not answered"
+    },
+    {
+      "key": "assessmentPresentation.workbookDescription",
+      "namespace": "assessmentPresentation",
+      "defaultText": "Includes all types, presentation options, Likert matrices, VAS and compatibility limitations."
+    },
+    {
       "key": "assessments.archivedAssessments",
       "namespace": "assessments",
       "defaultText": "Show Archived"
@@ -1213,9 +1283,19 @@ export const defaultTranslationSeed = {
       "defaultText": "days from the session date"
     },
     {
+      "key": "clinicalSettings.departmentScopeDescription",
+      "namespace": "clinicalSettings",
+      "defaultText": "Changes apply only to the selected department. Departments without their own configuration inherit the global defaults."
+    },
+    {
       "key": "clinicalSettings.editWindow",
       "namespace": "clinicalSettings",
       "defaultText": "Editing window per session"
+    },
+    {
+      "key": "clinicalSettings.globalDefaults",
+      "namespace": "clinicalSettings",
+      "defaultText": "Global defaults"
     },
     {
       "key": "clinicalSettings.supervisorRoles",
@@ -7953,6 +8033,16 @@ export const defaultTranslationSeed = {
       "defaultText": "User"
     },
     {
+      "key": "researchRoles.dataExports",
+      "namespace": "researchRoles",
+      "defaultText": "Research exports"
+    },
+    {
+      "key": "researchRoles.reportDepartmentsDescription",
+      "namespace": "researchRoles",
+      "defaultText": "Select the report departments. A global administrator must modify shared reports."
+    },
+    {
       "key": "roles.caregiver",
       "namespace": "roles",
       "defaultText": "Caregiver"
@@ -8021,6 +8111,16 @@ export const defaultTranslationSeed = {
       "key": "roles.patient",
       "namespace": "roles",
       "defaultText": "Patient"
+    },
+    {
+      "key": "roles.projectResearcher",
+      "namespace": "roles",
+      "defaultText": "Project researcher"
+    },
+    {
+      "key": "roles.researchAdmin",
+      "namespace": "roles",
+      "defaultText": "Research administrator"
     },
     {
       "key": "roles.roleCreated",
@@ -9390,6 +9490,10 @@ export const defaultTranslationSeed = {
   ],
   "values": {
     "de": {
+      "researchRoles": {
+        "dataExports": "Forschungsexporte",
+        "reportDepartmentsDescription": "Wählen Sie die Abteilungen des Berichts aus. Gemeinsame Berichte können nur von einem globalen Administrator geändert werden."
+      },
       "storageNotice": {
         "title": "Datenschutz und Browserspeicher",
         "message": "PSIRA verwendet keine Cookies für die Anmeldung oder Nachverfolgung. Es nutzt lokalen und sitzungsbezogenen Browserspeicher, um Sitzung, Berechtigungen, Sprache und erforderliche Systemeinstellungen zu speichern."
@@ -9626,6 +9730,8 @@ export const defaultTranslationSeed = {
         "searchCaregiver": "Suchen Sie nach der Nummer oder dem Namen einer bereits registrierten Betreuers"
       },
       "clinicalSettings": {
+        "globalDefaults": "Globale Standardwerte",
+        "departmentScopeDescription": "Änderungen gelten nur für die ausgewählte Abteilung. Abteilungen ohne eigene Konfiguration übernehmen die globalen Standardwerte.",
         "dashboardLookahead": "Dashboard anticipation",
         "daysBeforeDashboard": "days before sessions and assessments appear",
         "caseManagerRoles": "Roles allowed as case managers",
@@ -11261,6 +11367,8 @@ export const defaultTranslationSeed = {
         "unableDeleteDepartment": "Unable to delete department"
       },
       "roles": {
+        "researchAdmin": "Forschungsadministrator",
+        "projectResearcher": "Projektforscher",
         "createRole": "Rolle erstellen",
         "editRole": "Edit role",
         "deleteRole": "Delete role",
@@ -11439,9 +11547,29 @@ export const defaultTranslationSeed = {
         "choiceThree": "Choice three",
         "choiceFour": "Choice four",
         "choiceFive": "Choice five"
+      },
+      "assessmentPresentation": {
+        "progressSetting": "Fortschrittsanzeige",
+        "progressNone": "Keine Anzeige",
+        "progressPages": "Aktuelle Seite und Gesamtzahl",
+        "progressBar": "Fortschrittsbalken",
+        "pageOf": "Seite {{current}} von {{total}}",
+        "invalidAnswer": "Prüfen Sie diese Antwort, bevor Sie fortfahren.",
+        "required": "Erforderlich",
+        "question": "Frage",
+        "unanswered": "Nicht beantwortet",
+        "rangeInstruction": "Bewegen oder berühren Sie die Skala. Mit der Eingabetaste können Sie ebenfalls bestätigen.",
+        "progress": "Fortschritt der Auswertung",
+        "downloadLocalizedExampleWorkbook": "Vollständigen Testfragebogen herunterladen",
+        "downloadWorkbook": "Excel-Anleitung und Fragebogenbeispiele herunterladen",
+        "workbookDescription": "Enthält alle Typen, Darstellungsoptionen, Likert-Matrizen, VAS und Kompatibilitätshinweise."
       }
     },
     "en": {
+      "researchRoles": {
+        "dataExports": "Research exports",
+        "reportDepartmentsDescription": "Select the report departments. A global administrator must modify shared reports."
+      },
       "storageNotice": {
         "title": "Privacy and browser storage",
         "message": "PSIRA does not use cookies for sign-in or tracking. It uses browser local and session storage to keep the session, permissions, language and system preferences required for the application."
@@ -11673,6 +11801,8 @@ export const defaultTranslationSeed = {
         "saveGoogleCalendar": "Save Google Calendar"
       },
       "clinicalSettings": {
+        "globalDefaults": "Global defaults",
+        "departmentScopeDescription": "Changes apply only to the selected department. Departments without their own configuration inherit the global defaults.",
         "title": "Clinical settings",
         "editWindow": "Editing window per session",
         "daysFromSessionDate": "days from the session date",
@@ -12359,6 +12489,8 @@ export const defaultTranslationSeed = {
         "unableLoadParticularDepartment": "Unable to load default Particular department"
       },
       "roles": {
+        "researchAdmin": "Research administrator",
+        "projectResearcher": "Project researcher",
         "createRole": "Create Role",
         "editRole": "Edit role",
         "deleteRole": "Delete role",
@@ -13490,9 +13622,29 @@ export const defaultTranslationSeed = {
         "updated": "Bundle updated successfully!",
         "deleted": "Bundle deleted successfully!",
         "unableToLoad": "Unable to load bundles!"
+      },
+      "assessmentPresentation": {
+        "progressSetting": "Progress indicator",
+        "progressNone": "No indicator",
+        "progressPages": "Current page and total",
+        "progressBar": "Progress bar",
+        "pageOf": "Page {{current}} of {{total}}",
+        "invalidAnswer": "Review this answer before continuing.",
+        "required": "Required",
+        "question": "Question",
+        "unanswered": "Not answered",
+        "rangeInstruction": "Move or touch the scale to answer. You can also press Enter to confirm with the keyboard.",
+        "progress": "Assessment progress",
+        "downloadLocalizedExampleWorkbook": "Download the complete test questionnaire",
+        "downloadWorkbook": "Download the Excel questionnaire guide and examples",
+        "workbookDescription": "Includes all types, presentation options, Likert matrices, VAS and compatibility limitations."
       }
     },
     "es": {
+      "researchRoles": {
+        "dataExports": "Descargas de investigación",
+        "reportDepartmentsDescription": "Seleccioná los departamentos del informe. Los informes compartidos requieren un administrador global para modificarlos."
+      },
       "storageNotice": {
         "title": "Privacidad y almacenamiento del navegador",
         "message": "PSIRA no usa cookies para iniciar sesión ni para seguimiento. Utiliza almacenamiento local y de sesión del navegador para mantener la sesión, permisos, idioma y preferencias necesarias del sistema."
@@ -13727,6 +13879,8 @@ export const defaultTranslationSeed = {
         "saveGoogleCalendar": "Guardar Google Calendar"
       },
       "clinicalSettings": {
+        "globalDefaults": "Valores globales por defecto",
+        "departmentScopeDescription": "Los cambios se aplican únicamente al departamento seleccionado. Los departamentos sin configuración propia heredan los valores globales.",
         "title": "Ajustes clínicos",
         "editWindow": "Ventana de edición por sesión",
         "daysFromSessionDate": "días desde la fecha de la sesión",
@@ -14410,6 +14564,8 @@ export const defaultTranslationSeed = {
         "unableLoadParticularDepartment": "No se pudo cargar el departamento Particular por defecto"
       },
       "roles": {
+        "researchAdmin": "Investigador admin",
+        "projectResearcher": "Investigador de proyecto",
         "createRole": "Crear rol",
         "editRole": "Editar rol",
         "deleteRole": "Eliminar rol",
@@ -15542,9 +15698,29 @@ export const defaultTranslationSeed = {
         "updated": "¡Paquete de cuestionarios actualizado exitosamente!",
         "deleted": "¡Paquete de cuestionarios eliminado exitosamente!",
         "unableToLoad": "No se puede cargar el paquete de cuestionarios"
+      },
+      "assessmentPresentation": {
+        "progressSetting": "Indicador de progreso",
+        "progressNone": "Sin indicador",
+        "progressPages": "Página actual y total",
+        "progressBar": "Barra de progreso",
+        "pageOf": "Página {{current}} de {{total}}",
+        "invalidAnswer": "Revisá esta respuesta antes de continuar.",
+        "required": "Obligatoria",
+        "question": "Pregunta",
+        "unanswered": "Sin responder",
+        "rangeInstruction": "Mové o tocá la escala para responder. Con el teclado, también podés confirmar con Enter.",
+        "progress": "Progreso de la evaluación",
+        "downloadLocalizedExampleWorkbook": "Descargar cuestionario completo para probar",
+        "downloadWorkbook": "Descargar guía y ejemplos de cuestionarios en Excel",
+        "workbookDescription": "Incluye todos los tipos, opciones de presentación, matrices Likert, VAS y las limitaciones de compatibilidad."
       }
     },
     "nl": {
+      "researchRoles": {
+        "dataExports": "Onderzoeksexport",
+        "reportDepartmentsDescription": "Selecteer de afdelingen van het rapport. Gedeelde rapporten kunnen alleen door een globale beheerder worden gewijzigd."
+      },
       "storageNotice": {
         "title": "Privacy en browseropslag",
         "message": "PSIRA gebruikt geen cookies voor aanmelden of tracking. Het gebruikt lokale en sessieopslag van de browser om de sessie, machtigingen, taal en noodzakelijke systeemvoorkeuren te bewaren."
@@ -15781,6 +15957,8 @@ export const defaultTranslationSeed = {
         "searchCaregiver": "Search existing caregiver number or name"
       },
       "clinicalSettings": {
+        "globalDefaults": "Globale standaardwaarden",
+        "departmentScopeDescription": "Wijzigingen gelden alleen voor de geselecteerde afdeling. Afdelingen zonder eigen configuratie gebruiken de globale standaardwaarden.",
         "dashboardLookahead": "Dashboard anticipation",
         "daysBeforeDashboard": "days before sessions and assessments appear",
         "caseManagerRoles": "Roles allowed as case managers",
@@ -17413,6 +17591,8 @@ export const defaultTranslationSeed = {
         "unableDeleteDepartment": "Unable to delete department"
       },
       "roles": {
+        "researchAdmin": "Onderzoeksbeheerder",
+        "projectResearcher": "Projectonderzoeker",
         "createRole": "Rol aanmaken",
         "editRole": "Edit role",
         "deleteRole": "Delete role",
@@ -17591,6 +17771,22 @@ export const defaultTranslationSeed = {
         "choiceThree": "Choice three",
         "choiceFour": "Choice four",
         "choiceFive": "Choice five"
+      },
+      "assessmentPresentation": {
+        "progressSetting": "Voortgangsindicator",
+        "progressNone": "Geen indicator",
+        "progressPages": "Huidige pagina en totaal",
+        "progressBar": "Voortgangsbalk",
+        "pageOf": "Pagina {{current}} van {{total}}",
+        "invalidAnswer": "Controleer dit antwoord voordat u doorgaat.",
+        "required": "Verplicht",
+        "question": "Vraag",
+        "unanswered": "Niet beantwoord",
+        "rangeInstruction": "Verplaats of raak de schaal aan. U kunt ook met Enter bevestigen.",
+        "progress": "Voortgang van de beoordeling",
+        "downloadLocalizedExampleWorkbook": "Download de volledige testvragenlijst",
+        "downloadWorkbook": "Download de Excel-handleiding en voorbeeldvragenlijsten",
+        "workbookDescription": "Bevat alle typen, weergaveopties, Likert-matrices, VAS en compatibiliteitsbeperkingen."
       }
     }
   }

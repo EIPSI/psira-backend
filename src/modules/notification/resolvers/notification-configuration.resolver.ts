@@ -1,3 +1,4 @@
+import { filterProjectResources } from 'src/shared/project-resource-access';
 import { ForbiddenException, UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -40,8 +41,8 @@ export class NotificationConfigurationResolver {
         PermissionEnum.MAIL_TEMPLATES_VIEW_DEPARTMENT,
         PermissionEnum.MAIL_TEMPLATES_EDIT_DEPARTMENT,
     ])
-    notificationConfigurations(): Promise<NotificationConfiguration[]> {
-        return this.notificationConfigurationService.list();
+    async notificationConfigurations(@CurrentUser() user: User): Promise<NotificationConfiguration[]> {
+        return filterProjectResources(user.id, await this.notificationConfigurationService.list());
     }
 
     @Query(() => NotificationConfiguration)

@@ -1,3 +1,5 @@
+import { ClinicalSessionFollowUpSetting } from 'src/modules/clinical-session/models/clinical-session-follow-up-setting.model';
+import { In } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { SettingDto } from '../dtos/setting.dto';
 import { UpdateSettingInput } from '../dtos/update-setting.input';
@@ -31,6 +33,30 @@ export class SettingService {
             : defaultConfig[key];
 
         return value;
+    }
+
+    async clinicalSettings(departmentIds: number[] = []): Promise<ClinicalSessionFollowUpSetting> {
+        const base = await ClinicalSessionFollowUpSetting.findOne(1);
+        const defaults = { id: 1, editWindowDays: base?.editWindowDays ?? 7,
+            dashboardLookaheadDays: base?.dashboardLookaheadDays ?? 1,
+            patientCaseManagerRoleCodes: await this.getKey('patientCaseManagerRoleCodes'),
+            therapistSupervisorRoleCodes: await this.getKey('therapistSupervisorRoleCodes'),
+            updatedAt: base?.updatedAt || new Date() };
+        const ids = [...new Set(departmentIds)];
+        if (!ids.length) return Object.assign(new ClinicalSessionFollowUpSetting(), defaults);
+        const overrides = await ClinicalSessionFollowUpSetting.find({ where: { departmentId: In(ids) } });
+        const values = ids.map(id => ({ ...defaults, ...overrides.find(row => row.departmentId === id) }));
+        return Object.assign(new ClinicalSessionFollowUpSetting(), defaults, {
+            departmentId: ids.length === 1 ? ids[0] : undefined,
+            editWindowDays: Math.min(...values.map(row => row.editWindowDays)),
+            dashboardLookaheadDays: Math.max(...values.map(row => row.dashboardLookaheadDays)),
+            patientCaseManagerRoleCodes: [...new Set(values.flatMap(row => row.patientCaseManagerRoleCodes || defaults.patientCaseManagerRoleCodes))],
+            therapistSupervisorRoleCodes: [...new Set(values.flatMap(row => row.therapistSupervisorRoleCodes || defaults.therapistSupervisorRoleCodes))],
+        });
+    }
+
+    async clinicalRoleCodes(key: 'patientCaseManagerRoleCodes' | 'therapistSupervisorRoleCodes', departmentIds: number[] = []): Promise<string[]> {
+        return (await this.clinicalSettings(departmentIds))[key] || [];
     }
 
     async update<K extends keyof SettingDto>(

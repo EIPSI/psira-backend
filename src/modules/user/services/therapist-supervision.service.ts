@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { createQueryBuilder, getManager } from 'typeorm';
+import { Brackets, createQueryBuilder, getManager } from 'typeorm';
 import { PermissionEnum } from 'src/modules/permission/enums/permission.enum';
 import { RoleCode } from 'src/modules/permission/enums/role-code.enum';
 import { PermissionService } from 'src/modules/permission/providers/permission.service';
@@ -61,7 +61,7 @@ export class TherapistSupervisionService {
     }
 
     async getSupervisors(filter: SupervisionFilter, currentUser: User): Promise<UserConnectionDto> {
-        const supervisorRoleCodes = await this.getAssignableSupervisorRoleCodes();
+        const supervisorRoleCodes = await this.getAssignableSupervisorRoleCodes(filter.departmentIds || []);
         const query = User.createQueryBuilder('supervisor').distinct(true)
             .innerJoin('supervisor.roles', 'role', 'role.code IN (:...supervisorRoleCodes)', { supervisorRoleCodes })
             .leftJoinAndSelect('supervisor.roles', 'roles')
@@ -91,9 +91,16 @@ export class TherapistSupervisionService {
         }
 
         if (!filter.therapistId && filter.departmentIds?.length) {
-            query.andWhere('(departments.id IN (:...requestedDepartmentIds) OR role.code = :superAdminCode)', {
-                requestedDepartmentIds: filter.departmentIds, superAdminCode: RoleCode.SUPER_ADMIN,
-            });
+            const rules = await Promise.all(filter.departmentIds.map(async departmentId => ({ departmentId,
+                codes: await this.settingService.clinicalRoleCodes('therapistSupervisorRoleCodes', [departmentId]),
+            })));
+            query.andWhere(new Brackets(qb => {
+                qb.where('role.code = :superAdminCode', { superAdminCode: RoleCode.SUPER_ADMIN });
+                rules.forEach((rule, index) => {
+                    if (rule.codes.length) qb.orWhere(`(departments.id = :supervisorDepartment${index} AND role.code IN (:...supervisorCodes${index}))`,
+                        { [`supervisorDepartment${index}`]: rule.departmentId, [`supervisorCodes${index}`]: rule.codes });
+                });
+            }));
         }
 
         return paginate(query, filter, 'supervisor.id');
@@ -132,7 +139,7 @@ export class TherapistSupervisionService {
             throw new BadRequestException('Only active therapist users can be assigned to supervisors.');
         }
 
-        const supervisorRoleCodes = await this.getAssignableSupervisorRoleCodes();
+        const supervisorRoleCodes = await this.getAssignableSupervisorRoleCodes(therapist?.departments?.map(department => department.id) || []);
         if (!supervisor || supervisor.deletedAt || supervisor.active === false || !supervisor.roles?.some(role => supervisorRoleCodes.includes(role.code as RoleCode))) {
             throw new BadRequestException('Only active users with an assignable supervisor role can supervise therapists.');
         }
@@ -140,7 +147,9 @@ export class TherapistSupervisionService {
         if (supervisor.roles?.some(role => role.code === RoleCode.SUPER_ADMIN)) return;
         const therapistDepartmentIds = therapist.departments?.map(department => department.id) || [];
         const supervisorDepartmentIds = supervisor.departments?.map(department => department.id) || [];
-        const sharesDepartment = therapistDepartmentIds.some(id => supervisorDepartmentIds.includes(id));
+        const sharedDepartments = therapistDepartmentIds.filter(id => supervisorDepartmentIds.includes(id));
+        const sharedCodes = await this.settingService.clinicalRoleCodes('therapistSupervisorRoleCodes', sharedDepartments);
+        const sharesDepartment = sharedDepartments.length && supervisor.roles.some(role => sharedCodes.includes(role.code));
 
         if (!sharesDepartment) {
             throw new BadRequestException('Therapist and supervisor must share at least one department.');
@@ -210,9 +219,9 @@ export class TherapistSupervisionService {
             .getMany();
     }
 
-    private async getAssignableSupervisorRoleCodes(): Promise<RoleCode[]> {
-        const value = await this.settingService.getKey('therapistSupervisorRoleCodes' as any) as RoleCode[];
-        return [...new Set([RoleCode.SUPER_ADMIN, ...(value?.length ? value : [RoleCode.SUPERVISOR])])];
+    private async getAssignableSupervisorRoleCodes(departmentIds: number[] = []): Promise<RoleCode[]> {
+        const value = await this.settingService.clinicalRoleCodes('therapistSupervisorRoleCodes', departmentIds) as RoleCode[];
+        return [...new Set([RoleCode.SUPER_ADMIN, ...(Array.isArray(value) ? value : [RoleCode.SUPERVISOR])])];
     }
 
     private async canViewAllDepartmentUsers(userId: number): Promise<boolean> {

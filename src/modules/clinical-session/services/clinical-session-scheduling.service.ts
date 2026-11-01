@@ -1,3 +1,5 @@
+import { SettingService } from 'src/modules/setting/providers/setting.service';
+import { Role } from 'src/modules/permission/models/role.model';
 import { ClinicalAccess, sessionDepartmentIds, intersection, departmentIds } from 'src/shared/clinical-access';
 import { clinicalResponders } from 'src/shared/clinical-responders';
 import * as moment from 'moment-timezone';
@@ -324,25 +326,57 @@ export class ClinicalSessionSchedulingService {
         });
     }
 
-    async getClinicalSessionFollowUpSettings(): Promise<ClinicalSessionFollowUpSetting> {
-        return this.getOrCreateFollowUpSettings();
+    async getClinicalSessionFollowUpSettings(departmentId?: number, currentUser?: User): Promise<ClinicalSessionFollowUpSetting> {
+        if (departmentId) await this.assertClinicalSettingsDepartment(departmentId, currentUser, 'view');
+        const settingsService = new SettingService();
+        if (departmentId) return settingsService.clinicalSettings([departmentId]);
+        if (currentUser) {
+            const viewer = await ClinicalAccess.viewer(currentUser.id), grants = await ClinicalAccess.grants(currentUser.id);
+            if (!ClinicalAccess.all(viewer, grants, 'clinical-settings', 'view') && !grants.includes('settings.view.all')) {
+                return settingsService.clinicalSettings(departmentIds(viewer));
+            }
+        }
+        return settingsService.clinicalSettings();
+    }
+
+    private async assertClinicalSettingsDepartment(departmentId: number | undefined, currentUser: User, action: string): Promise<void> {
+        const viewer = await ClinicalAccess.viewer(currentUser.id), grants = await ClinicalAccess.grants(currentUser.id);
+        if (ClinicalAccess.all(viewer, grants, 'clinical-settings', action) || grants.includes(`settings.${action}.all`)) return;
+        if (!departmentId || !grants.includes(`clinical-settings.${action}.department`) || !departmentIds(viewer).includes(departmentId)) {
+            throw new BadRequestException('Clinical settings are outside your department scope');
+        }
     }
 
     async updateClinicalSessionFollowUpSettings(
-        input: UpdateClinicalSessionFollowUpSettingsInput,
+        input: UpdateClinicalSessionFollowUpSettingsInput, currentUser?: User,
     ): Promise<ClinicalSessionFollowUpSetting> {
-        if (input.editWindowDays < 0) {
-            throw new BadRequestException('Edit window must be zero or greater');
+        if (currentUser) await this.assertClinicalSettingsDepartment(input.departmentId, currentUser, 'edit');
+        if (![input.editWindowDays, input.dashboardLookaheadDays ?? 1].every(value => Number.isInteger(value) && value >= 0)) {
+            throw new BadRequestException('Clinical day settings must be nonnegative integers');
         }
-        if (input.dashboardLookaheadDays !== undefined && input.dashboardLookaheadDays < 0) {
-            throw new BadRequestException('Dashboard lookahead must be zero or greater');
+        const availableRoles = await Role.find();
+        for (const key of ['patientCaseManagerRoleCodes', 'therapistSupervisorRoleCodes']) {
+            if (input[key] && (!Array.isArray(input[key]) || input[key].some(code => !availableRoles.some(role =>
+                role.code === code && (!role.departmentIds?.length || (input.departmentId && role.departmentIds.includes(input.departmentId))))))) {
+                throw new BadRequestException('Invalid clinical role code');
+            }
         }
-        const settings = await this.getOrCreateFollowUpSettings();
+        const service = new SettingService();
+        if (!input.departmentId) {
+            if (input.patientCaseManagerRoleCodes) await service.updateKey('patientCaseManagerRoleCodes', input.patientCaseManagerRoleCodes);
+            if (input.therapistSupervisorRoleCodes) await service.updateKey('therapistSupervisorRoleCodes', input.therapistSupervisorRoleCodes);
+        }
+        let settings = input.departmentId ? await this.followUpSettingRepository.findOne({ where: { departmentId: input.departmentId } })
+            : await this.getOrCreateFollowUpSettings();
+        if (!settings) settings = this.followUpSettingRepository.create({ departmentId: input.departmentId });
         settings.editWindowDays = input.editWindowDays;
-        if (input.dashboardLookaheadDays !== undefined) {
-            settings.dashboardLookaheadDays = input.dashboardLookaheadDays;
+        if (input.dashboardLookaheadDays !== undefined) settings.dashboardLookaheadDays = input.dashboardLookaheadDays;
+        if (input.departmentId) {
+            settings.patientCaseManagerRoleCodes = input.patientCaseManagerRoleCodes;
+            settings.therapistSupervisorRoleCodes = input.therapistSupervisorRoleCodes;
         }
-        return this.followUpSettingRepository.save(settings);
+        await this.followUpSettingRepository.save(settings);
+        return service.clinicalSettings(input.departmentId ? [input.departmentId] : []);
     }
 
     async getActiveSchemeApplicationsForSession(
@@ -1252,10 +1286,12 @@ export class ClinicalSessionSchedulingService {
         currentUser?: User,
     ): Promise<void> {
         if (!session.calendarOccurrence?.startAt || !currentUser) return;
-        if (await this.userHasPermission(currentUser.id, PermissionEnum.ASSESSMENTS_EDIT_ALL)) {
+        if (await this.userHasPermission(currentUser.id, PermissionEnum.ASSESSMENTS_EDIT_ALL) ||
+            await this.userHasPermission(currentUser.id, PermissionEnum.CLINICAL_EDIT_DEPARTMENT)) {
             return;
         }
-        const settings = await this.getOrCreateFollowUpSettings();
+        const scoped = await ClinicalAccess.session(session.id);
+        const settings = await new SettingService().clinicalSettings(sessionDepartmentIds(scoped));
         const editUntil = new Date(session.calendarOccurrence.startAt);
         editUntil.setDate(editUntil.getDate() + settings.editWindowDays);
         if (new Date() > editUntil) {
@@ -1300,7 +1336,8 @@ export class ClinicalSessionSchedulingService {
         session: ClinicalSession,
         currentUser: User,
     ): Promise<boolean> {
-        if (await this.userHasPermission(currentUser.id, PermissionEnum.ASSESSMENTS_EDIT_ALL)) {
+        if (await this.userHasPermission(currentUser.id, PermissionEnum.ASSESSMENTS_EDIT_ALL) ||
+            await this.userHasPermission(currentUser.id, PermissionEnum.CLINICAL_EDIT_DEPARTMENT)) {
             return true;
         }
         if (!(await this.userHasPermission(currentUser.id, PermissionEnum.CLINICAL_EDIT_DEPARTMENT))) {

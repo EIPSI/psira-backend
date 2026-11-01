@@ -1,3 +1,4 @@
+import { filterProjectResources } from 'src/shared/project-resource-access';
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from 'src/modules/auth/auth-user.decorator';
@@ -26,8 +27,8 @@ export class InformedConsentModelResolver {
         PermissionEnum.INFORMED_CONSENT_MODELS_VIEW_DEPARTMENT,
         PermissionEnum.INFORMED_CONSENT_MODELS_EDIT_DEPARTMENT,
     ])
-    informedConsentModels(): Promise<InformedConsentModel[]> {
-        return this.modelService.list();
+    async informedConsentModels(@CurrentUser() user: User): Promise<InformedConsentModel[]> {
+        return filterProjectResources(user.id, await this.modelService.list());
     }
 
     @Query(() => InformedConsentModel)

@@ -173,7 +173,7 @@ export class MasterExportService {
         const grants = await PermissionService.userPermissionGrants(currentUser.id);
         const datasets = this.datasetDefinitions.map(dataset => ({
             ...dataset,
-            available: dataset.requiredPermissions.some(permission =>
+            available: PermissionService.hasPermission(grants, PermissionEnum.DATA_EXPORTS_VIEW_DEPARTMENT) && dataset.requiredPermissions.some(permission =>
                 PermissionService.hasPermission(grants, permission),
             ),
         }));

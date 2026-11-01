@@ -174,6 +174,15 @@ export class UpdateClinicalSessionInput {
 
 @InputType()
 export class UpdateClinicalSessionFollowUpSettingsInput {
+    @Field(() => Int, { nullable: true })
+    departmentId?: number;
+
+    @Field(() => [String], { nullable: true })
+    patientCaseManagerRoleCodes?: string[];
+
+    @Field(() => [String], { nullable: true })
+    therapistSupervisorRoleCodes?: string[];
+
     @Field(() => Int)
     editWindowDays: number;
 

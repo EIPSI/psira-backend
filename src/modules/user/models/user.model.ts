@@ -30,8 +30,8 @@ import {Caregiver} from 'src/modules/caregiver/models/caregiver.model';
 @ObjectType()
 @KeySet(['id'])
 @FilterableUnPagedRelation('roles', () => Role)
-@UnPagedRelation('permissions', () => Permission)
-@FilterableUnPagedRelation('departments', () => Department)
+@UnPagedRelation('permissions', () => Permission, { disableUpdate: true, disableRemove: true })
+@FilterableUnPagedRelation('departments', () => Department, { auth: { authorize: async () => ({}) } })
 @Entity({synchronize: true})
 export class User extends BaseEntity {
     static searchable = [

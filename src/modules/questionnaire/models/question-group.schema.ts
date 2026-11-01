@@ -18,6 +18,10 @@ export class QuestionGroup extends Document {
     @Prop()
     appearance: string;
 
+    @Field(() => Boolean, { nullable: true })
+    @Prop({ type: Boolean, default: false })
+    pageBreakBefore?: boolean;
+
     @Field(() => [Question])
     @Prop({ type: [QuestionSchema] })
     questions: Question[] = [];

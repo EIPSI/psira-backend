@@ -23,6 +23,23 @@ export interface QuestionData {
     relevant: string;
     choice_filter: string;
     appearance: string;
+    _row?: number;
+    page_break_before?: boolean | string;
+    range_min?: number;
+    range_max?: number;
+    range_step?: number | string;
+    range_label_list?: string;
+    range_min_label?: string;
+    range_max_label?: string;
+    range_labels_position?: string;
+    range_value_position?: string;
+    range_label_size?: number;
+    range_value_size?: number;
+    range_labels_boxed?: boolean | string;
+    range_labels_bold?: boolean | string;
+    range_gradient?: string;
+    range_color_start?: string;
+    range_color_end?: string;
     hint: string;
     constraint: string;
     constraint_message: string;
@@ -38,4 +55,6 @@ export interface ChoiceData {
     name: string;
     label: string;
     'media::image': string;
+    label_position?: string;
+    label_align?: string;
 }

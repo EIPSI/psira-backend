@@ -73,6 +73,7 @@ export class AssessmentTypeService {
     ): Promise<AssessmentType> {
         const newAssesmentType = this.assessmentTypeRepository.create();
 
+        newAssesmentType.departmentIds = input.departmentIds;
         newAssesmentType.name = input.name;
         newAssesmentType.status = input.status;
 

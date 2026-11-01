@@ -1,3 +1,5 @@
+import { projectDepartments } from 'src/shared/project-resource-access';
+import { departmentDefinitionFilter } from 'src/shared/department-definition-access';
 import {
     PrimaryGeneratedColumn,
     CreateDateColumn,
@@ -15,10 +17,15 @@ import { User } from 'src/modules/user/models/user.model';
 
 @ObjectType()
 @UnPagedRelation('roles', () => Role, {
+    auth: { authorize: async context => await departmentDefinitionFilter('Role', context) },
     disableRemove: true,
     disableUpdate: true,
 })
 @UnPagedRelation('users', () => User, {
+    auth: { authorize: async context => {
+        const ids = await projectDepartments(context.req.user.id);
+        return ids ? { departments: { id: { in: ids.length ? ids : [0] } } } : {};
+    } },
     disableRemove: true,
     disableUpdate: true,
 })
