@@ -20,14 +20,14 @@ describe('Spreadsheet assessment presentation', () => {
         const form = new XLSForm([]);
         for (const value of [true, 'true', 'yes', '1']) {
             const group = XlsFormQuestionFactory.createQuestion({ type: 'begin_group', name: 'matrix',
-                label: 'Matrix', appearance: 'likert-matrix', page_break_before: value }, form, {} as Question, {} as QuestionGroup);
+                label: 'Matrix', appearance: 'likert-matrix', 'page_break_before': value }, form, {} as Question, {} as QuestionGroup);
             expect((group as QuestionGroup).pageBreakBefore).toBe(true);
             expect((group as QuestionGroup).appearance).toBe('likert-matrix');
         }
         expect(() => XlsFormQuestionFactory.createQuestion({ type: 'text', name: 'question',
-            page_break_before: true }, form, {} as Question, {} as QuestionGroup)).toThrow('begin_group');
+            'page_break_before': true }, form, {} as Question, {} as QuestionGroup)).toThrow('begin_group');
         expect(() => XlsFormQuestionFactory.createQuestion({ type: 'begin_group', name: 'group',
-            page_break_before: 'invalid' }, form, {} as Question, {} as QuestionGroup)).toThrow('true or false');
+            'page_break_before': 'invalid' }, form, {} as Question, {} as QuestionGroup)).toThrow('true or false');
     });
     it('keeps legacy questions on their original presentation', () => {
         expect(readPresentation({ name: 'legacy', type: 'select_one list' }, [])).toBeUndefined();
